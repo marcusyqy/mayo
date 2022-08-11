@@ -1,14 +1,15 @@
 #pragma once
 
 #include <cstddef>
-#include "lzdef.hpp"
 
-namespace lzh {
+namespace zoo {
+
+using byte = unsigned char;
 
 template<std::size_t Len, std::size_t Align>
 struct aligned_storage {
     struct type {
-        alignas(Align) lzh::byte data[Len];
+        alignas(Align) byte data[Len];
     };
 };
 

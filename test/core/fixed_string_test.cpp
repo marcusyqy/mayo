@@ -1,12 +1,12 @@
 #include <gtest/gtest.h>
 #include "fixed_string.hpp"
 
-template<lzh::fixed_string T>
+template<zoo::fixed_string T>
 bool compile_this() noexcept {
     return true;
 }
 
-template<lzh::fixed_string T>
+template<zoo::fixed_string T>
 class compile_class : public std::true_type {};
 
 // Demonstrate some basic assertions.

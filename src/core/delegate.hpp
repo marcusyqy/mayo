@@ -1,6 +1,6 @@
 #pragma once
 
-namespace lzh {
+namespace zoo {
 
 template<typename...>
 class delegate;

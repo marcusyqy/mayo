@@ -1,10 +1,10 @@
 #pragma once
 
-#include <cstdint>
 #include <compare>
+#include <cstdint>
 #include <string_view>
 
-namespace lzh {
+namespace zoo {
 /*
  * this class is mainly for being able to write
  * hello<"hello"> in template arguments
@@ -14,7 +14,7 @@ struct fixed_string {
     char buf[N + 1]{};
 
     constexpr fixed_string(char const* s) {
-        for (size_t i {}; i != N; ++i)
+        for (size_t i{}; i != N; ++i)
             buf[i] = s[i];
     }
 

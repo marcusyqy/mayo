@@ -3,7 +3,7 @@
 #include <string>
 #include <variant>
 
-namespace lzh {
+namespace zoo {
 
 namespace detail::error {
 
