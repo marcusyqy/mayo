@@ -1,8 +1,6 @@
 #include <iostream>
 #include "EntryPoint.hpp"
-#include <spdlog/spdlog.h>
-
-#define LOG_INFO(message) spdlog::info("[{} in \".{}-{}\"] : {}", __FUNCTION__, __FILE__, __LINE__, message)
+#include "Log.hpp"
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -11,7 +9,7 @@ namespace zoo {
 
 static void errorCallback(int error, const char* description)
 {
-    spdlog::error("Error: {}", description);
+    ZOO_LOG_ERROR("Error: {}", description);
 }
 
 static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -21,7 +19,8 @@ static void keyCallback(GLFWwindow* window, int key, int scancode, int action, i
 }
 
 Application::ExitStatus Main(Application::Settings args) noexcept {
-    LOG_INFO("Starting application");
+
+    ZOO_LOG_INFO("Starting application");
 
     GLFWwindow* window;
 
@@ -30,8 +29,8 @@ Application::ExitStatus Main(Application::Settings args) noexcept {
     if (!glfwInit())
         return Application::ExitStatus::Err;
 
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 
     window = glfwCreateWindow(640, 480, "Simple example", NULL, NULL);
     if (!window)

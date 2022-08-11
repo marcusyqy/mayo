@@ -33,12 +33,12 @@ include_directories(
     )
 
 add_subdirectory(deps/glfw)
-
 add_executable( ${PROJECT_NAME} ${SRCS} )
+
 target_link_libraries( ${PROJECT_NAME}
     glfw
     )
-
+target_compile_definitions(${PROJECT_NAME} PUBLIC ZOO_ENABLE_LOGS)
 # ====== TESTING ======
 include(CTest)
 enable_testing()
