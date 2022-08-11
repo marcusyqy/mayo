@@ -2,6 +2,8 @@
 #include "EntryPoint.hpp"
 #include <spdlog/spdlog.h>
 
+#define LOG_INFO(message) spdlog::info("[{} in \".{}-{}\"] : {}", __FUNCTION__, __FILE__, __LINE__, message)
+
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
@@ -19,7 +21,7 @@ static void keyCallback(GLFWwindow* window, int key, int scancode, int action, i
 }
 
 Application::ExitStatus Main(Application::Settings args) noexcept {
-    spdlog::info("hello world! from {}", "zoo::Main!");
+    LOG_INFO("Starting application");
 
     GLFWwindow* window;
 
