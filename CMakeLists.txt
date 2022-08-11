@@ -16,7 +16,11 @@ set_target_properties(${TARGET_NAME}
 )
 
 
-file( GLOB SRCS src/**.cpp src/**.hpp)
+file( GLOB SRCS
+    src/**.cpp
+    src/**.hpp
+    src/*/**.cpp
+    src/*/**.hpp)
 
 # include_directories( ${CMAKE_SOURCE_DIR}/lzh)
 add_subdirectory( src )

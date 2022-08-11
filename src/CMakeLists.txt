@@ -20,11 +20,11 @@ file(
     GLOB SRCS
     core/**.cpp
     core/**.hpp
-    main.cpp)
+    main/**.hpp
+    main/**.cpp)
 
-include_directories( ${CMAKE_SOURCE_DIR}/src/core)
+include_directories( ${CMAKE_SOURCE_DIR}/src)
 # add_subdirectory( src )
 # add_subdirectory( test )
-
 # add_library( ${PROJECT_NAME} ${SRCS} )
 
