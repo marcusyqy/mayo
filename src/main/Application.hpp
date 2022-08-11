@@ -7,7 +7,6 @@ public:
     struct Settings {
         Settings(int argc, char** argv) noexcept;
     };
-
     enum ExitStatus { Ok, Err };
 
 private:
