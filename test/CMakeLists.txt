@@ -26,4 +26,4 @@ enable_testing()
 include(GoogleTest)
 # gtest_discover_tests(hello_test)
 #
-add_subdirectory( core )
+add_subdirectory( tools )

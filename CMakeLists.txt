@@ -20,7 +20,6 @@ set_target_properties(${TARGET_NAME}
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
 
-
 file( GLOB SRCS
     src/**.cpp
     src/**.hpp
@@ -28,14 +27,17 @@ file( GLOB SRCS
     src/*/**.hpp)
 
 include_directories(
+    ${CMAKE_SOURCE_DIR}/src
     ${CMAKE_SOURCE_DIR}/deps/glfw/include
-    ${CMAKE_SOURCE_DIR}/deps/spdlog/include)
+    ${CMAKE_SOURCE_DIR}/deps/spdlog/include
+    )
 
-add_subdirectory(src)
 add_subdirectory(deps/glfw)
 
 add_executable( ${PROJECT_NAME} ${SRCS} )
-target_link_libraries(${PROJECT_NAME} glfw)
+target_link_libraries( ${PROJECT_NAME}
+    glfw
+    )
 
 # ====== TESTING ======
 include(CTest)

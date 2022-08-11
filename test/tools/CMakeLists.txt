@@ -9,7 +9,7 @@
 # FetchContent_MakeAvailable(googletest)
 #
 # enable_testing()
-include_directories( ${CMAKE_SOURCE_DIR}/src/core)
+include_directories( ${CMAKE_SOURCE_DIR}/src/tools)
 
 add_executable(
     hello_test
