@@ -1,4 +1,3 @@
-#include <iostream>
 #include "EntryPoint.hpp"
 #include "Log.hpp"
 
@@ -22,7 +21,6 @@ Application::ExitStatus Main(Application::Settings args) noexcept {
 
     ZOO_LOG_INFO("Starting application");
 
-    GLFWwindow* window;
 
     glfwSetErrorCallback(errorCallback);
 
@@ -32,7 +30,7 @@ Application::ExitStatus Main(Application::Settings args) noexcept {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 
-    window = glfwCreateWindow(640, 480, "Simple example", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(640, 480, "Simple example", NULL, NULL);
     if (!window)
     {
         glfwTerminate();
