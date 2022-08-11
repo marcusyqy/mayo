@@ -1,6 +1,7 @@
-#include "main/entry.hpp"
+
+#include "main/EntryPoint.hpp"
 
 int main(int argc, char* argv[]) { // NOLINT
-    zoo::application::exit_status status = zoo::main(zoo::application::settings{argc, argv});
-    return status != zoo::application::exit_status::ok ? -1 : 0;
+    zoo::Application::ExitStatus status = zoo::Main(zoo::Application::Settings{argc, argv});
+    return status == zoo::Application::ExitStatus::Ok ? 0 : -1;
 }
