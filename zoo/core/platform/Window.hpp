@@ -11,25 +11,26 @@ class WindowFactory {
 public:
     using ErrorCallback = std::function<void(std::string_view description)>;
 
-    WindowFactory(const Application::Context& context) noexcept;
+    WindowFactory(const Application::Context& context, ErrorCallback description) noexcept;
     ~WindowFactory() noexcept;
-    void SetErrorCallback(ErrorCallback&& description) noexcept;
+
 
 private:
-
+    ErrorCallback callback_;
 };
 
 struct WindowTraits {
-    bool fullScreen;
+    bool fullScreen_;
 };
 
 class Window {
 public:
     using InputCallback = std::function<void(input::KeyCode)>;
-    void SetKeyCallback(InputCallback&& callback);
+    Window(InputCallback callback) noexcept;
 
 private:
     WindowTraits windowTraits_;
+    InputCallback callback_;
 };
 
 } // namespace zoo

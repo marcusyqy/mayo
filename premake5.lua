@@ -17,14 +17,14 @@ flags {
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
 -- Include directories relative to root folder (solution directory)
-local include_dir = {}
+include_dir = {}
 include_dir["GLFW"] = "%{wks.location}/deps/glfw/include"
 include_dir["spdlog"] = "%{wks.location}/deps/spdlog/include"
 
 --for grouping projects in the future
 group "Dependencies"
 warnings "Off"
-include "%{wks.location}/deps/glfw"
+include "deps/glfw"
 
 group ""
 --start of engine project
@@ -76,9 +76,9 @@ filter "configurations:Dist"
     optimize "on"
 
 
--- to make premake behave like cmake
-postbuildmessage "Regenerating project files with Premake5!"
-postbuildcommands
-{
-    "\"%{prj.location}bin/premake5\" %{_ACTION} --file=\"%{wks.location}premake5.lua\""
-}
+-- -- to make premake behave like cmake
+-- postbuildmessage "Regenerating project files with Premake5!"
+-- postbuildcommands
+-- {
+--     "\"%{prj.location}bin/premake5\" %{_ACTION} --file=\"%{wks.location}premake5.lua\""
+-- }

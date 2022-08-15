@@ -16,3 +16,8 @@ lib
 build
 .vs
 .vscode
+compile_commands
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.sln
