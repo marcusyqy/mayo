@@ -1,3 +1,6 @@
 [submodule "deps/export-compile-commands"]
 	path = deps/export-compile-commands
 	url = https://github.com/marcusyqy/premake-export-compile-commands.git
+[submodule "glfw"]
+	path = deps/glfw
+	url = https://github.com/marcusyqy/glfw.git
