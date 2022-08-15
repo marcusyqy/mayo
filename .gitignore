@@ -21,3 +21,5 @@ compile_commands
 *.vcxproj.filters
 *.vcxproj.user
 *.sln
+bin
+bin-int
