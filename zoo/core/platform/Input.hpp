@@ -78,7 +78,7 @@ namespace input {
     struct KeyCode {
         Mod mod_;
         Key code_;
-    }
+    };
 
 };
 

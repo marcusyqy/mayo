@@ -23,13 +23,13 @@ set_target_properties(${TARGET_NAME}
 )
 
 file( GLOB SRCS
-    src/**.cpp
-    src/**.hpp
-    src/*/**.cpp
-    src/*/**.hpp)
+    zoo/**.cpp
+    zoo/**.hpp
+    zoo/*/**.cpp
+    zoo/*/**.hpp)
 
 include_directories(
-    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/zoo
     ${CMAKE_SOURCE_DIR}/deps/glfw/include
     ${CMAKE_SOURCE_DIR}/deps/spdlog/include
     )
@@ -40,6 +40,7 @@ add_executable( ${PROJECT_NAME} ${SRCS} )
 target_link_libraries( ${PROJECT_NAME}
     glfw
     )
+
 target_compile_definitions(${PROJECT_NAME} PUBLIC ZOO_ENABLE_LOGS)
 # ====== TESTING ======
 include(CTest)

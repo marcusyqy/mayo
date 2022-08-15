@@ -9,7 +9,7 @@
 # FetchContent_MakeAvailable(googletest)
 #
 # enable_testing()
-include_directories( ${CMAKE_SOURCE_DIR}/src/tools)
+include_directories( ${CMAKE_SOURCE_DIR}/zoo/tools)
 
 add_executable(
     hello_test
