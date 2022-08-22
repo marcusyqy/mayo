@@ -19,7 +19,7 @@ public:
         Version version_;
     };
 
-    enum ExitStatus { Ok, Err };
+    enum ExitStatus { ok, err };
 
 private:
     Settings settings_;

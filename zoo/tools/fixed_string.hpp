@@ -18,7 +18,7 @@ struct fixed_string {
             buf[i] = s[i];
     }
 
-    constexpr operator char const *() const { return buf; }
+    constexpr operator char const*() const { return buf; }
 
     auto operator<=>(const fixed_string&) const = default;
 };
@@ -26,4 +26,4 @@ struct fixed_string {
 template<unsigned N>
 fixed_string(char const (&)[N]) -> fixed_string<N - 1>;
 
-} // namespace lzh
+} // namespace zoo

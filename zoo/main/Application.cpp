@@ -3,8 +3,7 @@
 
 namespace zoo {
 
-Application::Settings::Settings(int argc, char** argv) noexcept
-{
+Application::Settings::Settings(int argc, char** argv) noexcept {
     (void)argc;
     (void)argv;
 }

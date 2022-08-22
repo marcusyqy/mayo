@@ -16,10 +16,12 @@ flags {
 
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
+VULKAN_SDK = os.getenv("VULKAN_SDK")
 -- Include directories relative to root folder (solution directory)
 include_dir = {}
 include_dir["GLFW"] = "%{wks.location}/deps/glfw/include"
 include_dir["spdlog"] = "%{wks.location}/deps/spdlog/include"
+include_dir["vulkan"] =  "%{VULKAN_SDK}/Include"
 
 --for grouping projects in the future
 group "Dependencies"
@@ -47,11 +49,13 @@ files {
 includedirs {
     "%{include_dir.GLFW}",
     "%{include_dir.spdlog}",
+    "%{include_dir.vulkan}",
     "%{prj.name}"
 }
 
 links {
     "GLFW",
+    "%{VULKAN_SDK}/Lib/vulkan-1.lib"
 }
 
 warnings "Extra"

@@ -1,56 +1,37 @@
 #include "EntryPoint.hpp"
 #include "core/Log.hpp"
 
-#define GLFW_INCLUDE_NONE
-#include <GLFW/glfw3.h>
+#include "core/platform/Window.hpp"
 
 namespace zoo {
 
-static void errorCallback(int error, const char* description) {
-    ZOO_LOG_ERROR("Error: {}", description);
-}
+constexpr Application::Context app_context{{0, 0, 0}};
 
-static void keyCallback(
-    GLFWwindow* window, int key, int scancode, int action, int mods) {
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, GLFW_TRUE);
-}
-
-Application::ExitStatus Main(Application::Settings args) noexcept {
+Application::ExitStatus main(Application::Settings) noexcept {
     ZOO_LOG_INFO("Starting application");
 
-    glfwSetErrorCallback(errorCallback);
+    std::shared_ptr<WindowContext> win_context =
+        std::make_shared<WindowContext>();
+    Window window{win_context, WindowTraits{WindowSize{640, 480}, false, "zoo"},
+        [](Window& win, input::KeyCode keycode) {
+            if (keycode.key_ == input::Key::escape &&
+                keycode.action_ == input::Action::pressed) {
+                win.close();
+            }
+        }};
 
-    if (!glfwInit())
-        return Application::ExitStatus::Err;
-
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-
-    GLFWwindow* window =
-        glfwCreateWindow(640, 480, "Simple example", NULL, NULL);
-
-    if (!window) {
-        glfwTerminate();
-        return Application::ExitStatus::Err;
+    if (!window.is_current_context()) {
+        window.current_context_here();
     }
 
-    glfwSetKeyCallback(window, keyCallback);
+    win_context->wait_for_vsync();
 
-    glfwMakeContextCurrent(window);
-    glfwSwapInterval(1);
-
-    while (!glfwWindowShouldClose(window)) {
-        // glfwGetFramebufferSize(window, &width, &height);
-        glfwSwapBuffers(window);
-        glfwPollEvents();
+    while (window.is_open()) {
+        window.swap_buffers();
+        win_context->poll_events();
     }
 
-    glfwDestroyWindow(window);
-
-    glfwTerminate();
-
-    return Application::ExitStatus::Ok;
+    return Application::ExitStatus::ok;
 }
 
 } // namespace zoo

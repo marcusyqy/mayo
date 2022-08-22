@@ -16,4 +16,4 @@ struct aligned_storage {
 template<std::size_t Len, std::size_t Align>
 using aligned_storage_t = typename aligned_storage<Len, Align>::type;
 
-} // namespace lzh
+} // namespace zoo
