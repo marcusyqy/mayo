@@ -25,14 +25,15 @@ WindowContext::WindowContext() noexcept : valid_{false} {
 void WindowContext::poll_events() noexcept { glfwPollEvents(); }
 
 void WindowContext::wait_for_vsync() const noexcept { glfwSwapInterval(1); }
+
 Window::Window(std::shared_ptr<WindowContext> context,
     const WindowTraits& traits, InputCallback callback) noexcept
     : context_{context}, traits_{traits}, callback_{std::move(callback)},
       impl_{glfwCreateWindow(traits_.size_.x_, traits_.size_.y_,
           traits_.name_.data(), NULL, NULL)},
       context_set_{false} {
-    glfwSetWindowUserPointer(impl_, this);
 
+    glfwSetWindowUserPointer(impl_, this);
     glfwSetKeyCallback(impl_, [](GLFWwindow* window, int key, int scancode,
                                   int action, int mods) {
         Window* self = static_cast<Window*>(glfwGetWindowUserPointer(window));
@@ -58,6 +59,7 @@ void Window::close() noexcept {
 bool Window::is_current_context() const noexcept {
     return impl_ == glfwGetCurrentContext();
 }
+
 void Window::current_context_here() noexcept {
     if (context_set_) {
         ZOO_LOG_WARN("cannot set context twice!");
@@ -69,6 +71,11 @@ void Window::current_context_here() noexcept {
 void Window::swap_buffers() noexcept { glfwSwapBuffers(impl_); }
 
 WindowContext::~WindowContext() noexcept { glfwTerminate(); }
+
+WindowFactory::WindowFactory(std::shared_ptr<WindowContext> context) noexcept
+    : context_(std::move(context)), windows_() {}
+
+WindowFactory::~WindowFactory() noexcept = default;
 
 Window* WindowFactory::create_window(
     const WindowTraits& traits, InputCallback callback) noexcept {

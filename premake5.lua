@@ -67,10 +67,12 @@ filter "system:windows"
     defines { "WIN32", "_CRT_SECURE_NO_WARNINGS" }
 
 filter "configurations:Debug"
+    defines { "ZOO_ENABLE_LOGS" }
     runtime "Debug"
     symbols "on"
 
 filter "configurations:Release"
+    defines { "ZOO_ENABLE_LOGS" }
     runtime "Release"
     optimize "on"
 

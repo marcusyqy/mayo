@@ -5,7 +5,7 @@ namespace zoo::input {
 enum class Key {
     // clang-format off
     unknown,
-    nr_0, nr_1, nr_2, nr_3, nr_4, nr_5, nr_6, nr_7, nr_8, nr_9,
+    n_0, n_1, n_2, n_3, n_4, n_5, n_6, n_7, n_8, n_9,
     a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z,
     space,
 

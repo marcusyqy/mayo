@@ -12,6 +12,7 @@ Application::ExitStatus main(Application::Settings) noexcept {
 
     std::shared_ptr<WindowContext> win_context =
         std::make_shared<WindowContext>();
+
     Window window{win_context, WindowTraits{WindowSize{640, 480}, false, "zoo"},
         [](Window& win, input::KeyCode keycode) {
             if (keycode.key_ == input::Key::escape &&
@@ -20,6 +21,7 @@ Application::ExitStatus main(Application::Settings) noexcept {
             }
         }};
 
+    // for threading
     if (!window.is_current_context()) {
         window.current_context_here();
     }
