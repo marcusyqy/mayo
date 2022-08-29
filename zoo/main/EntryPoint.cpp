@@ -5,9 +5,9 @@
 
 namespace zoo {
 
-constexpr Application::Context app_context{{0, 0, 0}};
+constexpr application::Info app_context{{0, 0, 0}};
 
-Application::ExitStatus main(Application::Settings) noexcept {
+application::ExitStatus main(application::Settings) noexcept {
     ZOO_LOG_INFO("Starting application");
 
     std::shared_ptr<WindowContext> win_context =
@@ -33,7 +33,7 @@ Application::ExitStatus main(Application::Settings) noexcept {
         win_context->poll_events();
     }
 
-    return Application::ExitStatus::ok;
+    return application::ExitStatus::ok;
 }
 
 } // namespace zoo

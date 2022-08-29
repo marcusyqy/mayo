@@ -5,7 +5,10 @@
 namespace zoo::render::vulkan {
 
 Device::Device(VkInstance instance) noexcept {}
+
 void Device::cleanup() noexcept { vkDestroyDevice(logical_, nullptr); }
+
+Device::~Device() noexcept { cleanup(); }
 
 /*
     release device resources

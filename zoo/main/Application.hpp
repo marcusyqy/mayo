@@ -1,28 +1,12 @@
 #pragma once
-#include <cstdint>
+#include "Info.hpp"
 
-namespace zoo {
+namespace zoo::main {
 
 class Application {
 public:
-    struct Settings {
-        Settings(int argc, char** argv) noexcept;
-    };
-
-    struct Version {
-        uint16_t major_;
-        uint16_t minor_;
-        uint16_t patch_;
-    };
-
-    struct Context {
-        Version version_;
-    };
-
-    enum ExitStatus { ok, err };
-
 private:
-    Settings settings_;
+    application::Settings settings_;
 };
 
-} // namespace zoo
+} // namespace zoo::main

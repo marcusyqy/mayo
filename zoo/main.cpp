@@ -2,7 +2,7 @@
 #include "main/EntryPoint.hpp"
 
 int main(int argc, char* argv[]) { // NOLINT
-    zoo::Application::ExitStatus status =
-        zoo::main(zoo::Application::Settings{argc, argv});
-    return status == zoo::Application::ExitStatus::ok ? 0 : -1;
+    zoo::application::ExitStatus status =
+        zoo::main(zoo::application::Settings{argc, argv});
+    return status == zoo::application::ExitStatus::ok ? 0 : -1;
 }
