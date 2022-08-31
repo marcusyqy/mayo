@@ -4,40 +4,46 @@
 
 #include "Input.hpp"
 #include "main/Application.hpp"
+#include "render/Types.hpp"
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
 namespace zoo {
 
-struct WindowSize {
+namespace window  {
+struct Size {
     std::uint16_t x_;
     std::uint16_t y_;
 };
 
-struct WindowTraits {
-    WindowSize size_;
+struct Traits {
+    Size size_;
     bool full_screen_;
     std::string_view name_;
 };
 
-struct WindowContext : std::enable_shared_from_this<WindowContext> {
+struct Context : std::enable_shared_from_this<Context> {
 public:
-    WindowContext() noexcept;
-    ~WindowContext() noexcept;
+    Context() noexcept;
+    ~Context() noexcept;
 
     bool valid() const noexcept { return valid_; }
     void poll_events() noexcept;
     void wait_for_vsync() const noexcept;
 
+    static constexpr render::Api render_type = render::Api::vulkan;
+
 private:
     bool valid_;
 };
+}
+
 
 class Window {
 public:
     using InputCallback = std::function<void(Window&, input::KeyCode)>;
-    Window(std::shared_ptr<WindowContext> context, const WindowTraits& traits,
+    Window(std::shared_ptr<window::Context> context, const window::Traits& traits,
         InputCallback callback) noexcept;
     ~Window() noexcept;
 
@@ -61,27 +67,29 @@ public:
     operator bool() const noexcept { return valid(); }
 
 private:
-    std::shared_ptr<WindowContext> context_;
-    WindowTraits traits_;
+    std::shared_ptr<window::Context> context_;
+    window::Traits traits_;
     InputCallback callback_;
     GLFWwindow* impl_;
     bool context_set_;
 };
 
-class WindowFactory {
+namespace window {
+
+class Factory {
 public:
     using ErrorCallback = std::function<void(std::string_view description)>;
     using InputCallback = Window::InputCallback;
 
-    WindowFactory(std::shared_ptr<WindowContext> context) noexcept;
-    ~WindowFactory() noexcept;
+    Factory(std::shared_ptr<window::Context> context) noexcept;
+    ~Factory() noexcept;
 
     Window* create_window(
-        const WindowTraits& traits, InputCallback callback) noexcept;
+        const window::Traits& traits, InputCallback callback) noexcept;
 
 private:
-    std::shared_ptr<WindowContext> context_;
+    std::shared_ptr<window::Context> context_;
     std::vector<std::unique_ptr<Window>> windows_;
 };
-
+} // namespace window
 } // namespace zoo

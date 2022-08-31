@@ -3,6 +3,7 @@
 #include "core/Log.hpp"
 
 #include <vulkan/vk_enum_string_helper.h>
+#include "core/platform/Query.hpp"
 
 namespace zoo::render {
 
@@ -20,23 +21,27 @@ VkInstance create_instance(const engine::Info& info) noexcept {
         app_info.applicationVersion = make_version(info.app_info_.version_);
         app_info.pEngineName = core::engine::name.data();
         app_info.engineVersion = make_version(core::engine::version);
-        app_info.apiVersion = 0; // I don't know what is API Version
+        app_info.apiVersion = VK_API_VERSION_1_3;
     }
 
-    // TODO : still have to create instance properly but i'm really tired
-    ZOO_LOG_ERROR("did not create this instance properly!!");
-
     VkInstanceCreateInfo create_info{};
+
+    zoo::platform::vulkan::Parameters params{true};
+    zoo::platform::vulkan::Query query{params};
+
+    zoo::platform::vulkan::Info vulkan_query_info = query.get_info();
+    const auto& enabled_layers = vulkan_query_info.layers_;
+    const auto& enabled_extensions = vulkan_query_info.extensions_;
     {
         create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
         create_info.pNext = nullptr;
         create_info.flags = 0;
         create_info.pApplicationInfo = &app_info;
 
-        create_info.enabledLayerCount;
-        create_info.ppEnabledLayerNames;
-        create_info.enabledExtensionCount;
-        create_info.ppEnabledExtensionNames;
+        create_info.enabledLayerCount = static_cast<uint32_t>(enabled_layers.size());
+        create_info.ppEnabledLayerNames = enabled_layers.data();
+        create_info.enabledExtensionCount = static_cast<uint32_t>(enabled_extensions.size());;
+        create_info.ppEnabledExtensionNames = enabled_extensions.data();
     }
 
     VkInstance instance = VK_NULL_HANDLE;
@@ -56,7 +61,9 @@ std::shared_ptr<vulkan::Device> create_device(VkInstance instance) noexcept {
 
 } // namespace
 
-Engine::Engine(const engine::Info& info) : info_(info) {}
+Engine::Engine(const engine::Info& info) noexcept : info_(info) {}
+
+Engine::~Engine() noexcept { cleanup(); }
 
 void Engine::initialize() noexcept {
     instance_ = create_instance(info_);
@@ -64,9 +71,11 @@ void Engine::initialize() noexcept {
 }
 
 void Engine::cleanup() noexcept {
-    if (instance_ != nullptr) {
+    if (instance_ != VK_NULL_HANDLE) {
+        instance_ = VK_NULL_HANDLE;
         vkDestroyInstance(instance_, nullptr);
     }
+    device_.reset();
 }
 
 } // namespace zoo::render

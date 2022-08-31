@@ -11,7 +11,7 @@ static void error_callback(int, [[maybe_unused]] const char* description) {
 
 } // namespace
 
-WindowContext::WindowContext() noexcept : valid_{false} {
+window::Context::Context() noexcept : valid_{false} {
     glfwSetErrorCallback(error_callback);
 
     if (!glfwInit())
@@ -19,15 +19,23 @@ WindowContext::WindowContext() noexcept : valid_{false} {
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+
+    // No opengl  
+    if constexpr(render_type == render::Api::opengl) {
+         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    }
+
+    // disable resizing for now 
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
     valid_ = true;
 }
 
-void WindowContext::poll_events() noexcept { glfwPollEvents(); }
+void window::Context::poll_events() noexcept { glfwPollEvents(); }
 
-void WindowContext::wait_for_vsync() const noexcept { glfwSwapInterval(1); }
+void window::Context::wait_for_vsync() const noexcept { glfwSwapInterval(1); }
 
-Window::Window(std::shared_ptr<WindowContext> context,
-    const WindowTraits& traits, InputCallback callback) noexcept
+Window::Window(std::shared_ptr<window::Context> context,
+    const window::Traits& traits, InputCallback callback) noexcept
     : context_{context}, traits_{traits}, callback_{std::move(callback)},
       impl_{glfwCreateWindow(traits_.size_.x_, traits_.size_.y_,
           traits_.name_.data(), NULL, NULL)},
@@ -68,17 +76,21 @@ void Window::current_context_here() noexcept {
     context_set_ = true;
 }
 
-void Window::swap_buffers() noexcept { glfwSwapBuffers(impl_); }
+void Window::swap_buffers() noexcept {
+    if constexpr(window::Context::render_type == render::Api::opengl) {
+        glfwSwapBuffers(impl_); 
+    }
+}
 
-WindowContext::~WindowContext() noexcept { glfwTerminate(); }
+window::Context::~Context() noexcept { glfwTerminate(); }
 
-WindowFactory::WindowFactory(std::shared_ptr<WindowContext> context) noexcept
+window::Factory::Factory(std::shared_ptr<window::Context> context) noexcept
     : context_(std::move(context)), windows_() {}
 
-WindowFactory::~WindowFactory() noexcept = default;
+window::Factory::~Factory() noexcept = default;
 
-Window* WindowFactory::create_window(
-    const WindowTraits& traits, InputCallback callback) noexcept {
+Window* window::Factory::create_window(
+    const window::Traits& traits, InputCallback callback) noexcept {
     windows_.emplace_back(
         std::make_unique<Window>(context_, traits, std::move(callback)));
     return windows_.back().get();

@@ -14,7 +14,8 @@ struct Info {
 
 class Engine {
 public:
-    Engine(const engine::Info& info);
+    Engine(const engine::Info& info) noexcept;
+    ~Engine() noexcept;
 
     void initialize() noexcept;
     void cleanup() noexcept;

@@ -22,7 +22,7 @@ input::KeyCode convert(KeyCode value) noexcept {
         }
     }
 
-    ZOO_LOG_ERROR("not implemented feature for input");
+    ZOO_LOG_ERROR("convert function for keycode not implemented feature for input");
     return input::KeyCode{};
 }
 

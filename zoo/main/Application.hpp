@@ -1,7 +1,7 @@
 #pragma once
 #include "Info.hpp"
 
-namespace zoo::main {
+namespace zoo {
 
 class Application {
 public:
