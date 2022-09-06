@@ -7,8 +7,16 @@ namespace zoo::render::vulkan::debug {
 
 class Messenger {
 public:
-    Messenger(VkInstance instance);
-    ~Messenger();
+    Messenger(VkInstance instance) noexcept;
+    ~Messenger() noexcept;
+
+    Messenger(const Messenger&) noexcept = delete;
+    Messenger& operator=(const Messenger&) noexcept = delete;
+    
+    Messenger(Messenger&& other) noexcept;
+    Messenger& operator=(Messenger&& other) noexcept;
+
+    void reset() noexcept;
 
 private:
     VkInstance instance_;

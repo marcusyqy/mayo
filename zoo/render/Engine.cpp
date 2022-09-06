@@ -67,15 +67,18 @@ Engine::~Engine() noexcept { cleanup(); }
 
 void Engine::initialize() noexcept {
     instance_ = create_instance(info_);
+    if(instance_ != VK_NULL_HANDLE && info_.debug_layer_)
+        debugger_ = std::make_optional<vulkan::debug::Messenger>(instance_);
     device_ = create_device(instance_);
 }
 
 void Engine::cleanup() noexcept {
+    device_.reset();
+    debugger_.reset();
     if (instance_ != VK_NULL_HANDLE) {
         instance_ = VK_NULL_HANDLE;
         vkDestroyInstance(instance_, nullptr);
     }
-    device_.reset();
 }
 
 } // namespace zoo::render

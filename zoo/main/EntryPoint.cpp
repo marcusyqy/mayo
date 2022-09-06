@@ -9,7 +9,7 @@ namespace zoo {
 
 application::ExitStatus main(application::Settings) noexcept {
     const application::Info app_context{{0, 0, 0}, "Zoo Engine Application"};
-    const render::engine::Info render_engine_info {app_context};
+    const render::engine::Info render_engine_info {app_context, true};
 
     ZOO_LOG_INFO("Starting application");
 

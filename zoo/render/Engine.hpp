@@ -4,11 +4,14 @@
 #include "vulkan/Device.hpp"
 #include <vulkan/vulkan.h>
 
+#include "render/vulkan/debug/Messenger.hpp"
+
 namespace zoo::render {
 
 namespace engine {
 struct Info {
     application::Info app_info_;
+    bool debug_layer_;
 };
 } // namespace engine
 
@@ -30,6 +33,7 @@ private:
 
     VkInstance instance_ = VK_NULL_HANDLE;
     std::shared_ptr<vulkan::Device> device_ = nullptr;
+    std::optional<vulkan::debug::Messenger> debugger_ = std::nullopt;
 };
 
 } // namespace zoo::render
