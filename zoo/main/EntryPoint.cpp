@@ -6,17 +6,17 @@
 
 namespace zoo {
 
-
 application::ExitStatus main(application::Settings) noexcept {
     const application::Info app_context{{0, 0, 0}, "Zoo Engine Application"};
-    const render::engine::Info render_engine_info {app_context, true};
+    const render::engine::Info render_engine_info{app_context, true};
 
     ZOO_LOG_INFO("Starting application");
 
     std::shared_ptr<window::Context> win_context =
         std::make_shared<window::Context>();
 
-    Window window{win_context, window::Traits{window::Size{640, 480}, false, "zoo"},
+    Window window{win_context,
+        window::Traits{window::Size{640, 480}, false, "zoo"},
         [](Window& win, input::KeyCode keycode) {
             if (keycode.key_ == input::Key::escape &&
                 keycode.action_ == input::Action::pressed) {

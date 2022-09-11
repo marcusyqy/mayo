@@ -2,8 +2,10 @@
 #include "core/Defines.hpp"
 #include "core/Log.hpp"
 
-#include <vulkan/vk_enum_string_helper.h>
 #include "core/platform/Query.hpp"
+#include <vulkan/vk_enum_string_helper.h>
+
+#include <compare>
 
 namespace zoo::render {
 
@@ -38,9 +40,11 @@ VkInstance create_instance(const engine::Info& info) noexcept {
         create_info.flags = 0;
         create_info.pApplicationInfo = &app_info;
 
-        create_info.enabledLayerCount = static_cast<uint32_t>(enabled_layers.size());
+        create_info.enabledLayerCount =
+            static_cast<uint32_t>(enabled_layers.size());
         create_info.ppEnabledLayerNames = enabled_layers.data();
-        create_info.enabledExtensionCount = static_cast<uint32_t>(enabled_extensions.size());;
+        create_info.enabledExtensionCount =
+            static_cast<uint32_t>(enabled_extensions.size());
         create_info.ppEnabledExtensionNames = enabled_extensions.data();
     }
 
@@ -53,10 +57,58 @@ VkInstance create_instance(const engine::Info& info) noexcept {
     return instance;
 }
 
+bool check_device_features_met(VkPhysicalDeviceFeatures features) noexcept {
+    return true;
+}
+
+bool check_device_properties_met(
+    VkPhysicalDeviceProperties properties) noexcept {
+    return properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
+}
+
+struct PhysicalDeviceScorer {
+    PhysicalDeviceScorer(VkPhysicalDevice device) noexcept {
+        VkPhysicalDeviceProperties device_properties;
+        vkGetPhysicalDeviceProperties(device, &device_properties);
+
+        VkPhysicalDeviceFeatures device_features;
+        vkGetPhysicalDeviceFeatures(device, &device_features);
+
+        device_features_met_ = check_device_features_met(device_features);
+        device_properties_met_ = check_device_properties_met(device_properties);
+    }
+
+    operator bool() const noexcept {
+        return device_features_met_ && device_properties_met_;
+    }
+
+    auto operator<=>(
+        const PhysicalDeviceScorer& other) const noexcept = default;
+
+    bool device_features_met_ = false;
+    bool device_properties_met_ = false;
+};
+
 std::shared_ptr<vulkan::Device> create_device(VkInstance instance) noexcept {
     if (instance == VK_NULL_HANDLE)
         return nullptr;
-    return std::make_shared<vulkan::Device>(instance);
+
+    uint32_t device_count = 0;
+    VkResult result =
+        vkEnumeratePhysicalDevices(instance, &device_count, nullptr);
+    if (result != VK_SUCCESS || device_count == 0) {
+        ZOO_LOG_ERROR("Devices cannot be 0 for vkEnumeratePhysicalDevices!");
+        return nullptr;
+    }
+
+    std::vector<VkPhysicalDevice> devices(device_count);
+    vkEnumeratePhysicalDevices(instance, &device_count, devices.data());
+
+    std::vector<PhysicalDeviceScorer> scorers{
+        std::begin(devices), std::end(devices)};
+    auto chosen = std::max(std::begin(scorers), std::end(scorers));
+    const auto index = std::distance(scorers.begin(), chosen);
+    return std::make_shared<vulkan::Device>(instance, devices[index]);
 }
 
 } // namespace
@@ -67,7 +119,7 @@ Engine::~Engine() noexcept { cleanup(); }
 
 void Engine::initialize() noexcept {
     instance_ = create_instance(info_);
-    if(instance_ != VK_NULL_HANDLE && info_.debug_layer_)
+    if (instance_ != VK_NULL_HANDLE && info_.debug_layer_)
         debugger_ = std::make_optional<vulkan::debug::Messenger>(instance_);
     device_ = create_device(instance_);
 }

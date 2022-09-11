@@ -11,7 +11,7 @@
 
 namespace zoo {
 
-namespace window  {
+namespace window {
 struct Size {
     std::uint16_t x_;
     std::uint16_t y_;
@@ -37,14 +37,13 @@ public:
 private:
     bool valid_;
 };
-}
-
+} // namespace window
 
 class Window {
 public:
     using InputCallback = std::function<void(Window&, input::KeyCode)>;
-    Window(std::shared_ptr<window::Context> context, const window::Traits& traits,
-        InputCallback callback) noexcept;
+    Window(std::shared_ptr<window::Context> context,
+        const window::Traits& traits, InputCallback callback) noexcept;
     ~Window() noexcept;
 
     Window(Window&& other) noexcept = delete;

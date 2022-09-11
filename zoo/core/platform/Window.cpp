@@ -20,12 +20,12 @@ window::Context::Context() noexcept : valid_{false} {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 
-    // No opengl  
-    if constexpr(render_type == render::Api::opengl) {
-         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    // No opengl
+    if constexpr (render_type == render::Api::opengl) {
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     }
 
-    // disable resizing for now 
+    // disable resizing for now
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
     valid_ = true;
 }
@@ -77,8 +77,8 @@ void Window::current_context_here() noexcept {
 }
 
 void Window::swap_buffers() noexcept {
-    if constexpr(window::Context::render_type == render::Api::opengl) {
-        glfwSwapBuffers(impl_); 
+    if constexpr (window::Context::render_type == render::Api::opengl) {
+        glfwSwapBuffers(impl_);
     }
 }
 

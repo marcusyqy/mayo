@@ -1,7 +1,7 @@
 #pragma once
-#include <vulkan/vulkan.h>
-#include <functional>
 #include "core/Log.hpp"
+#include <functional>
+#include <vulkan/vulkan.h>
 
 namespace zoo::render::vulkan::debug {
 
@@ -12,7 +12,7 @@ public:
 
     Messenger(const Messenger&) noexcept = delete;
     Messenger& operator=(const Messenger&) noexcept = delete;
-    
+
     Messenger(Messenger&& other) noexcept;
     Messenger& operator=(Messenger&& other) noexcept;
 
@@ -23,4 +23,4 @@ private:
     VkDebugUtilsMessengerEXT debug_messenger_;
 };
 
-}
+} // namespace zoo::render::vulkan::debug

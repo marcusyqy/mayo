@@ -9,4 +9,4 @@ private:
     application::Settings settings_;
 };
 
-} // namespace zoo::main
+} // namespace zoo

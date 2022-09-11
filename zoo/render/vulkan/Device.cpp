@@ -4,16 +4,22 @@
 
 namespace zoo::render::vulkan {
 
-Device::Device(VkInstance instance) noexcept {}
+Device::Device(VkInstance instance, VkPhysicalDevice physical_device) noexcept
+    : physical_(physical_device) {}
 
-void Device::cleanup() noexcept { vkDestroyDevice(logical_, nullptr); }
+void Device::reset() noexcept {
+    if (logical_ != VK_NULL_HANDLE) {
+        vkDestroyDevice(logical_, nullptr);
+        logical_ = VK_NULL_HANDLE;
+    }
+}
 
-Device::~Device() noexcept { cleanup(); }
+Device::~Device() noexcept { reset(); }
 
 /*
     release device resources
 */
-void Device::release_device_resource(VkFence fence) {
+void Device::release_device_resource(VkFence fence) noexcept {
     if (fence != VK_NULL_HANDLE)
         vkDestroyFence(logical_, fence, nullptr);
 }
