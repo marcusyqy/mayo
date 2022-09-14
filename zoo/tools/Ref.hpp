@@ -7,32 +7,31 @@
 namespace zoo {
 
 template<typename T>
-concept Referenceable = requires(T a) {
+concept referenceable = requires(T a) {
     std::is_copy_constructible_v<T>&& std::is_move_constructible_v<T>&&
         std::is_copy_assignable_v<T>&& std::is_move_assignable_v<T>;
 };
 
-template<Referenceable T>
-class RefStorage {
+template<referenceable T>
+class ref_storage {
 public:
 private:
-    std::vector<Type> storage_;
+    std::vector<Type> Storage_;
 };
 
-template<Referenceable T>
-class Ref {
+template<referenceable T>
+class ref {
 public:
-    using Storage = RefStorage<T>;
+    using storage_type = ref_storage<T>;
 
-    Ref(std::shared_ptr<Storage> storage, std::size_t index) : storage_(std::move(storage), index_(index) {
-	}
+    ref(std::shared_ptr<storage_type> Storage, std::size_t Index) : Storage_(std::move(Storage), Index_(Index) {}
 
  private:
-     std::shared_ptr<Storage> storage_;
-     std::size_t index_;
+     std::shared_ptr<storage_type> Storage_;
+     std::size_t Index_;
 };
 
-template<Referenceable T>
-Ref(std::shared_ptr<RefStorage<T>> type, std::size_t index) -> Ref<T>;
+template<referenceable T>
+ref(std::shared_ptr<ref_storage<T>> Type, std::size_t Index) -> ref<T>;
 
 } // namespace zoo

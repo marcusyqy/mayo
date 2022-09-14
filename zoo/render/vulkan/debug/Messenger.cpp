@@ -5,11 +5,11 @@ namespace zoo::render::vulkan::debug {
 
 namespace {
 
-VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
+VKAPI_ATTR auto VKAPI_CALL debug_callback(
     VkDebugUtilsMessageSeverityFlagBitsEXT severity,
     VkDebugUtilsMessageTypeFlagsEXT type,
     const VkDebugUtilsMessengerCallbackDataEXT* callback_data,
-    [[maybe_unused]] void* user_data) {
+    [[maybe_unused]] void* user_data) noexcept -> VkBool32 {
 
     const char* prepend = nullptr;
     if (type >= VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT) {
@@ -33,10 +33,10 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
     return VK_FALSE;
 }
 
-VkResult create_debug_utils_messenger_ext(VkInstance instance,
+auto create_debug_utils_messenger_ext(VkInstance instance,
     const VkDebugUtilsMessengerCreateInfoEXT* create_info,
     const VkAllocationCallbacks* allocator,
-    VkDebugUtilsMessengerEXT* debug_messenger) {
+    VkDebugUtilsMessengerEXT* debug_messenger) noexcept -> VkResult {
     auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
         instance, "vkCreateDebugUtilsMessengerEXT");
     if (func != nullptr) {
@@ -46,9 +46,9 @@ VkResult create_debug_utils_messenger_ext(VkInstance instance,
     }
 }
 
-void destroy_debug_utils_messenger_ext(VkInstance instance,
+auto destroy_debug_utils_messenger_ext(VkInstance instance,
     VkDebugUtilsMessengerEXT debug_messenger,
-    const VkAllocationCallbacks* allocator) {
+    const VkAllocationCallbacks* allocator) noexcept -> void {
     auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
         instance, "vkDestroyDebugUtilsMessengerEXT");
     if (func != nullptr) {
@@ -90,7 +90,7 @@ Messenger::Messenger(VkInstance instance) noexcept
 
 Messenger::~Messenger() noexcept { reset(); }
 
-void Messenger::reset() noexcept {
+auto Messenger::reset() noexcept -> void {
     if (debug_messenger_ != VK_NULL_HANDLE) {
         destroy_debug_utils_messenger_ext(instance_, debug_messenger_, nullptr);
         debug_messenger_ = VK_NULL_HANDLE;
@@ -102,7 +102,7 @@ Messenger::Messenger(Messenger&& other) noexcept
     *this = std::move(other);
 }
 
-Messenger& Messenger::operator=(Messenger&& other) noexcept {
+auto Messenger::operator=(Messenger&& other) noexcept -> Messenger& {
     std::swap(instance_, other.instance_);
     std::swap(debug_messenger_, other.debug_messenger_);
     return *this;

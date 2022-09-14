@@ -8,12 +8,12 @@
 
 namespace zoo::input::glfw_layer {
 
-KeyCode convert(input::KeyCode) noexcept {
+auto convert(input::KeyCode) noexcept -> KeyCode {
     ZOO_LOG_ERROR("convert function for glfw key code not implemented yet!");
     return {};
 }
 
-input::KeyCode convert(KeyCode value) noexcept {
+auto convert(KeyCode value) noexcept -> input::KeyCode {
 
     switch (value.key_) {
     case GLFW_KEY_ESCAPE:

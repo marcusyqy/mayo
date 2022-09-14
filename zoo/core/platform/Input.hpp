@@ -92,8 +92,8 @@ struct KeyCode {
     int mods_;
 };
 
-KeyCode convert(input::KeyCode value) noexcept;
-input::KeyCode convert(KeyCode value) noexcept;
+auto convert(input::KeyCode value) noexcept -> KeyCode;
+auto convert(KeyCode value) noexcept -> input::KeyCode;
 
 } // namespace glfw_layer
 

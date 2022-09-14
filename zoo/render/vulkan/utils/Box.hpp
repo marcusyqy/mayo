@@ -25,18 +25,18 @@ public:
         : device_(std::move(device)), type_(type) {}
 
     Box(const Box& other) noexcept = delete;
-    Box& operator=(const Box& other) noexcept = delete;
+    auto operator=(const Box& other) noexcept -> Box& = delete;
 
     Box(Box&& other) noexcept : Box() { this = std::move(other); }
 
-    Box& operator=(Box&& other) noexcept {
+    auto operator=(Box&& other) noexcept -> Box& {
         std::swap(device_, other.device_);
         std::swap(type_, other.type_);
     }
 
     ~Box() noexcept { release(); }
 
-    void release() noexcept {
+    auto release() noexcept -> void {
         if (device_) {
             device_->release_device_resource(type_);
             type_ = VK_NULL_HANDLE;
@@ -45,7 +45,7 @@ public:
     operator bool() const noexcept { return type_ != VK_NULL_HANDLE; }
 
     [[nodiscard]] operator T() const noexcept { return type_; }
-    [[nodiscard]] T get() const noexcept { return type_; }
+    [[nodiscard]] auto get() const noexcept -> T { return type_; }
 
 private:
     std::shared_ptr<vulkan::Device> device_;

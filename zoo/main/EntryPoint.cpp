@@ -6,7 +6,7 @@
 
 namespace zoo {
 
-application::ExitStatus main(application::Settings) noexcept {
+auto main(application::Settings) noexcept -> application::ExitStatus {
     const application::Info app_context{{0, 0, 0}, "Zoo Engine Application"};
     const render::engine::Info render_engine_info{app_context, true};
 

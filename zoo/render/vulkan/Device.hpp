@@ -15,8 +15,8 @@ public:
     Device& operator=(const Device& other) noexcept = delete;
     Device& operator=(Device&& other) noexcept = delete;
 
-    void reset() noexcept;
-    void release_device_resource(VkFence fence) noexcept;
+    auto reset() noexcept -> void;
+    auto release_device_resource(VkFence fence) noexcept -> void;
 
 private:
     VkPhysicalDevice physical_ = VK_NULL_HANDLE;

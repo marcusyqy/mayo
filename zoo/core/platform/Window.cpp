@@ -5,7 +5,8 @@ namespace zoo {
 
 namespace {
 
-static void error_callback(int, [[maybe_unused]] const char* description) {
+static auto error_callback(
+    int, [[maybe_unused]] const char* description) noexcept -> void {
     ZOO_LOG_ERROR("Error: {}", description);
 }
 
@@ -30,9 +31,11 @@ window::Context::Context() noexcept : valid_{false} {
     valid_ = true;
 }
 
-void window::Context::poll_events() noexcept { glfwPollEvents(); }
+auto window::Context::poll_events() noexcept -> void { glfwPollEvents(); }
 
-void window::Context::wait_for_vsync() const noexcept { glfwSwapInterval(1); }
+auto window::Context::wait_for_vsync() const noexcept -> void {
+    glfwSwapInterval(1);
+}
 
 Window::Window(std::shared_ptr<window::Context> context,
     const window::Traits& traits, InputCallback callback) noexcept
@@ -53,22 +56,22 @@ Window::Window(std::shared_ptr<window::Context> context,
 
 Window::~Window() noexcept { close(); }
 
-bool Window::is_open() const noexcept {
+auto Window::is_open() const noexcept -> bool {
     return impl_ != nullptr && !glfwWindowShouldClose(impl_);
 }
 
-void Window::close() noexcept {
+auto Window::close() noexcept -> void {
     if (impl_ != nullptr) {
         glfwDestroyWindow(impl_);
         impl_ = nullptr;
     }
 }
 
-bool Window::is_current_context() const noexcept {
+auto Window::is_current_context() const noexcept -> bool {
     return impl_ == glfwGetCurrentContext();
 }
 
-void Window::current_context_here() noexcept {
+auto Window::current_context_here() noexcept -> void {
     if (context_set_) {
         ZOO_LOG_WARN("cannot set context twice!");
     }
@@ -76,7 +79,7 @@ void Window::current_context_here() noexcept {
     context_set_ = true;
 }
 
-void Window::swap_buffers() noexcept {
+auto Window::swap_buffers() noexcept -> void {
     if constexpr (window::Context::render_type == render::Api::opengl) {
         glfwSwapBuffers(impl_);
     }
@@ -89,8 +92,8 @@ window::Factory::Factory(std::shared_ptr<window::Context> context) noexcept
 
 window::Factory::~Factory() noexcept = default;
 
-Window* window::Factory::create_window(
-    const window::Traits& traits, InputCallback callback) noexcept {
+auto window::Factory::create_window(
+    const window::Traits& traits, InputCallback callback) noexcept -> Window* {
     windows_.emplace_back(
         std::make_unique<Window>(context_, traits, std::move(callback)));
     return windows_.back().get();

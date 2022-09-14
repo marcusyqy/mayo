@@ -20,13 +20,13 @@ public:
     Engine(const engine::Info& info) noexcept;
     ~Engine() noexcept;
 
-    void initialize() noexcept;
-    void cleanup() noexcept;
+    auto initialize() noexcept -> void;
+    auto cleanup() noexcept -> void;
 
     Engine(const Engine&) noexcept = delete;
-    Engine& operator=(const Engine&) noexcept = delete;
+    auto operator=(const Engine&) noexcept -> Engine& = delete;
     Engine(Engine&&) noexcept = delete;
-    Engine& operator=(Engine&&) noexcept = delete;
+    auto operator=(Engine&&) noexcept -> Engine& = delete;
 
 private:
     engine::Info info_;

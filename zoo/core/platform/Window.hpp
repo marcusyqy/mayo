@@ -28,9 +28,9 @@ public:
     Context() noexcept;
     ~Context() noexcept;
 
-    bool valid() const noexcept { return valid_; }
-    void poll_events() noexcept;
-    void wait_for_vsync() const noexcept;
+    auto valid() const noexcept -> bool { return valid_; }
+    auto poll_events() noexcept -> void;
+    auto wait_for_vsync() const noexcept -> void;
 
     static constexpr render::Api render_type = render::Api::vulkan;
 
@@ -47,22 +47,22 @@ public:
     ~Window() noexcept;
 
     Window(Window&& other) noexcept = delete;
-    Window& operator=(Window&& other) noexcept = delete;
+    auto operator=(Window&& other) noexcept -> Window& = delete;
 
     Window(const Window& other) noexcept = delete;
-    Window& operator=(const Window& other) noexcept = delete;
+    auto operator=(const Window& other) noexcept -> Window& = delete;
 
     [[nodiscard("querying from glfw should not discard this")]] bool
     is_open() const noexcept;
 
-    bool is_current_context() const noexcept;
-    void current_context_here() noexcept;
+    auto is_current_context() const noexcept -> bool;
+    auto current_context_here() noexcept -> void;
 
-    void swap_buffers() noexcept;
-    void close() noexcept;
+    auto swap_buffers() noexcept -> void;
+    auto close() noexcept -> void;
 
 public:
-    bool valid() const noexcept { return impl_ != nullptr; }
+    auto valid() const noexcept -> bool { return impl_ != nullptr; }
     operator bool() const noexcept { return valid(); }
 
 private:
@@ -83,8 +83,8 @@ public:
     Factory(std::shared_ptr<window::Context> context) noexcept;
     ~Factory() noexcept;
 
-    Window* create_window(
-        const window::Traits& traits, InputCallback callback) noexcept;
+    auto create_window(const window::Traits& traits,
+        InputCallback callback) noexcept -> Window*;
 
 private:
     std::shared_ptr<window::Context> context_;

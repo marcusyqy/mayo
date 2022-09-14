@@ -3,6 +3,6 @@
 
 namespace zoo {
 
-application::ExitStatus main(application::Settings args) noexcept;
+auto main(application::Settings args) noexcept -> application::ExitStatus;
 
 } // namespace zoo

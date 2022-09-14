@@ -10,11 +10,11 @@
 namespace zoo::render {
 
 namespace {
-uint32_t make_version(core::Version version) noexcept {
+auto make_version(core::Version version) noexcept -> uint32_t {
     return VK_MAKE_VERSION(version.major_, version.minor_, version.patch_);
 }
 
-VkInstance create_instance(const engine::Info& info) noexcept {
+auto create_instance(const engine::Info& info) noexcept -> VkInstance {
     VkApplicationInfo app_info{};
     {
         app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -57,12 +57,13 @@ VkInstance create_instance(const engine::Info& info) noexcept {
     return instance;
 }
 
-bool check_device_features_met(VkPhysicalDeviceFeatures features) noexcept {
+auto check_device_features_met(VkPhysicalDeviceFeatures features) noexcept
+    -> bool {
     return true;
 }
 
-bool check_device_properties_met(
-    VkPhysicalDeviceProperties properties) noexcept {
+auto check_device_properties_met(VkPhysicalDeviceProperties properties) noexcept
+    -> bool {
     return properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
 }
 
@@ -89,7 +90,8 @@ struct PhysicalDeviceScorer {
     bool device_properties_met_ = false;
 };
 
-std::shared_ptr<vulkan::Device> create_device(VkInstance instance) noexcept {
+auto create_device(VkInstance instance) noexcept
+    -> std::shared_ptr<vulkan::Device> {
     if (instance == VK_NULL_HANDLE)
         return nullptr;
 
@@ -117,14 +119,14 @@ Engine::Engine(const engine::Info& info) noexcept : info_(info) {}
 
 Engine::~Engine() noexcept { cleanup(); }
 
-void Engine::initialize() noexcept {
+auto Engine::initialize() noexcept -> void {
     instance_ = create_instance(info_);
     if (instance_ != VK_NULL_HANDLE && info_.debug_layer_)
         debugger_ = std::make_optional<vulkan::debug::Messenger>(instance_);
     device_ = create_device(instance_);
 }
 
-void Engine::cleanup() noexcept {
+auto Engine::cleanup() noexcept -> void {
     device_.reset();
     debugger_.reset();
     if (instance_ != VK_NULL_HANDLE) {
