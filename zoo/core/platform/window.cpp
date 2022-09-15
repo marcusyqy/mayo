@@ -37,8 +37,8 @@ auto window::context::wait_for_vsync() const noexcept -> void {
     glfwSwapInterval(1);
 }
 
-window::window(std::shared_ptr<context> context,
-    const traits& traits, input_callback callback) noexcept
+window::window(std::shared_ptr<context> context, const traits& traits,
+    input_callback callback) noexcept
     : context_{context}, traits_{traits}, callback_{std::move(callback)},
       impl_{glfwCreateWindow(traits_.size_.x_, traits_.size_.y_,
           traits_.name_.data(), NULL, NULL)},
@@ -47,7 +47,8 @@ window::window(std::shared_ptr<context> context,
     glfwSetWindowUserPointer(impl_, this);
     glfwSetKeyCallback(impl_, [](GLFWwindow* glfw_window, int key, int scancode,
                                   int action, int mods) {
-        window* self = static_cast<window*>(glfwGetWindowUserPointer(glfw_window));
+        window* self =
+            static_cast<window*>(glfwGetWindowUserPointer(glfw_window));
         self->callback_(*self,
             input::glfw_layer::convert(
                 input::glfw_layer::key_code{key, scancode, action, mods}));
@@ -86,19 +87,19 @@ auto window::swap_buffers() noexcept -> void {
 }
 
 namespace window_detail {
-    context::~context() noexcept { glfwTerminate(); }
+context::~context() noexcept { glfwTerminate(); }
 
-    factory::factory(std::shared_ptr<context> context) noexcept
-        : context_(std::move(context)), windows_() {}
+factory::factory(std::shared_ptr<context> context) noexcept
+    : context_(std::move(context)), windows_() {}
 
-    factory::~factory() noexcept = default;
+factory::~factory() noexcept = default;
 
-    auto factory::create_window(
-            const traits& traits, input_callback callback) noexcept -> window* {
-        windows_.emplace_back(
-                std::make_unique<window>(context_, traits, std::move(callback)));
-        return windows_.back().get();
-    }
+auto factory::create_window(
+    const traits& traits, input_callback callback) noexcept -> window* {
+    windows_.emplace_back(
+        std::make_unique<window>(context_, traits, std::move(callback)));
+    return windows_.back().get();
 }
+} // namespace window_detail
 
 } // namespace zoo

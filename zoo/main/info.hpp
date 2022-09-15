@@ -18,4 +18,4 @@ struct info {
 
 enum exit_status { ok, err };
 
-} // namespace zoo::application
+} // namespace zoo::application_detail

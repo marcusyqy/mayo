@@ -7,4 +7,4 @@ settings::settings(int argc, char** argv) noexcept {
     (void)argv;
 }
 
-} // namespace zoo::application
+} // namespace zoo::application_detail

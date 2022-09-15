@@ -7,6 +7,8 @@
 
 #include <compare>
 
+#include "vulkan/utils/physical_device_scorer.hpp"
+
 namespace zoo::render {
 
 namespace {
@@ -57,39 +59,6 @@ auto create_instance(const engine::info& info) noexcept -> VkInstance {
     return instance;
 }
 
-auto check_device_features_met(VkPhysicalDeviceFeatures features) noexcept
-    -> bool {
-    return true;
-}
-
-auto check_device_properties_met(VkPhysicalDeviceProperties properties) noexcept
-    -> bool {
-    return properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
-}
-
-struct PhysicalDeviceScorer {
-    PhysicalDeviceScorer(VkPhysicalDevice device) noexcept {
-        VkPhysicalDeviceProperties device_properties;
-        vkGetPhysicalDeviceProperties(device, &device_properties);
-
-        VkPhysicalDeviceFeatures device_features;
-        vkGetPhysicalDeviceFeatures(device, &device_features);
-
-        device_features_met_ = check_device_features_met(device_features);
-        device_properties_met_ = check_device_properties_met(device_properties);
-    }
-
-    operator bool() const noexcept {
-        return device_features_met_ && device_properties_met_;
-    }
-
-    auto operator<=>(
-        const PhysicalDeviceScorer& other) const noexcept = default;
-
-    bool device_features_met_ = false;
-    bool device_properties_met_ = false;
-};
-
 auto create_device(VkInstance instance) noexcept
     -> std::shared_ptr<vulkan::device> {
     if (instance == VK_NULL_HANDLE)
@@ -106,7 +75,7 @@ auto create_device(VkInstance instance) noexcept
     std::vector<VkPhysicalDevice> devices(device_count);
     vkEnumeratePhysicalDevices(instance, &device_count, devices.data());
 
-    std::vector<PhysicalDeviceScorer> scorers{
+    std::vector<physical_device_scorer> scorers{
         std::begin(devices), std::end(devices)};
     auto chosen = std::max(std::begin(scorers), std::end(scorers));
     const auto index = std::distance(scorers.begin(), chosen);

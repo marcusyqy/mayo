@@ -13,7 +13,7 @@ struct info {
     application::info app_info;
     bool debug_layer;
 };
-} // namespace engine
+} // namespace engine_detail
 
 class engine {
 public:

@@ -52,14 +52,14 @@ public:
     factory(std::shared_ptr<context> context) noexcept;
     ~factory() noexcept;
 
-    auto create_window(const traits& traits,
-        input_callback callback) noexcept -> window*;
+    auto create_window(const traits& traits, input_callback callback) noexcept
+        -> window*;
 
 private:
     std::shared_ptr<context> context_;
     std::vector<std::unique_ptr<window>> windows_;
 };
-} // namespace window
+} // namespace window_detail
 
 class window {
 public:
@@ -69,8 +69,9 @@ public:
     using input_callback = window_detail::input_callback;
     using factory = window_detail::factory;
 
-    window(std::shared_ptr<context> win_ctx,
-        const traits& traits, input_callback callback) noexcept;
+    window(std::shared_ptr<context> win_ctx, const traits& traits,
+        input_callback callback) noexcept;
+
     ~window() noexcept;
 
     window(window&& other) noexcept = delete;
@@ -100,6 +101,5 @@ private:
     bool context_set_;
 };
 
-namespace window_detail {
-} // namespace window
+namespace window_detail {} // namespace window_detail
 } // namespace zoo

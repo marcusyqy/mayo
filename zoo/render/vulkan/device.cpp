@@ -4,7 +4,8 @@
 
 namespace zoo::render::vulkan {
 
-device::device([[maybe_unused]] VkInstance instance, VkPhysicalDevice physical_device) noexcept
+device::device([[maybe_unused]] VkInstance instance,
+    VkPhysicalDevice physical_device) noexcept
     : physical_(physical_device) {}
 
 auto device::reset() noexcept -> void {
