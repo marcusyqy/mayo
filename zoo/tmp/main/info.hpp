@@ -1,9 +1,9 @@
 #pragma once
-#include "core/Defines.hpp"
+#include "core/defines.hpp"
 #include <cstdint>
 #include <string>
 
-namespace zoo::application {
+namespace zoo::detail::application {
 
 struct Settings {
     Settings(int argc, char** argv) noexcept;
