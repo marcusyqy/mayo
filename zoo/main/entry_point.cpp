@@ -1,45 +1,47 @@
-#include "EntryPoint.hpp"
-#include "core/Log.hpp"
+#include "entry_point.hpp"
+#include "core/log.hpp"
 
-#include "core/platform/Window.hpp"
-#include "render/Engine.hpp"
+#include "core/platform/window.hpp"
+#include "render/engine.hpp"
 
 namespace zoo {
 
-auto main(application::Settings) noexcept -> application::ExitStatus {
-    const application::Info app_context{{0, 0, 0}, "Zoo Engine Application"};
-    const render::engine::Info render_engine_info{app_context, true};
+auto main(application::settings args) noexcept -> application::exit_status {
+    (void)args;
+
+    const application::info app_context{{0, 0, 0}, "Zoo Engine Application"};
+    const render::engine::info render_engine_info{app_context, true};
 
     ZOO_LOG_INFO("Starting application");
 
-    std::shared_ptr<window::Context> win_context =
-        std::make_shared<window::Context>();
+    std::shared_ptr<window::context> win_context =
+        std::make_shared<window::context>();
 
-    Window window{win_context,
-        window::Traits{window::Size{640, 480}, false, "zoo"},
-        [](Window& win, input::KeyCode keycode) {
-            if (keycode.key_ == input::Key::escape &&
-                keycode.action_ == input::Action::pressed) {
+    window main_window{win_context,
+        window::traits{window::size{640, 480}, false, "zoo"},
+        [](window& win, input::key_code keycode) {
+            if (keycode.key_ == input::key::escape &&
+                keycode.action_ == input::action::pressed) {
                 win.close();
             }
         }};
 
-    render::Engine render_engine(render_engine_info);
+    render::engine render_engine(render_engine_info);
     render_engine.initialize();
 
     // for threading
-    if (!window.is_current_context()) {
-        window.current_context_here();
+    if (!main_window.is_current_context()) {
+        main_window.current_context_here();
     }
 
     win_context->wait_for_vsync();
 
-    while (window.is_open()) {
-        window.swap_buffers();
+    while (main_window.is_open()) {
+        main_window.swap_buffers();
         win_context->poll_events();
     }
 
-    return application::ExitStatus::ok;
+    return application::exit_status::ok;
 }
 
 } // namespace zoo

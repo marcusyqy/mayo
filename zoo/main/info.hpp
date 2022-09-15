@@ -1,21 +1,21 @@
 #pragma once
-#include "core/defines.hpp"
+#include "core/fwd.hpp"
 #include <cstdint>
 #include <string>
 
-namespace zoo::detail::application {
+namespace zoo::application_detail {
 
-struct Settings {
-    Settings(int argc, char** argv) noexcept;
+struct settings {
+    settings(int num_args, char** args) noexcept;
 };
 
-using Version = core::Version;
+using version = core::version;
 
-struct Info {
-    Version version_;
-    std::string name_;
+struct info {
+    version version;
+    std::string name;
 };
 
-enum ExitStatus { ok, err };
+enum exit_status { ok, err };
 
 } // namespace zoo::application

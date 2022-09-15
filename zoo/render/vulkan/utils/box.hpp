@@ -8,33 +8,33 @@
 
 namespace zoo::render::vulkan::utils {
 
-struct TypeMap {};
+struct type_map {};
 
 template<typename T>
-concept Type = requires(T a) {
-    std::declval<vulkan::Device>().release_device_resource(a);
+concept type = requires(T a) {
+    std::declval<vulkan::device>().release_device_resource(a);
     { a != VK_NULL_HANDLE } -> std::convertible_to<bool>;
     std::is_trivially_copyable_v<T>;
 };
 
-template<Type T>
-class Box {
+template<type T>
+class box {
 public:
-    Box() noexcept : device_(nullptr), type_(VK_NULL_HANDLE) {}
-    Box(std::shared_ptr<vulkan::Device> device, T type)
+    box() noexcept : device_(nullptr), type_(VK_NULL_HANDLE) {}
+    box(std::shared_ptr<vulkan::device> device, T type)
         : device_(std::move(device)), type_(type) {}
 
-    Box(const Box& other) noexcept = delete;
-    auto operator=(const Box& other) noexcept -> Box& = delete;
+    box(const box& other) noexcept = delete;
+    auto operator=(const box& other) noexcept -> box& = delete;
 
-    Box(Box&& other) noexcept : Box() { this = std::move(other); }
+    box(box&& other) noexcept : box() { this = std::move(other); }
 
-    auto operator=(Box&& other) noexcept -> Box& {
+    auto operator=(box&& other) noexcept -> box& {
         std::swap(device_, other.device_);
         std::swap(type_, other.type_);
     }
 
-    ~Box() noexcept { release(); }
+    ~box() noexcept { release(); }
 
     auto release() noexcept -> void {
         if (device_) {
@@ -48,7 +48,7 @@ public:
     [[nodiscard]] auto get() const noexcept -> T { return type_; }
 
 private:
-    std::shared_ptr<vulkan::Device> device_;
+    std::shared_ptr<vulkan::device> device_;
     T type_;
 };
 

@@ -1,8 +1,8 @@
-#include "Info.hpp"
+#include "info.hpp"
 
-namespace zoo::application {
+namespace zoo::application_detail {
 
-Settings::Settings(int argc, char** argv) noexcept {
+settings::settings(int argc, char** argv) noexcept {
     (void)argc;
     (void)argv;
 }

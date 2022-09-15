@@ -1,20 +1,20 @@
 #pragma once
-#include "core/Log.hpp"
+#include "core/log.hpp"
 #include <functional>
 #include <vulkan/vulkan.h>
 
 namespace zoo::render::vulkan::debug {
 
-class Messenger {
+class messenger {
 public:
-    Messenger(VkInstance instance) noexcept;
-    ~Messenger() noexcept;
+    messenger(VkInstance instance) noexcept;
+    ~messenger() noexcept;
 
-    Messenger(const Messenger&) noexcept = delete;
-    auto operator=(const Messenger&) noexcept -> Messenger& = delete;
+    messenger(const messenger&) noexcept = delete;
+    auto operator=(const messenger&) noexcept -> messenger& = delete;
 
-    Messenger(Messenger&& other) noexcept;
-    auto operator=(Messenger&& other) noexcept -> Messenger&;
+    messenger(messenger&& other) noexcept;
+    auto operator=(messenger&& other) noexcept -> messenger&;
 
     auto reset() noexcept -> void;
 

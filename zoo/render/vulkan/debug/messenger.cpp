@@ -1,4 +1,4 @@
-#include "Messenger.hpp"
+#include "messenger.hpp"
 #include <vulkan/vk_enum_string_helper.h>
 
 namespace zoo::render::vulkan::debug {
@@ -20,7 +20,7 @@ VKAPI_ATTR auto VKAPI_CALL debug_callback(
         prepend = "GENERAL";
     }
 
-    constexpr char validation_message[] = "<{}> :|vulkan|: {}";
+    static constexpr char validation_message[] = "<{}> :|vulkan|: {}";
     if (severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
         ZOO_LOG_ERROR(validation_message, prepend, callback_data->pMessage);
     } else if (severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
@@ -56,7 +56,7 @@ auto destroy_debug_utils_messenger_ext(VkInstance instance,
     }
 }
 } // namespace
-Messenger::Messenger(VkInstance instance) noexcept
+messenger::messenger(VkInstance instance) noexcept
     : instance_(instance), debug_messenger_(VK_NULL_HANDLE) {
 
     VkDebugUtilsMessengerCreateInfoEXT create_info{};
@@ -88,21 +88,21 @@ Messenger::Messenger(VkInstance instance) noexcept
     }
 }
 
-Messenger::~Messenger() noexcept { reset(); }
+messenger::~messenger() noexcept { reset(); }
 
-auto Messenger::reset() noexcept -> void {
+auto messenger::reset() noexcept -> void {
     if (debug_messenger_ != VK_NULL_HANDLE) {
         destroy_debug_utils_messenger_ext(instance_, debug_messenger_, nullptr);
         debug_messenger_ = VK_NULL_HANDLE;
     }
 }
 
-Messenger::Messenger(Messenger&& other) noexcept
+messenger::messenger(messenger&& other) noexcept
     : instance_(VK_NULL_HANDLE), debug_messenger_(VK_NULL_HANDLE) {
     *this = std::move(other);
 }
 
-auto Messenger::operator=(Messenger&& other) noexcept -> Messenger& {
+auto messenger::operator=(messenger&& other) noexcept -> messenger& {
     std::swap(instance_, other.instance_);
     std::swap(debug_messenger_, other.debug_messenger_);
     return *this;

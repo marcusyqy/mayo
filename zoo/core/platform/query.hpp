@@ -4,25 +4,25 @@
 namespace zoo::platform {
 
 namespace vulkan {
-struct Info {
+struct info {
     std::vector<const char*> extensions_;
     std::vector<const char*> layers_;
 };
 
-struct Parameters {
+struct parameters {
     bool validation_;
 };
 
-class Query {
+class query {
 public:
-    Query(Parameters parameters) noexcept;
+    query(parameters parameters) noexcept;
 
-    [[nodiscard]] auto get_info() noexcept -> Info;
+    [[nodiscard]] auto get_info() noexcept -> info;
     [[nodiscard]] auto get_extensions() noexcept -> std::vector<const char*>;
     [[nodiscard]] auto get_layers() noexcept -> std::vector<const char*>;
 
 private:
-    Parameters parameters_;
+    parameters parameters_;
 };
 } // namespace vulkan
 } // namespace zoo::platform

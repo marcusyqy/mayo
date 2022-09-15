@@ -1,8 +1,8 @@
 
-#include "main/EntryPoint.hpp"
+#include "main/entry_point.hpp"
 
 auto main(int argc, char* argv[]) -> int { // NOLINT
-    zoo::application::ExitStatus status =
-        zoo::main(zoo::application::Settings{argc, argv});
-    return status == zoo::application::ExitStatus::ok ? 0 : -1;
+    zoo::application::exit_status status =
+        zoo::main(zoo::application::settings{argc, argv});
+    return status == zoo::application::exit_status::ok ? 0 : -1;
 }

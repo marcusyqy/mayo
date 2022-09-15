@@ -1,12 +1,16 @@
 #pragma once
-#include "Info.hpp"
+#include "info.hpp"
 
 namespace zoo {
 
-class Application {
+class application {
 public:
+    using settings = application_detail::settings;
+    using exit_status = application_detail::exit_status;
+    using info = application_detail::info;
+
 private:
-    application::Settings settings_;
+    settings settings_;
 };
 
 } // namespace zoo

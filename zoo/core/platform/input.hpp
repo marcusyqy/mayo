@@ -2,7 +2,7 @@
 
 namespace zoo::input {
 
-enum class Key {
+enum class key {
     // clang-format off
     unknown,
     n_0, n_1, n_2, n_3, n_4, n_5, n_6, n_7, n_8, n_9,
@@ -62,7 +62,7 @@ enum class Key {
 };
 
 // this should probably be a bit operation
-enum class Mod {
+enum class mod {
     none,
     left_shift,
     left_control,
@@ -75,25 +75,25 @@ enum class Mod {
     last
 };
 
-enum class Action { pressed, released, repeat };
+enum class action { pressed, released, repeat };
 
-struct KeyCode {
-    Key key_;
-    Action action_;
-    Mod mod_ = Mod::none;
+struct key_code {
+    key key_;
+    action action_;
+    mod mod_ = mod::none;
 };
 
 namespace glfw_layer {
 
-struct KeyCode {
+struct key_code {
     int key_;
     int scancode_;
     int action_;
     int mods_;
 };
 
-auto convert(input::KeyCode value) noexcept -> KeyCode;
-auto convert(KeyCode value) noexcept -> input::KeyCode;
+auto convert(input::key_code value) noexcept -> key_code;
+auto convert(key_code value) noexcept -> input::key_code;
 
 } // namespace glfw_layer
 

@@ -1,39 +1,40 @@
 #pragma once
 
-#include "main/Info.hpp"
-#include "vulkan/Device.hpp"
+#include "main/application.hpp"
+#include "vulkan/device.hpp"
 #include <vulkan/vulkan.h>
 
-#include "render/vulkan/debug/Messenger.hpp"
+#include "render/vulkan/debug/messenger.hpp"
 
 namespace zoo::render {
 
-namespace engine {
-struct Info {
-    application::Info app_info_;
-    bool debug_layer_;
+namespace engine_detail {
+struct info {
+    application::info app_info;
+    bool debug_layer;
 };
 } // namespace engine
 
-class Engine {
+class engine {
 public:
-    Engine(const engine::Info& info) noexcept;
-    ~Engine() noexcept;
+    using info = engine_detail::info;
+    engine(const info& info) noexcept;
+    ~engine() noexcept;
 
     auto initialize() noexcept -> void;
     auto cleanup() noexcept -> void;
 
-    Engine(const Engine&) noexcept = delete;
-    auto operator=(const Engine&) noexcept -> Engine& = delete;
-    Engine(Engine&&) noexcept = delete;
-    auto operator=(Engine&&) noexcept -> Engine& = delete;
+    engine(const engine&) noexcept = delete;
+    auto operator=(const engine&) noexcept -> engine& = delete;
+    engine(engine&&) noexcept = delete;
+    auto operator=(engine&&) noexcept -> engine& = delete;
 
 private:
-    engine::Info info_;
+    info info_;
 
     VkInstance instance_ = VK_NULL_HANDLE;
-    std::shared_ptr<vulkan::Device> device_ = nullptr;
-    std::optional<vulkan::debug::Messenger> debugger_ = std::nullopt;
+    std::shared_ptr<vulkan::device> device_ = nullptr;
+    std::optional<vulkan::debug::messenger> debugger_ = std::nullopt;
 };
 
 } // namespace zoo::render

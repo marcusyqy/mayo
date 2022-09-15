@@ -2,8 +2,6 @@
 #include <cstdint>
 #include <string_view>
 
-#include "main/info.hpp"
-
 namespace zoo::core {
 
 struct version {

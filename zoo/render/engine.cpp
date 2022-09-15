@@ -1,8 +1,8 @@
-#include "render/Engine.hpp"
-#include "core/Defines.hpp"
-#include "core/Log.hpp"
+#include "render/engine.hpp"
+#include "core/fwd.hpp"
+#include "core/log.hpp"
 
-#include "core/platform/Query.hpp"
+#include "core/platform/query.hpp"
 #include <vulkan/vk_enum_string_helper.h>
 
 #include <compare>
@@ -10,17 +10,17 @@
 namespace zoo::render {
 
 namespace {
-auto make_version(core::Version version) noexcept -> uint32_t {
-    return VK_MAKE_VERSION(version.major_, version.minor_, version.patch_);
+auto make_version(core::version version) noexcept -> uint32_t {
+    return VK_MAKE_VERSION(version.major, version.minor, version.patch);
 }
 
-auto create_instance(const engine::Info& info) noexcept -> VkInstance {
+auto create_instance(const engine::info& info) noexcept -> VkInstance {
     VkApplicationInfo app_info{};
     {
         app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
         app_info.pNext = nullptr; // for now
-        app_info.pApplicationName = info.app_info_.name_.c_str();
-        app_info.applicationVersion = make_version(info.app_info_.version_);
+        app_info.pApplicationName = info.app_info.name.c_str();
+        app_info.applicationVersion = make_version(info.app_info.version);
         app_info.pEngineName = core::engine::name.data();
         app_info.engineVersion = make_version(core::engine::version);
         app_info.apiVersion = VK_API_VERSION_1_3;
@@ -28,10 +28,10 @@ auto create_instance(const engine::Info& info) noexcept -> VkInstance {
 
     VkInstanceCreateInfo create_info{};
 
-    zoo::platform::vulkan::Parameters params{true};
-    zoo::platform::vulkan::Query query{params};
+    zoo::platform::vulkan::parameters params{true};
+    zoo::platform::vulkan::query query{params};
 
-    zoo::platform::vulkan::Info vulkan_query_info = query.get_info();
+    zoo::platform::vulkan::info vulkan_query_info = query.get_info();
     const auto& enabled_layers = vulkan_query_info.layers_;
     const auto& enabled_extensions = vulkan_query_info.extensions_;
     {
@@ -91,7 +91,7 @@ struct PhysicalDeviceScorer {
 };
 
 auto create_device(VkInstance instance) noexcept
-    -> std::shared_ptr<vulkan::Device> {
+    -> std::shared_ptr<vulkan::device> {
     if (instance == VK_NULL_HANDLE)
         return nullptr;
 
@@ -110,23 +110,23 @@ auto create_device(VkInstance instance) noexcept
         std::begin(devices), std::end(devices)};
     auto chosen = std::max(std::begin(scorers), std::end(scorers));
     const auto index = std::distance(scorers.begin(), chosen);
-    return std::make_shared<vulkan::Device>(instance, devices[index]);
+    return std::make_shared<vulkan::device>(instance, devices[index]);
 }
 
 } // namespace
 
-Engine::Engine(const engine::Info& info) noexcept : info_(info) {}
+engine::engine(const engine::info& info) noexcept : info_(info) {}
 
-Engine::~Engine() noexcept { cleanup(); }
+engine::~engine() noexcept { cleanup(); }
 
-auto Engine::initialize() noexcept -> void {
+auto engine::initialize() noexcept -> void {
     instance_ = create_instance(info_);
-    if (instance_ != VK_NULL_HANDLE && info_.debug_layer_)
-        debugger_ = std::make_optional<vulkan::debug::Messenger>(instance_);
+    if (instance_ != VK_NULL_HANDLE && info_.debug_layer)
+        debugger_ = std::make_optional<vulkan::debug::messenger>(instance_);
     device_ = create_device(instance_);
 }
 
-auto Engine::cleanup() noexcept -> void {
+auto engine::cleanup() noexcept -> void {
     device_.reset();
     debugger_.reset();
     if (instance_ != VK_NULL_HANDLE) {
