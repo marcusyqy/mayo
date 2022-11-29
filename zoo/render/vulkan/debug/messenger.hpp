@@ -11,12 +11,12 @@ public:
     ~messenger() noexcept;
 
     messenger(const messenger&) noexcept = delete;
-    auto operator=(const messenger&) noexcept -> messenger& = delete;
+    messenger& operator=(const messenger&) noexcept = delete;
 
     messenger(messenger&& other) noexcept;
-    auto operator=(messenger&& other) noexcept -> messenger&;
+    messenger& operator=(messenger&& other) noexcept;
 
-    auto reset() noexcept -> void;
+    void reset() noexcept;
 
 private:
     VkInstance instance_;

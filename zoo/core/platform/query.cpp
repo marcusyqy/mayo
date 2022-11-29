@@ -10,14 +10,14 @@ namespace zoo::platform::vulkan {
 
 query::query(parameters parameters) noexcept : parameters_{parameters} {}
 
-auto query::get_info() noexcept -> info {
+info query::get_info() noexcept {
     info info{};
     info.extensions_ = get_extensions();
     info.layers_ = get_layers();
     return info;
 }
 
-auto query::get_extensions() noexcept -> std::vector<const char*> {
+std::vector<const char*> query::get_extensions() noexcept {
     std::vector<const char*> extensions{};
     uint32_t glfw_extensions_count;
     const char** glfw_extensions =
@@ -31,7 +31,7 @@ auto query::get_extensions() noexcept -> std::vector<const char*> {
 
     return extensions;
 }
-auto query::get_layers() noexcept -> std::vector<const char*> {
+std::vector<const char*> query::get_layers() noexcept {
     if (parameters_.validation_) {
         const char* validation_layer{"VK_LAYER_KHRONOS_validation"};
         uint32_t layer_count;

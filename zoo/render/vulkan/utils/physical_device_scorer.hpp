@@ -1,17 +1,15 @@
 #pragma once
-#include <compare>
 
 #include <vulkan/vulkan.h>
 
 namespace zoo::render {
 
-auto check_device_features_met(VkPhysicalDeviceFeatures features) noexcept
-    -> bool {
+bool check_device_features_met(VkPhysicalDeviceFeatures features) noexcept {
     return true;
 }
 
-auto check_device_properties_met(VkPhysicalDeviceProperties properties) noexcept
-    -> bool {
+bool check_device_properties_met(
+    VkPhysicalDeviceProperties properties) noexcept {
     return properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
 }
 
@@ -30,9 +28,6 @@ struct physical_device_scorer {
     operator bool() const noexcept {
         return device_features_met_ && device_properties_met_;
     }
-
-    auto operator<=>(
-        const physical_device_scorer& other) const noexcept = default;
 
     bool device_features_met_ = false;
     bool device_properties_met_ = false;

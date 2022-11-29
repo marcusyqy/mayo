@@ -5,11 +5,11 @@ namespace zoo::render::vulkan::debug {
 
 namespace {
 
-VKAPI_ATTR auto VKAPI_CALL debug_callback(
+VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
     VkDebugUtilsMessageSeverityFlagBitsEXT severity,
     VkDebugUtilsMessageTypeFlagsEXT type,
     const VkDebugUtilsMessengerCallbackDataEXT* callback_data,
-    [[maybe_unused]] void* user_data) noexcept -> VkBool32 {
+    [[maybe_unused]] void* user_data) noexcept {
 
     const char* prepend = nullptr;
     if (type >= VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT) {
@@ -33,10 +33,10 @@ VKAPI_ATTR auto VKAPI_CALL debug_callback(
     return VK_FALSE;
 }
 
-auto create_debug_utils_messenger_ext(VkInstance instance,
+VkResult create_debug_utils_messenger_ext(VkInstance instance,
     const VkDebugUtilsMessengerCreateInfoEXT* create_info,
     const VkAllocationCallbacks* allocator,
-    VkDebugUtilsMessengerEXT* debug_messenger) noexcept -> VkResult {
+    VkDebugUtilsMessengerEXT* debug_messenger) noexcept {
     auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
         instance, "vkCreateDebugUtilsMessengerEXT");
     if (func != nullptr) {
@@ -46,9 +46,9 @@ auto create_debug_utils_messenger_ext(VkInstance instance,
     }
 }
 
-auto destroy_debug_utils_messenger_ext(VkInstance instance,
+void destroy_debug_utils_messenger_ext(VkInstance instance,
     VkDebugUtilsMessengerEXT debug_messenger,
-    const VkAllocationCallbacks* allocator) noexcept -> void {
+    const VkAllocationCallbacks* allocator) noexcept {
     auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
         instance, "vkDestroyDebugUtilsMessengerEXT");
     if (func != nullptr) {
@@ -56,6 +56,7 @@ auto destroy_debug_utils_messenger_ext(VkInstance instance,
     }
 }
 } // namespace
+
 messenger::messenger(VkInstance instance) noexcept
     : instance_(instance), debug_messenger_(VK_NULL_HANDLE) {
 
@@ -90,7 +91,7 @@ messenger::messenger(VkInstance instance) noexcept
 
 messenger::~messenger() noexcept { reset(); }
 
-auto messenger::reset() noexcept -> void {
+void messenger::reset() noexcept {
     if (debug_messenger_ != VK_NULL_HANDLE) {
         destroy_debug_utils_messenger_ext(instance_, debug_messenger_, nullptr);
         debug_messenger_ = VK_NULL_HANDLE;
@@ -102,7 +103,7 @@ messenger::messenger(messenger&& other) noexcept
     *this = std::move(other);
 }
 
-auto messenger::operator=(messenger&& other) noexcept -> messenger& {
+messenger& messenger::operator=(messenger&& other) noexcept {
     std::swap(instance_, other.instance_);
     std::swap(debug_messenger_, other.debug_messenger_);
     return *this;

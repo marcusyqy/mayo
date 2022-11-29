@@ -5,8 +5,8 @@ namespace zoo {
 
 namespace {
 
-static auto error_callback(
-    int, [[maybe_unused]] const char* description) noexcept -> void {
+static void error_callback(
+    int, [[maybe_unused]] const char* description) noexcept {
     ZOO_LOG_ERROR("Error: {}", description);
 }
 
@@ -22,20 +22,18 @@ window::context::context() noexcept : valid_{false} {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
 
     // No opengl
-    if constexpr (render_type == render::api::opengl) {
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    }
+    // if constexpr (render_type == render::api::opengl) {
+    //    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    //}
 
     // disable resizing for now
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
     valid_ = true;
 }
 
-auto window::context::poll_events() noexcept -> void { glfwPollEvents(); }
+void window::context::poll_events() noexcept { glfwPollEvents(); }
 
-auto window::context::wait_for_vsync() const noexcept -> void {
-    glfwSwapInterval(1);
-}
+void window::context::wait_for_vsync() const noexcept { glfwSwapInterval(1); }
 
 window::window(std::shared_ptr<context> context, const traits& traits,
     input_callback callback) noexcept
@@ -57,22 +55,22 @@ window::window(std::shared_ptr<context> context, const traits& traits,
 
 window::~window() noexcept { close(); }
 
-auto window::is_open() const noexcept -> bool {
+bool window::is_open() const noexcept {
     return impl_ != nullptr && !glfwWindowShouldClose(impl_);
 }
 
-auto window::close() noexcept -> void {
+void window::close() noexcept {
     if (impl_ != nullptr) {
         glfwDestroyWindow(impl_);
         impl_ = nullptr;
     }
 }
 
-auto window::is_current_context() const noexcept -> bool {
+bool window::is_current_context() const noexcept {
     return impl_ == glfwGetCurrentContext();
 }
 
-auto window::current_context_here() noexcept -> void {
+void window::current_context_here() noexcept {
     if (context_set_) {
         ZOO_LOG_WARN("cannot set context twice!");
     }
@@ -80,13 +78,14 @@ auto window::current_context_here() noexcept -> void {
     context_set_ = true;
 }
 
-auto window::swap_buffers() noexcept -> void {
-    if constexpr (context::render_type == render::api::opengl) {
-        glfwSwapBuffers(impl_);
-    }
+void window::swap_buffers() noexcept {
+    // if constexpr (context::render_type == render::api::opengl) {
+    //     glfwSwapBuffers(impl_);
+    // }
 }
 
 namespace window_detail {
+
 context::~context() noexcept { glfwTerminate(); }
 
 factory::factory(std::shared_ptr<context> context) noexcept
@@ -94,8 +93,8 @@ factory::factory(std::shared_ptr<context> context) noexcept
 
 factory::~factory() noexcept = default;
 
-auto factory::create_window(
-    const traits& traits, input_callback callback) noexcept -> window* {
+window* factory::create_window(
+    const traits& traits, input_callback callback) noexcept {
     windows_.emplace_back(
         std::make_unique<window>(context_, traits, std::move(callback)));
     return windows_.back().get();

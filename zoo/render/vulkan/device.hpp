@@ -12,11 +12,10 @@ public:
     device(const device& other) noexcept = delete;
     device(device&& other) noexcept = delete;
 
-    auto operator=(const device& other) noexcept -> device& = delete;
-    auto operator=(device&& other) noexcept -> device& = delete;
-
-    auto reset() noexcept -> void;
-    auto release_device_resource(VkFence fence) noexcept -> void;
+    void operator=(const device& other) noexcept = delete;
+    void operator=(device&& other) noexcept = delete;
+    void reset() noexcept;
+    void release_device_resource(VkFence fence) noexcept;
 
 private:
     VkPhysicalDevice physical_ = VK_NULL_HANDLE;

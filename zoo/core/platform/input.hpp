@@ -8,7 +8,6 @@ enum class key {
     n_0, n_1, n_2, n_3, n_4, n_5, n_6, n_7, n_8, n_9,
     a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, v, w, x, y, z,
     space,
-
     apostrophe,
     comma,
     minus,
@@ -39,7 +38,6 @@ enum class key {
     num_lock,
     print_screen,
     pause,
-
     f1, f2, f3, f4,
     f5, f6, f7, f8,
     f9, f10, f11, f12,
@@ -92,8 +90,8 @@ struct key_code {
     int mods_;
 };
 
-auto convert(input::key_code value) noexcept -> key_code;
-auto convert(key_code value) noexcept -> input::key_code;
+key_code convert(input::key_code value) noexcept;
+input::key_code convert(key_code value) noexcept;
 
 } // namespace glfw_layer
 

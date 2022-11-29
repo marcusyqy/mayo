@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include "main/application.hpp"
 #include "vulkan/device.hpp"
 #include <vulkan/vulkan.h>
@@ -21,13 +23,13 @@ public:
     engine(const info& info) noexcept;
     ~engine() noexcept;
 
-    auto initialize() noexcept -> void;
-    auto cleanup() noexcept -> void;
+    void initialize() noexcept;
+    void cleanup() noexcept;
 
     engine(const engine&) noexcept = delete;
-    auto operator=(const engine&) noexcept -> engine& = delete;
+    engine& operator=(const engine&) noexcept = delete;
     engine(engine&&) noexcept = delete;
-    auto operator=(engine&&) noexcept -> engine& = delete;
+    engine& operator=(engine&&) noexcept = delete;
 
 private:
     info info_;

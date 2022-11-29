@@ -17,9 +17,9 @@ class query {
 public:
     query(parameters parameters) noexcept;
 
-    [[nodiscard]] auto get_info() noexcept -> info;
-    [[nodiscard]] auto get_extensions() noexcept -> std::vector<const char*>;
-    [[nodiscard]] auto get_layers() noexcept -> std::vector<const char*>;
+    [[nodiscard]] info get_info() noexcept;
+    [[nodiscard]] std::vector<const char*> get_extensions() noexcept;
+    [[nodiscard]] std::vector<const char*> get_layers() noexcept;
 
 private:
     parameters parameters_;

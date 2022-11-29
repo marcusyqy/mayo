@@ -1,5 +1,3 @@
 #pragma once
 
-namespace zoo::render {
-enum class api { vulkan, opengl };
-}
+namespace zoo::render {}

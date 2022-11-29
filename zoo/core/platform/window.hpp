@@ -9,6 +9,8 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
+#include <memory>
+
 namespace zoo {
 
 // fwd declaration
@@ -32,11 +34,9 @@ public:
     context() noexcept;
     ~context() noexcept;
 
-    auto valid() const noexcept -> bool { return valid_; }
-    auto poll_events() noexcept -> void;
-    auto wait_for_vsync() const noexcept -> void;
-
-    static constexpr render::api render_type = render::api::vulkan;
+    bool valid() const noexcept { return valid_; }
+    void poll_events() noexcept;
+    void wait_for_vsync() const noexcept;
 
 private:
     bool valid_;
@@ -52,8 +52,8 @@ public:
     factory(std::shared_ptr<context> context) noexcept;
     ~factory() noexcept;
 
-    auto create_window(const traits& traits, input_callback callback) noexcept
-        -> window*;
+    window* create_window(
+        const traits& traits, input_callback callback) noexcept;
 
 private:
     std::shared_ptr<context> context_;
@@ -75,22 +75,21 @@ public:
     ~window() noexcept;
 
     window(window&& other) noexcept = delete;
-    auto operator=(window&& other) noexcept -> window& = delete;
+    window& operator=(window&& other) noexcept = delete;
 
     window(const window& other) noexcept = delete;
-    auto operator=(const window& other) noexcept -> window& = delete;
+    window& operator=(const window& other) noexcept = delete;
 
-    [[nodiscard("querying from glfw should not discard this")]] bool
-    is_open() const noexcept;
+    [[nodiscard]] bool is_open() const noexcept;
 
-    auto is_current_context() const noexcept -> bool;
-    auto current_context_here() noexcept -> void;
+    bool is_current_context() const noexcept;
+    void current_context_here() noexcept;
 
-    auto swap_buffers() noexcept -> void;
-    auto close() noexcept -> void;
+    void swap_buffers() noexcept;
+    void close() noexcept;
 
 public:
-    auto valid() const noexcept -> bool { return impl_ != nullptr; }
+    bool valid() const noexcept { return impl_ != nullptr; }
     operator bool() const noexcept { return valid(); }
 
 private:

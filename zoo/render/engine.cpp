@@ -5,18 +5,19 @@
 #include "core/platform/query.hpp"
 #include <vulkan/vk_enum_string_helper.h>
 
-#include <compare>
+#include <optional>
 
 #include "vulkan/utils/physical_device_scorer.hpp"
 
 namespace zoo::render {
 
 namespace {
-auto make_version(core::version version) noexcept -> uint32_t {
+
+uint32_t make_version(core::version version) noexcept {
     return VK_MAKE_VERSION(version.major, version.minor, version.patch);
 }
 
-auto create_instance(const engine::info& info) noexcept -> VkInstance {
+VkInstance create_instance(const engine::info& info) noexcept {
     VkApplicationInfo app_info{};
     {
         app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -59,14 +60,14 @@ auto create_instance(const engine::info& info) noexcept -> VkInstance {
     return instance;
 }
 
-auto create_device(VkInstance instance) noexcept
-    -> std::shared_ptr<vulkan::device> {
+std::shared_ptr<vulkan::device> create_device(VkInstance instance) noexcept {
     if (instance == VK_NULL_HANDLE)
         return nullptr;
 
     uint32_t device_count = 0;
     VkResult result =
         vkEnumeratePhysicalDevices(instance, &device_count, nullptr);
+
     if (result != VK_SUCCESS || device_count == 0) {
         ZOO_LOG_ERROR("Devices cannot be 0 for vkEnumeratePhysicalDevices!");
         return nullptr;
@@ -77,7 +78,7 @@ auto create_device(VkInstance instance) noexcept
 
     std::vector<physical_device_scorer> scorers{
         std::begin(devices), std::end(devices)};
-    auto chosen = std::max(std::begin(scorers), std::end(scorers));
+    auto chosen = std::max_element(std::begin(scorers), std::end(scorers));
     const auto index = std::distance(scorers.begin(), chosen);
     return std::make_shared<vulkan::device>(instance, devices[index]);
 }
@@ -88,14 +89,14 @@ engine::engine(const engine::info& info) noexcept : info_(info) {}
 
 engine::~engine() noexcept { cleanup(); }
 
-auto engine::initialize() noexcept -> void {
+void engine::initialize() noexcept {
     instance_ = create_instance(info_);
     if (instance_ != VK_NULL_HANDLE && info_.debug_layer)
         debugger_ = std::make_optional<vulkan::debug::messenger>(instance_);
     device_ = create_device(instance_);
 }
 
-auto engine::cleanup() noexcept -> void {
+void engine::cleanup() noexcept {
     device_.reset();
     debugger_.reset();
     if (instance_ != VK_NULL_HANDLE) {

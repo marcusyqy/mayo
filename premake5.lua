@@ -33,7 +33,7 @@ group ""
 project "zoo"
 location "zoo"
 language "C++"
-cppdialect "C++20"
+cppdialect "C++17"
 staticruntime "on"
 characterset "MBCS"
 targetdir ("bin/" .. outputdir .. "/%{prj.name}")
