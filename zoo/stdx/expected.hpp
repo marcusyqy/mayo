@@ -3,7 +3,7 @@
 #include <string>
 #include <variant>
 
-namespace zoo {
+namespace stdx {
 
 namespace detail::error {
 
@@ -146,4 +146,4 @@ private:
     std::variant<value_type, error_type> value_;
 };
 
-} // namespace zoo
+} // namespace stdx

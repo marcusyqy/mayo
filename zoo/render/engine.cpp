@@ -51,7 +51,7 @@ VkInstance create_instance(const engine::info& info) noexcept {
         create_info.ppEnabledExtensionNames = enabled_extensions.data();
     }
 
-    VkInstance instance = VK_NULL_HANDLE;
+    VkInstance instance = nullptr;
     VkResult result = vkCreateInstance(&create_info, nullptr, &instance);
     if (result != VK_SUCCESS)
         ZOO_LOG_ERROR("vkCreateInstance failed with exit code = {}",
@@ -60,9 +60,10 @@ VkInstance create_instance(const engine::info& info) noexcept {
     return instance;
 }
 
-std::shared_ptr<vulkan::device> create_device(VkInstance instance) noexcept {
-    if (instance == VK_NULL_HANDLE)
-        return nullptr;
+std::vector<vulkan::physical_device> populate_physical_devices(
+    VkInstance instance) noexcept {
+    if (instance == nullptr)
+        return {};
 
     uint32_t device_count = 0;
     VkResult result =
@@ -70,18 +71,20 @@ std::shared_ptr<vulkan::device> create_device(VkInstance instance) noexcept {
 
     if (result != VK_SUCCESS || device_count == 0) {
         ZOO_LOG_ERROR("Devices cannot be 0 for vkEnumeratePhysicalDevices!");
-        return nullptr;
+        return {};
     }
 
     std::vector<VkPhysicalDevice> devices(device_count);
     vkEnumeratePhysicalDevices(instance, &device_count, devices.data());
 
-    std::vector<physical_device_scorer> scorers{
-        std::begin(devices), std::end(devices)};
-    auto chosen = std::max_element(std::begin(scorers), std::end(scorers));
-    const auto index = std::distance(scorers.begin(), chosen);
-    return std::make_shared<vulkan::device>(instance, devices[index]);
+    return {std::begin(devices), std::end(devices)};
 }
+//    std::vector<physical_device_scorer> scorers{
+//        std::begin(devices), std::end(devices)};
+//    auto chosen = std::max_element(std::begin(scorers), std::end(scorers));
+//    const auto index = std::distance(scorers.begin(), chosen);
+//    return std::make_shared<vulkan::device>(instance, devices[index]);
+//}
 
 } // namespace
 
@@ -91,18 +94,22 @@ engine::~engine() noexcept { cleanup(); }
 
 void engine::initialize() noexcept {
     instance_ = create_instance(info_);
-    if (instance_ != VK_NULL_HANDLE && info_.debug_layer)
+    if (instance_ != nullptr && info_.debug_layer)
         debugger_ = std::make_optional<vulkan::debug::messenger>(instance_);
-    device_ = create_device(instance_);
+    physical_devices_ = populate_physical_devices(instance_);
 }
 
 void engine::cleanup() noexcept {
-    device_.reset();
+    devices_.clear();
     debugger_.reset();
-    if (instance_ != VK_NULL_HANDLE) {
-        instance_ = VK_NULL_HANDLE;
+
+    if (instance_ != nullptr) {
+        instance_ = nullptr;
         vkDestroyInstance(instance_, nullptr);
     }
 }
+
+std::unique_ptr<window> engine::create_window(
+    window_detail::traits window_traits) noexcept {}
 
 } // namespace zoo::render

@@ -30,6 +30,7 @@ application::exit_status main(application::settings args) noexcept {
     render_engine.initialize();
 
     // for threading
+    // TODO: remove this and use a more vulkan approach
     if (!main_window.is_current_context()) {
         main_window.current_context_here();
     }

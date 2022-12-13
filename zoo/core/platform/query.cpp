@@ -22,6 +22,7 @@ std::vector<const char*> query::get_extensions() noexcept {
     uint32_t glfw_extensions_count;
     const char** glfw_extensions =
         glfwGetRequiredInstanceExtensions(&glfw_extensions_count);
+
     std::copy(glfw_extensions, glfw_extensions + glfw_extensions_count,
         std::back_inserter(extensions));
 

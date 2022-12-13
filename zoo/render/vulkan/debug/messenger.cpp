@@ -58,7 +58,7 @@ void destroy_debug_utils_messenger_ext(VkInstance instance,
 } // namespace
 
 messenger::messenger(VkInstance instance) noexcept
-    : instance_(instance), debug_messenger_(VK_NULL_HANDLE) {
+    : instance_(instance), debug_messenger_(nullptr) {
 
     VkDebugUtilsMessengerCreateInfoEXT create_info{};
     {
@@ -85,27 +85,30 @@ messenger::messenger(VkInstance instance) noexcept
     if (result != VK_SUCCESS) {
         ZOO_LOG_INFO(
             "Debug utils messenger failed with {}", string_VkResult(result));
-        debug_messenger_ = VK_NULL_HANDLE; // set back to null just to be sure.
+        debug_messenger_ = nullptr; // set back to null just to be sure.
     }
 }
 
 messenger::~messenger() noexcept { reset(); }
 
 void messenger::reset() noexcept {
-    if (debug_messenger_ != VK_NULL_HANDLE) {
+    if (debug_messenger_ != nullptr) {
         destroy_debug_utils_messenger_ext(instance_, debug_messenger_, nullptr);
-        debug_messenger_ = VK_NULL_HANDLE;
+        debug_messenger_ = nullptr;
     }
 }
 
 messenger::messenger(messenger&& other) noexcept
-    : instance_(VK_NULL_HANDLE), debug_messenger_(VK_NULL_HANDLE) {
+    : instance_(nullptr), debug_messenger_(nullptr) {
     *this = std::move(other);
 }
 
 messenger& messenger::operator=(messenger&& other) noexcept {
-    std::swap(instance_, other.instance_);
-    std::swap(debug_messenger_, other.debug_messenger_);
+    instance_ = other.instance_;
+    debug_messenger_ = other.debug_messenger_;
+
+    other.instance_ = nullptr;
+    other.debug_messenger_ = nullptr;
     return *this;
 }
 

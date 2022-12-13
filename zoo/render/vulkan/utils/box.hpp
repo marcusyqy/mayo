@@ -13,14 +13,14 @@ struct type_map {};
 // template<typename T>
 // concept type = requires(T a) {
 //     std::declval<vulkan::device>().release_device_resource(a);
-//     { a != VK_NULL_HANDLE } -> std::convertible_to<bool>;
+//     { a != nullptr } -> std::convertible_to<bool>;
 //     std::is_trivially_copyable_v<T>;
 // };
 
 template<typename T>
 class box {
 public:
-    box() noexcept : device_(nullptr), type_(VK_NULL_HANDLE) {}
+    box() noexcept : device_(nullptr), type_(nullptr) {}
     box(std::shared_ptr<vulkan::device> device, T type)
         : device_(std::move(device)), type_(type) {}
 
@@ -39,10 +39,10 @@ public:
     void release() noexcept {
         if (device_) {
             device_->release_device_resource(type_);
-            type_ = VK_NULL_HANDLE;
+            type_ = nullptr;
         }
     }
-    operator bool() const noexcept { return type_ != VK_NULL_HANDLE; }
+    operator bool() const noexcept { return type_ != nullptr; }
 
     [[nodiscard]] operator T() const noexcept { return type_; }
     [[nodiscard]] T get() const noexcept { return type_; }
