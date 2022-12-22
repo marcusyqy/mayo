@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 
-namespace zoo::platform::vulkan {
+namespace zoo::platform::render {
 
 struct info {
     std::vector<const char*> extensions_;
@@ -24,4 +24,4 @@ private:
     parameters parameters_;
 };
 
-} // namespace zoo::platform::vulkan
+} // namespace zoo::platform::render

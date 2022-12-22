@@ -6,7 +6,7 @@
 
 #include <iterator>
 
-namespace zoo::platform::vulkan {
+namespace zoo::platform::render {
 
 query::query(parameters parameters) noexcept : parameters_{parameters} {}
 
@@ -51,4 +51,4 @@ std::vector<const char*> query::get_layers() noexcept {
 
     return std::vector<const char*>();
 }
-} // namespace zoo::platform::vulkan
+} // namespace zoo::platform::render

@@ -31,10 +31,10 @@ VkInstance create_instance(const engine::info& info) noexcept {
 
     VkInstanceCreateInfo create_info{};
 
-    zoo::platform::vulkan::parameters params{true};
-    zoo::platform::vulkan::query query{params};
+    platform::render::parameters params{true};
+    platform::render::query query{params};
 
-    zoo::platform::vulkan::info vulkan_query_info = query.get_info();
+    platform::render::info vulkan_query_info = query.get_info();
     const auto& enabled_layers = vulkan_query_info.layers_;
     const auto& enabled_extensions = vulkan_query_info.extensions_;
     {
@@ -110,6 +110,8 @@ void engine::cleanup() noexcept {
 }
 
 std::unique_ptr<window> engine::create_window(
-    window_detail::traits window_traits) noexcept {}
+    [[maybe_unused]] window_detail::traits window_traits) noexcept {
+    return nullptr;
+}
 
 } // namespace zoo::render

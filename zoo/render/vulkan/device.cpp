@@ -1,4 +1,3 @@
-
 #include "device.hpp"
 #include <vulkan/vulkan.h>
 
@@ -44,7 +43,7 @@ void device::reset() noexcept {
 device::~device() noexcept { reset(); }
 
 /*
-    release device resources
+    release device resources for each vulkan resource
 */
 void device::release_device_resource(VkFence fence) noexcept {
     if (fence != nullptr)
