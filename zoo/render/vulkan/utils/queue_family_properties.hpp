@@ -20,6 +20,8 @@ public:
     [[nodiscard]] bool valid() const noexcept;
     size_type size() const noexcept;
 
+    uint32_t index() const noexcept { return queue_index_; }
+
 private:
     uint32_t queue_index_;
     VkQueueFamilyProperties properties_;

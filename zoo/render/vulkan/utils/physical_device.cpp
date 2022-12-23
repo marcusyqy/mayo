@@ -44,6 +44,10 @@ bool physical_device::is_other() const noexcept {
     return properties_.deviceType == VK_PHYSICAL_DEVICE_TYPE_OTHER;
 }
 
+const VkPhysicalDeviceFeatures& physical_device::features() const noexcept {
+    return features_;
+}
+
 std::string_view physical_device::name() const noexcept {
     return properties_.deviceName;
 }
@@ -54,10 +58,6 @@ physical_device::id_type physical_device::id() const noexcept {
 
 VkPhysicalDeviceLimits physical_device::limits() const noexcept {
     return properties_.limits;
-}
-VkPhysicalDeviceSparseProperties
-physical_device::sparse_props() const noexcept {
-    return properties_.sparseProperties;
 }
 
 bool physical_device::has_geometry_shader() const noexcept {

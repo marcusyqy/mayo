@@ -17,7 +17,10 @@ application::exit_status main(application::settings args) noexcept {
     std::shared_ptr<window::context> win_context =
         std::make_shared<window::context>();
 
-    window main_window{win_context,
+    render::engine render_engine(render_engine_info);
+    render_engine.initialize();
+
+    window main_window{render_engine, win_context,
         window::traits{window::size{640, 480}, false, "zoo"},
         [](window& win, input::key_code keycode) {
             if (keycode.key_ == input::key::escape &&
@@ -25,9 +28,6 @@ application::exit_status main(application::settings args) noexcept {
                 win.close();
             }
         }};
-
-    render::engine render_engine(render_engine_info);
-    render_engine.initialize();
 
     // for threading
     // TODO: remove this and use a more vulkan approach

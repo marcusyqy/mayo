@@ -7,8 +7,6 @@
 
 #include <optional>
 
-#include "vulkan/utils/physical_device_scorer.hpp"
-
 namespace zoo::render {
 
 namespace {

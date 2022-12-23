@@ -10,6 +10,7 @@
 #include <GLFW/glfw3.h>
 
 #include <memory>
+#include <vulkan/vulkan.h>
 
 namespace zoo {
 
@@ -52,8 +53,8 @@ public:
     factory(std::shared_ptr<context> context) noexcept;
     ~factory() noexcept;
 
-    window* create_window(
-        const traits& traits, input_callback callback) noexcept;
+    window* create_window(render::engine& engine, const traits& traits,
+        input_callback callback) noexcept;
 
 private:
     std::shared_ptr<context> context_;

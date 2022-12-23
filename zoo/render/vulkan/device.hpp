@@ -10,7 +10,9 @@ namespace zoo::render::vulkan {
 
 class device : std::enable_shared_from_this<device> {
 public:
-    device(VkInstance instance, utils::physical_device pdevice) noexcept;
+    device(VkInstance instance, utils::physical_device pdevice,
+        const utils::queue_family_properties& family_props) noexcept;
+
     ~device() noexcept;
 
     device(const device& other) noexcept = delete;
@@ -20,7 +22,7 @@ public:
     void operator=(device&& other) noexcept = delete;
     void reset() noexcept;
 
-    operator utils::physical_device() const noexcept { return physical_; }
+    const utils::physical_device& get() const noexcept { return physical_; }
 
     void release_device_resource(VkFence fence) noexcept;
 

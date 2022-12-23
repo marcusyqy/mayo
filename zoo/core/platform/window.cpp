@@ -35,8 +35,8 @@ void window::context::poll_events() noexcept { glfwPollEvents(); }
 
 void window::context::wait_for_vsync() const noexcept { glfwSwapInterval(1); }
 
-window::window(std::shared_ptr<context> context, const traits& traits,
-    input_callback callback) noexcept
+window::window(render::engine& engine, std::shared_ptr<context> context,
+    const traits& traits, input_callback callback) noexcept
     : context_{context}, traits_{traits}, callback_{std::move(callback)},
       impl_{glfwCreateWindow(traits_.size_.x_, traits_.size_.y_,
           traits_.name_.data(), NULL, NULL)},
@@ -51,6 +51,20 @@ window::window(std::shared_ptr<context> context, const traits& traits,
             input::glfw_layer::convert(
                 input::glfw_layer::key_code{key, scancode, action, mods}));
     });
+
+    // query for suitable device from engine
+    for (const auto& device : engine.devices()) {
+        const auto& physical_device = device->get();
+        if (physical_device.has_geometry_shader()) {
+            for (const auto& queue_properties :
+                physical_device.queue_properties()) {
+                if (queue_properties.has_graphics() &&
+                    queue_properties.has_transfer()) {
+                    // use this device;
+                }
+            }
+        }
+    }
 }
 
 window::~window() noexcept { close(); }
@@ -91,10 +105,10 @@ factory::factory(std::shared_ptr<context> context) noexcept
 
 factory::~factory() noexcept = default;
 
-window* factory::create_window(
-    const traits& traits, input_callback callback) noexcept {
-    windows_.emplace_back(
-        std::make_unique<window>(context_, traits, std::move(callback)));
+window* factory::create_window(render::engine& engine, const traits& traits,
+    input_callback callback) noexcept {
+    windows_.emplace_back(std::make_unique<window>(
+        engine, context_, traits, std::move(callback)));
     return windows_.back().get();
 }
 } // namespace window_detail
