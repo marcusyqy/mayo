@@ -60,7 +60,7 @@ VkInstance create_instance(const engine::info& info) noexcept {
     return instance;
 }
 
-std::vector<vulkan::physical_device> populate_physical_devices(
+std::vector<vulkan::utils::physical_device> populate_physical_devices(
     VkInstance instance) noexcept {
     if (instance == nullptr)
         return {};
@@ -76,7 +76,6 @@ std::vector<vulkan::physical_device> populate_physical_devices(
 
     std::vector<VkPhysicalDevice> devices(device_count);
     vkEnumeratePhysicalDevices(instance, &device_count, devices.data());
-
     return {std::begin(devices), std::end(devices)};
 }
 //    std::vector<physical_device_scorer> scorers{
@@ -107,11 +106,6 @@ void engine::cleanup() noexcept {
         instance_ = nullptr;
         vkDestroyInstance(instance_, nullptr);
     }
-}
-
-std::unique_ptr<window> engine::create_window(
-    [[maybe_unused]] window_detail::traits window_traits) noexcept {
-    return nullptr;
 }
 
 } // namespace zoo::render

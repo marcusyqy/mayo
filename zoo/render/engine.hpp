@@ -6,7 +6,6 @@
 #include "vulkan/device.hpp"
 #include <vulkan/vulkan.h>
 
-#include "core/platform/window.hpp"
 #include "render/vulkan/debug/messenger.hpp"
 
 namespace zoo::render {
@@ -27,9 +26,6 @@ public:
     void initialize() noexcept;
     void cleanup() noexcept;
 
-    std::unique_ptr<window> create_window(
-        window_detail::traits window_traits) noexcept;
-
     engine(const engine&) noexcept = delete;
     engine& operator=(const engine&) noexcept = delete;
     engine(engine&&) noexcept = delete;
@@ -39,8 +35,12 @@ private:
     info info_;
 
     VkInstance instance_ = nullptr;
-    std::vector<vulkan::physical_device> physical_devices_{};
+
+    std::vector<vulkan::utils::physical_device> physical_devices_{};
     std::vector<std::shared_ptr<vulkan::device>> devices_{};
+
+    // debugger may be named incorrectly
+    // TODO: change this name to something that is more correct
     std::optional<vulkan::debug::messenger> debugger_ = std::nullopt;
 };
 

@@ -4,7 +4,7 @@
 
 #include "input.hpp"
 #include "main/application.hpp"
-#include "render/fwd.hpp"
+#include "render/engine.hpp"
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -69,8 +69,8 @@ public:
     using input_callback = window_detail::input_callback;
     using factory = window_detail::factory;
 
-    window(std::shared_ptr<context> win_ctx, const traits& traits,
-        input_callback callback) noexcept;
+    window(render::engine& engine, std::shared_ptr<context> win_ctx,
+        const traits& traits, input_callback callback) noexcept;
 
     ~window() noexcept;
 
