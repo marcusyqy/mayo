@@ -12,7 +12,7 @@ public:
     using underlying_type = VkPhysicalDevice;
     using id_type = uint32_t;
 
-    operator underlying_type() const noexcept { return underlying_; }
+    operator underlying_type() const noexcept { return get(); }
     underlying_type get() const noexcept { return underlying_; }
 
     physical_device(underlying_type underlying) noexcept;

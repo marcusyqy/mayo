@@ -3,7 +3,7 @@
 #include "core/log.hpp"
 
 #include "core/platform/query.hpp"
-#include <vulkan/vk_enum_string_helper.h>
+#include "render/fwd.hpp"
 
 #include <optional>
 
@@ -50,11 +50,7 @@ VkInstance create_instance(const engine::info& info) noexcept {
     }
 
     VkInstance instance = nullptr;
-    VkResult result = vkCreateInstance(&create_info, nullptr, &instance);
-    if (result != VK_SUCCESS)
-        ZOO_LOG_ERROR("vkCreateInstance failed with exit code = {}",
-            string_VkResult(result));
-
+    VK_EXPECT_SUCCESS(vkCreateInstance(&create_info, nullptr, &instance));
     return instance;
 }
 
@@ -64,16 +60,20 @@ std::vector<vulkan::utils::physical_device> populate_physical_devices(
         return {};
 
     uint32_t device_count = 0;
-    VkResult result =
-        vkEnumeratePhysicalDevices(instance, &device_count, nullptr);
+    VK_EXPECT_SUCCESS(
+        vkEnumeratePhysicalDevices(instance, &device_count, nullptr));
 
-    if (result != VK_SUCCESS || device_count == 0) {
+    if (device_count == 0) {
         ZOO_LOG_ERROR("Devices cannot be 0 for vkEnumeratePhysicalDevices!");
+        // TODO: this needs to fail (assertion) or some sort of termination that
+        // tells us something meaningful which users can report to us about.
         return {};
     }
 
     std::vector<VkPhysicalDevice> devices(device_count);
-    vkEnumeratePhysicalDevices(instance, &device_count, devices.data());
+    VK_EXPECT_SUCCESS(
+        vkEnumeratePhysicalDevices(instance, &device_count, devices.data()));
+
     return {std::begin(devices), std::end(devices)};
 }
 //    std::vector<physical_device_scorer> scorers{

@@ -16,9 +16,10 @@ class query {
 public:
     query(parameters parameters) noexcept;
 
-    [[nodiscard]] info get_info() noexcept;
-    [[nodiscard]] std::vector<const char*> get_extensions() noexcept;
-    [[nodiscard]] std::vector<const char*> get_layers() noexcept;
+    [[nodiscard]] info get_info() const noexcept;
+    [[nodiscard]] std::vector<const char*> get_extensions() const noexcept;
+    [[nodiscard]] std::vector<const char*> get_layers() const noexcept;
+    [[nodiscard]] const parameters& get_params() const noexcept;
 
 private:
     parameters parameters_;

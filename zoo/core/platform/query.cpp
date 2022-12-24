@@ -10,14 +10,14 @@ namespace zoo::platform::render {
 
 query::query(parameters parameters) noexcept : parameters_{parameters} {}
 
-info query::get_info() noexcept {
+info query::get_info() const noexcept {
     info info{};
     info.extensions_ = get_extensions();
     info.layers_ = get_layers();
     return info;
 }
 
-std::vector<const char*> query::get_extensions() noexcept {
+std::vector<const char*> query::get_extensions() const noexcept {
     std::vector<const char*> extensions{};
     uint32_t glfw_extensions_count;
     const char** glfw_extensions =
@@ -32,7 +32,7 @@ std::vector<const char*> query::get_extensions() noexcept {
 
     return extensions;
 }
-std::vector<const char*> query::get_layers() noexcept {
+std::vector<const char*> query::get_layers() const noexcept {
     if (parameters_.validation_) {
         const char* validation_layer{"VK_LAYER_KHRONOS_validation"};
         uint32_t layer_count;
@@ -51,4 +51,7 @@ std::vector<const char*> query::get_layers() noexcept {
 
     return std::vector<const char*>();
 }
+
+const parameters& query::get_params() const noexcept { return parameters_; }
+
 } // namespace zoo::platform::render

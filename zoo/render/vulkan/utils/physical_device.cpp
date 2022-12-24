@@ -5,7 +5,9 @@
 namespace zoo::render::vulkan::utils {
 
 physical_device::physical_device(underlying_type underlying) noexcept
-    : underlying_{underlying} {}
+    : underlying_{underlying} {
+    query_properties_and_features();
+}
 
 void physical_device::query_properties_and_features() noexcept {
     vkGetPhysicalDeviceProperties(underlying_, &properties_);
