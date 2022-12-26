@@ -1,6 +1,15 @@
 #include "window.hpp"
 #include "core/log.hpp"
 
+#include "render/fwd.hpp"
+#include "render/vulkan/device.hpp"
+
+#define VK_USE_PLATFORM_WIN32_KHR
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
+#define GLFW_EXPOSE_NATIVE_WIN32
+#include <GLFW/glfw3native.h>
+
 namespace zoo {
 
 namespace {
@@ -8,6 +17,22 @@ namespace {
 static void error_callback(
     int, [[maybe_unused]] const char* description) noexcept {
     ZOO_LOG_ERROR("Error: {}", description);
+}
+
+std::optional<size_t> get_queue_index_if_physical_device_is_chosen(
+    const render::vulkan::utils::physical_device& physical_device,
+    VkSurfaceKHR surface) noexcept {
+    if (!physical_device.has_geometry_shader())
+        return std::nullopt;
+
+    size_t index{};
+    for (const auto& queue_properties : physical_device.queue_properties()) {
+        if (queue_properties.has_graphics() &&
+            physical_device.has_present(queue_properties, surface))
+            return std::make_optional(index);
+        ++index;
+    }
+    return std::nullopt;
 }
 
 } // namespace
@@ -40,7 +65,7 @@ window::window(render::engine& engine, std::shared_ptr<context> context,
     : context_{context}, traits_{traits}, callback_{std::move(callback)},
       impl_{glfwCreateWindow(traits_.size_.x_, traits_.size_.y_,
           traits_.name_.data(), NULL, NULL)},
-      context_set_{false} {
+      context_set_{false}, instance_(engine.vk_instance()), surface_(nullptr) {
 
     glfwSetWindowUserPointer(impl_, this);
     glfwSetKeyCallback(impl_, [](GLFWwindow* glfw_window, int key, int scancode,
@@ -52,19 +77,39 @@ window::window(render::engine& engine, std::shared_ptr<context> context,
                 input::glfw_layer::key_code{key, scancode, action, mods}));
     });
 
+    // TODO: look into allocations for vulkan
+    VK_EXPECT_SUCCESS(
+        glfwCreateWindowSurface(instance_, impl_, nullptr, &surface_));
+
     // query for suitable device from engine
-    for (const auto& device : engine.devices()) {
-        const auto& physical_device = device->get();
-        if (physical_device.has_geometry_shader()) {
-            for (const auto& queue_properties :
-                physical_device.queue_properties()) {
-                if (queue_properties.has_graphics() &&
-                    queue_properties.has_transfer()) {
-                    // use this device;
-                }
+    auto [chosen_device, queue_index] =
+        [&]() -> std::pair<std::shared_ptr<render::vulkan::device>, size_t> {
+        for (const auto& device : engine.devices()) {
+            if (auto index = get_queue_index_if_physical_device_is_chosen(
+                    device->get(), surface_))
+                return std::make_pair(device, *index);
+        }
+        return std::make_pair(nullptr, 0);
+    }();
+
+    if (!chosen_device) {
+        const auto& physical_devices = engine.physical_devices();
+
+        for (auto begin = std::begin(physical_devices),
+                  end = std::end(physical_devices);
+             begin != end; ++begin) {
+            if (auto index = get_queue_index_if_physical_device_is_chosen(
+                    *begin, surface_)) {
+                chosen_device = engine.promote(begin);
+                queue_index = *index;
+                break;
             }
         }
     }
+}
+
+void window::deallocate_render_resources() noexcept {
+    vkDestroySurfaceKHR(instance_, surface_, nullptr);
 }
 
 window::~window() noexcept { close(); }

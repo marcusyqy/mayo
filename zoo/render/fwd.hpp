@@ -3,19 +3,17 @@
 #include <vulkan/vk_enum_string_helper.h>
 #include <vulkan/vulkan.h>
 
-namespace zoo::render {
-
-namespace hidden::detail {
+namespace zoo::render::hidden::detail {
 
 void maybe_invoke(VkResult result) noexcept;
 
 template<typename Call, typename... Args>
-void maybe_invoke(VkResult result, Call fn, Args&&... args) noexcept {
-    fn(result, std::forward<Args>(args)...);
+void maybe_invoke(VkResult result, Call then, Args&&... args) noexcept {
+    then(result, std::forward<Args>(args)...);
     maybe_invoke(result);
 }
 
-} // namespace hidden::detail
+} // namespace zoo::render::hidden::detail
 
 // TODO: maybe std::exit is not the way to go (change this later on)
 #define VK_EXPECT_SUCCESS(EXP, ...)                                            \
@@ -23,6 +21,5 @@ void maybe_invoke(VkResult result, Call fn, Args&&... args) noexcept {
         ZOO_LOG_ERROR("VK_SUCCESS NOT MET FOR CALL : " #EXP                    \
                       " , failed with exit code = {}",                         \
             string_VkResult(result));                                          \
-        hidden::detail::maybe_invoke(result, __VA_ARGS__);                     \
+        zoo::render::hidden::detail::maybe_invoke(result, __VA_ARGS__);        \
     }
-} // namespace zoo::render

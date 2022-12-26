@@ -48,7 +48,8 @@ device::device([[maybe_unused]] VkInstance instance,
     VK_EXPECT_SUCCESS(
         vkCreateDevice(physical_, &create_info, nullptr, &logical_),
         [this]([[maybe_unused]] VkResult result) {
-            // TODO: check if logical will still stay as NULL when it fails
+            // not sure if device will be set to nullptr after the end.
+            // need a `then` callback.
             logical_ = nullptr;
         });
 

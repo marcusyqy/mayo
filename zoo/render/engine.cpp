@@ -106,4 +106,14 @@ void engine::cleanup() noexcept {
     }
 }
 
+std::shared_ptr<vulkan::device> engine::promote(
+    physical_device_iterator physical_device,
+    const vulkan::utils::queue_family_properties& family_props) noexcept {
+    // TODO: get a better query parameter.
+    platform::render::parameters params{true};
+    platform::render::query query{params};
+    devices_.emplace_back(instance_, physical_device, family_props, query);
+    physical_devices_.erase(physical_device);
+    return devices_.back();
+}
 } // namespace zoo::render

@@ -39,6 +39,9 @@ public:
         return queue_family_properties_;
     }
 
+    [[nodiscard]] bool has_present(const queue_family_properties& family_props,
+        VkSurfaceKHR surface) const noexcept;
+
 private:
     void query_properties_and_features() noexcept;
 

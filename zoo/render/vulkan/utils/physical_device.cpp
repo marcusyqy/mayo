@@ -66,4 +66,12 @@ bool physical_device::has_geometry_shader() const noexcept {
     return features_.geometryShader;
 }
 
+bool physical_device::has_present(const queue_family_properties& family_props,
+    VkSurfaceKHR surface) const noexcept {
+    VkBool32 present_support = false;
+    vkGetPhysicalDeviceSurfaceSupportKHR(
+        underlying_, family_props.index(), surface, &present_support);
+    return static_cast<bool>(present_support);
+}
+
 } // namespace zoo::render::vulkan::utils

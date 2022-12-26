@@ -47,7 +47,10 @@ public:
     }
 
     std::shared_ptr<vulkan::device> promote(
-        physical_device_iterator physical_device) noexcept;
+        physical_device_iterator physical_device,
+        const vulkan::utils::queue_family_properties& family_props) noexcept;
+
+    VkInstance vk_instance() const noexcept { return instance_; }
 
 private:
     info info_;

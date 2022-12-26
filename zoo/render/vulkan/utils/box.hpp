@@ -1,8 +1,9 @@
 #pragma once
-#include "render/vulkan/Device.hpp"
-#include <concepts>
+#include "render/vulkan/device.hpp"
+
 #include <cstddef>
 #include <memory>
+#include <stdx/type_traits.hpp>
 #include <utility>
 #include <vulkan/vulkan.h>
 
@@ -10,14 +11,23 @@ namespace zoo::render::vulkan::utils {
 
 struct type_map {};
 
-// template<typename T>
-// concept type = requires(T a) {
-//     std::declval<vulkan::device>().release_device_resource(a);
-//     { a != nullptr } -> std::convertible_to<bool>;
-//     std::is_trivially_copyable_v<T>;
-// };
+namespace detail {
 
 template<typename T>
+using device_release_resource_exist_t =
+    std::void_t<decltype(std::declval<vulkan::device>().release_device_resource(
+        std::declval<T>()))>;
+
+} // namespace detail
+
+template<typename T>
+using is_valid_vulkan_obj_t =
+    std::void_t<detail::device_release_resource_exist_t<T>,
+        stdx::nullptr_check_exists_t<T>,
+        stdx::condition_type_t<std::is_assignable_v<T, std::nullptr_t>>,
+        stdx::condition_type_t<std::is_trivially_copyable_v<T>>>;
+
+template<typename T, typename = is_valid_vulkan_obj_t<T>>
 class box {
 public:
     box() noexcept : device_(nullptr), type_(nullptr) {}
@@ -34,14 +44,21 @@ public:
         std::swap(type_, other.type_);
     }
 
-    ~box() noexcept { release(); }
+    ~box() noexcept { reset(); }
 
-    void release() noexcept {
+    T release() noexcept {
+        T ret = type_;
+        type_ = nullptr;
+        return ret;
+    }
+
+    void reset() noexcept {
         if (device_) {
             device_->release_device_resource(type_);
             type_ = nullptr;
         }
     }
+
     operator bool() const noexcept { return type_ != nullptr; }
 
     [[nodiscard]] operator T() const noexcept { return type_; }

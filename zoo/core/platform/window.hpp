@@ -89,9 +89,11 @@ public:
     void swap_buffers() noexcept;
     void close() noexcept;
 
-public:
     bool valid() const noexcept { return impl_ != nullptr; }
     operator bool() const noexcept { return valid(); }
+
+private:
+    void deallocate_render_resources() noexcept;
 
 private:
     std::shared_ptr<context> context_;
@@ -99,6 +101,10 @@ private:
     input_callback callback_;
     GLFWwindow* impl_;
     bool context_set_;
+
+    // TODO: evaluate if this should be placed into a vulkan presenting context
+    VkInstance instance_;
+    VkSurfaceKHR surface_;
 };
 
 namespace window_detail {} // namespace window_detail
