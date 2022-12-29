@@ -56,6 +56,8 @@ device_context::device_context([[maybe_unused]] VkInstance instance,
             // not sure if device will be set to nullptr after the end.
             // need a `then` callback.
             logical_ = nullptr;
+            std::abort(); // maybe we don't need this since it's already going
+                          // to destroy itself.
         });
 
     // create a queue. where should this be stored?

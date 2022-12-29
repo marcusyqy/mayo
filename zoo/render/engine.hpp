@@ -32,9 +32,6 @@ public:
     engine(const info& info) noexcept;
     ~engine() noexcept;
 
-    void initialize() noexcept;
-    void cleanup() noexcept;
-
     engine(const engine&) noexcept = delete;
     engine& operator=(const engine&) noexcept = delete;
     engine(engine&&) noexcept = delete;
@@ -46,6 +43,10 @@ public:
     }
 
     VkInstance vk_instance() const noexcept { return instance_; }
+
+private:
+    void initialize() noexcept;
+    void cleanup() noexcept;
 
 private:
     info info_;

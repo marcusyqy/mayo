@@ -18,7 +18,6 @@ application::exit_status main(application::settings args) noexcept {
         std::make_shared<window::context>();
 
     render::engine render_engine(render_engine_info);
-    render_engine.initialize();
 
     window main_window{render_engine, win_context,
         window::traits{window::size{640, 480}, false, "zoo"},

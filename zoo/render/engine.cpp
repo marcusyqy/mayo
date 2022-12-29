@@ -85,7 +85,9 @@ std::vector<utils::physical_device> populate_physical_devices(
 
 } // namespace
 
-engine::engine(const engine::info& info) noexcept : info_(info) {}
+engine::engine(const engine::info& info) noexcept : info_(info) {
+    initialize();
+}
 
 engine::~engine() noexcept { cleanup(); }
 

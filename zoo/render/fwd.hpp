@@ -10,7 +10,8 @@ void maybe_invoke(VkResult result) noexcept;
 template<typename Call, typename... Args>
 void maybe_invoke(VkResult result, Call then, Args&&... args) noexcept {
     then(result, std::forward<Args>(args)...);
-    maybe_invoke(result);
+    // maybe shouldn't throw
+    // maybe_invoke(result);
 }
 
 } // namespace zoo::render::hidden::detail

@@ -27,8 +27,15 @@ public:
 
     void reset() noexcept;
 
-    operator const utils::physical_device&() const noexcept { return get(); }
-    const utils::physical_device& get() const noexcept { return physical_; }
+    operator const utils::physical_device&() const noexcept {
+        return physical();
+    }
+    const utils::physical_device& physical() const noexcept {
+        return physical_;
+    }
+
+    operator const VkDevice&() const noexcept { return logical(); }
+    const VkDevice& logical() const noexcept { return logical_; }
 
     template<typename T>
     T create() const noexcept {}
