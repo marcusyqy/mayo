@@ -35,12 +35,8 @@ public:
     context() noexcept;
     ~context() noexcept;
 
-    bool valid() const noexcept { return valid_; }
     void poll_events() noexcept;
     void wait_for_vsync() const noexcept;
-
-private:
-    bool valid_;
 };
 
 using input_callback = std::function<void(window&, input::key_code)>;

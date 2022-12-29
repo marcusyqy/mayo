@@ -38,11 +38,13 @@ std::optional<size_t> get_queue_index_if_physical_device_is_chosen(
 
 } // namespace
 
-window::context::context() noexcept : valid_{false} {
+window::context::context() noexcept {
     glfwSetErrorCallback(error_callback);
 
-    if (!glfwInit())
-        return;
+    if (!glfwInit()) {
+        ZOO_LOG_ERROR("Something went wrong when initializing glfw");
+        std::abort();
+    }
 
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
@@ -54,7 +56,6 @@ window::context::context() noexcept : valid_{false} {
 
     // disable resizing for now
     glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-    valid_ = true;
 }
 
 void window::context::poll_events() noexcept { glfwPollEvents(); }
