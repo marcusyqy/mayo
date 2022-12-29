@@ -2,7 +2,7 @@
 
 #include <vulkan/vulkan.h>
 
-namespace zoo::render::vulkan::utils {
+namespace zoo::render::utils {
 
 class queue_family_properties {
 public:
@@ -27,4 +27,4 @@ private:
     VkQueueFamilyProperties properties_;
 };
 
-} // namespace zoo::render::vulkan::utils
+} // namespace zoo::render::utils

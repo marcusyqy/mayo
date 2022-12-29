@@ -2,10 +2,11 @@
 #include "queue_family_properties.hpp"
 
 #include <string_view>
+#include <unordered_set>
 #include <vector>
 #include <vulkan/vulkan.h>
 
-namespace zoo::render::vulkan::utils {
+namespace zoo::render::utils {
 
 class physical_device {
 public:
@@ -42,6 +43,8 @@ public:
     [[nodiscard]] bool has_present(const queue_family_properties& family_props,
         VkSurfaceKHR surface) const noexcept;
 
+    bool has_required_extension(std::string_view extension_name) const noexcept;
+
 private:
     void query_properties_and_features() noexcept;
 
@@ -51,6 +54,7 @@ private:
     VkPhysicalDeviceProperties properties_{};
     VkPhysicalDeviceFeatures features_{};
     std::vector<queue_family_properties> queue_family_properties_{};
+    std::unordered_set<std::string_view> device_extensions_{};
 };
 
-} // namespace zoo::render::vulkan::utils
+} // namespace zoo::render::utils

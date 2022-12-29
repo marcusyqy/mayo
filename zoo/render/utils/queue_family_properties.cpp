@@ -1,6 +1,6 @@
 #include "queue_family_properties.hpp"
 
-namespace zoo::render::vulkan::utils {
+namespace zoo::render::utils {
 
 queue_family_properties::queue_family_properties(
     uint32_t queue_index, VkQueueFamilyProperties properties) noexcept
@@ -35,4 +35,4 @@ queue_family_properties::size() const noexcept {
     return properties_.queueCount;
 }
 
-} // namespace zoo::render::vulkan::utils
+} // namespace zoo::render::utils

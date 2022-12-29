@@ -1,7 +1,7 @@
 #include "messenger.hpp"
 #include <vulkan/vk_enum_string_helper.h>
 
-namespace zoo::render::vulkan::debug {
+namespace zoo::render::debug {
 
 namespace {
 
@@ -112,4 +112,4 @@ messenger& messenger::operator=(messenger&& other) noexcept {
     return *this;
 }
 
-} // namespace zoo::render::vulkan::debug
+} // namespace zoo::render::debug

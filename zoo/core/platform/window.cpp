@@ -1,8 +1,8 @@
 #include "window.hpp"
 #include "core/log.hpp"
 
+#include "render/device.hpp"
 #include "render/fwd.hpp"
-#include "render/vulkan/device.hpp"
 
 #define VK_USE_PLATFORM_WIN32_KHR
 #define GLFW_INCLUDE_VULKAN
@@ -20,9 +20,10 @@ static void error_callback(
 }
 
 std::optional<size_t> get_queue_index_if_physical_device_is_chosen(
-    const render::vulkan::utils::physical_device& physical_device,
+    const render::utils::physical_device& physical_device,
     VkSurfaceKHR surface) noexcept {
-    if (!physical_device.has_geometry_shader())
+    if (!physical_device.has_geometry_shader() &&
+        physical_device.has_required_extension(VK_KHR_SWAPCHAIN_EXTENSION_NAME))
         return std::nullopt;
 
     size_t index{};
@@ -83,7 +84,7 @@ window::window(render::engine& engine, std::shared_ptr<context> context,
 
     // query for suitable device from engine
     auto [chosen_device, queue_index] =
-        [&]() -> std::pair<std::shared_ptr<render::vulkan::device>, size_t> {
+        [&]() -> std::pair<std::shared_ptr<render::device>, size_t> {
         for (const auto& device : engine.devices()) {
             if (auto index = get_queue_index_if_physical_device_is_chosen(
                     device->get(), surface_))
@@ -100,7 +101,8 @@ window::window(render::engine& engine, std::shared_ptr<context> context,
              begin != end; ++begin) {
             if (auto index = get_queue_index_if_physical_device_is_chosen(
                     *begin, surface_)) {
-                chosen_device = engine.promote(begin);
+                chosen_device =
+                    engine.promote(begin, begin->queue_properties()[*index]);
                 queue_index = *index;
                 break;
             }

@@ -1,7 +1,10 @@
 #include "device.hpp"
 #include "render/fwd.hpp"
 
-namespace zoo::render::vulkan {
+namespace zoo::render {
+namespace {
+const char* device_extension{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+}
 
 // TODO: since we need to create the queues at the start should we also just
 // initialize the engine with settings that will determine the queues that
@@ -30,7 +33,9 @@ device::device([[maybe_unused]] VkInstance instance,
     create_info.queueCreateInfoCount = 1;
     create_info.pQueueCreateInfos = &queue_create_info;
     create_info.pEnabledFeatures = &(physical_.features());
-    create_info.enabledExtensionCount = 0;
+
+    create_info.ppEnabledExtensionNames = &device_extension;
+    create_info.enabledExtensionCount = 1;
 
     // this has been deprecated on newer versions of VULKAN
     //
@@ -53,9 +58,10 @@ device::device([[maybe_unused]] VkInstance instance,
             logical_ = nullptr;
         });
 
-    // TODO: create a queue. where should this be stored?
-    VkQueue queue;
-    vkGetDeviceQueue(logical_, family_props.index(), 0, &queue);
+    // create a queue. where should this be stored?
+    // TODO: need to consider that will also have two different types of indices
+    // and two different types of queues for present and graphics.
+    vkGetDeviceQueue(logical_, family_props.index(), 0, &queue_);
 }
 
 void device::reset() noexcept {
@@ -75,4 +81,4 @@ void device::release_device_resource(VkFence fence) noexcept {
         vkDestroyFence(logical_, fence, nullptr);
 }
 
-} // namespace zoo::render::vulkan
+} // namespace zoo::render

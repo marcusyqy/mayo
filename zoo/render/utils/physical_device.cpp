@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <iterator>
 
-namespace zoo::render::vulkan::utils {
+namespace zoo::render::utils {
 
 physical_device::physical_device(underlying_type underlying) noexcept
     : underlying_{underlying} {
@@ -12,22 +12,40 @@ physical_device::physical_device(underlying_type underlying) noexcept
 void physical_device::query_properties_and_features() noexcept {
     vkGetPhysicalDeviceProperties(underlying_, &properties_);
     vkGetPhysicalDeviceFeatures(underlying_, &features_);
+    {
+        uint32_t queue_family_count = 0;
+        vkGetPhysicalDeviceQueueFamilyProperties(
+            underlying_, &queue_family_count, nullptr);
 
-    uint32_t queue_family_count = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(
-        underlying_, &queue_family_count, nullptr);
+        std::vector<VkQueueFamilyProperties> queue_families(queue_family_count);
+        vkGetPhysicalDeviceQueueFamilyProperties(
+            underlying_, &queue_family_count, queue_families.data());
+        uint32_t idx{};
+        std::transform(std::begin(queue_families), std::end(queue_families),
+            std::back_inserter(queue_family_properties_),
+            [&idx](const VkQueueFamilyProperties& props)
+                -> queue_family_properties {
+                return {idx++, props};
+            });
+    }
+    {
+        uint32_t extension_count{};
+        vkEnumerateDeviceExtensionProperties(
+            underlying_, nullptr, &extension_count, nullptr);
 
-    std::vector<VkQueueFamilyProperties> queue_families(queue_family_count);
-    vkGetPhysicalDeviceQueueFamilyProperties(
-        underlying_, &queue_family_count, queue_families.data());
+        std::vector<VkExtensionProperties> available_extensions(
+            extension_count);
 
-    uint32_t idx{};
-    std::transform(std::begin(queue_families), std::end(queue_families),
-        std::back_inserter(queue_family_properties_),
-        [&idx](
-            const VkQueueFamilyProperties& props) -> queue_family_properties {
-            return {idx++, props};
-        });
+        vkEnumerateDeviceExtensionProperties(underlying_, nullptr,
+            &extension_count, available_extensions.data());
+
+        std::transform(std::begin(available_extensions),
+            std::end(available_extensions),
+            std::inserter(device_extensions_, std::end(device_extensions_)),
+            [](const VkExtensionProperties& props) -> std::string_view {
+                return props.extensionName;
+            });
+    }
 }
 
 bool physical_device::is_discrete() const noexcept {
@@ -74,4 +92,8 @@ bool physical_device::has_present(const queue_family_properties& family_props,
     return static_cast<bool>(present_support);
 }
 
-} // namespace zoo::render::vulkan::utils
+bool physical_device::has_required_extension(
+    std::string_view extension_name) const noexcept {
+    return device_extensions_.count(extension_name) > 0;
+}
+} // namespace zoo::render::utils

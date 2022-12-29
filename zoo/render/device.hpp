@@ -7,7 +7,7 @@
 #include <string_view>
 #include <vulkan/vulkan.h>
 
-namespace zoo::render::vulkan {
+namespace zoo::render {
 
 class device : std::enable_shared_from_this<device> {
 public:
@@ -33,6 +33,7 @@ public:
 private:
     utils::physical_device physical_ = nullptr;
     VkDevice logical_ = nullptr;
+    VkQueue queue_ = nullptr;
 };
 
-} // namespace zoo::render::vulkan
+} // namespace zoo::render

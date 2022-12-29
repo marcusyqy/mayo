@@ -1,5 +1,5 @@
 #pragma once
-#include "render/vulkan/device.hpp"
+#include "render/device.hpp"
 
 #include <cstddef>
 #include <memory>
@@ -7,7 +7,7 @@
 #include <utility>
 #include <vulkan/vulkan.h>
 
-namespace zoo::render::vulkan::utils {
+namespace zoo::render::utils {
 
 struct type_map {};
 
@@ -15,23 +15,23 @@ namespace detail {
 
 template<typename T>
 using device_release_resource_exist_t =
-    std::void_t<decltype(std::declval<vulkan::device>().release_device_resource(
+    std::void_t<decltype(std::declval<device>().release_device_resource(
         std::declval<T>()))>;
 
 } // namespace detail
 
 template<typename T>
-using is_valid_vulkan_obj_t =
+using is_valid_device_obj_t =
     std::void_t<detail::device_release_resource_exist_t<T>,
         stdx::nullptr_check_exists_t<T>,
         stdx::condition_type_t<std::is_assignable_v<T, std::nullptr_t>>,
         stdx::condition_type_t<std::is_trivially_copyable_v<T>>>;
 
-template<typename T, typename = is_valid_vulkan_obj_t<T>>
+template<typename T, typename = is_valid_device_obj_t<T>>
 class box {
 public:
     box() noexcept : device_(nullptr), type_(nullptr) {}
-    box(std::shared_ptr<vulkan::device> device, T type)
+    box(std::shared_ptr<device> device, T type)
         : device_(std::move(device)), type_(type) {}
 
     box(const box& other) noexcept = delete;
@@ -65,8 +65,8 @@ public:
     [[nodiscard]] T get() const noexcept { return type_; }
 
 private:
-    std::shared_ptr<vulkan::device> device_;
+    std::shared_ptr<device> device_;
     T type_;
 };
 
-} // namespace zoo::render::vulkan::utils
+} // namespace zoo::render::utils

@@ -3,7 +3,7 @@
 #include <functional>
 #include <vulkan/vulkan.h>
 
-namespace zoo::render::vulkan::debug {
+namespace zoo::render::debug {
 
 class messenger {
 public:
@@ -23,4 +23,4 @@ private:
     VkDebugUtilsMessengerEXT debug_messenger_;
 };
 
-} // namespace zoo::render::vulkan::debug
+} // namespace zoo::render::debug

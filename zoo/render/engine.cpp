@@ -32,9 +32,9 @@ VkInstance create_instance(const engine::info& info) noexcept {
     platform::render::parameters params{true};
     platform::render::query query{params};
 
-    platform::render::info vulkan_query_info = query.get_info();
-    const auto& enabled_layers = vulkan_query_info.layers_;
-    const auto& enabled_extensions = vulkan_query_info.extensions_;
+    platform::render::info query_info = query.get_info();
+    const auto& enabled_layers = query_info.layers_;
+    const auto& enabled_extensions = query_info.extensions_;
     {
         create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
         create_info.pNext = nullptr;
@@ -54,7 +54,7 @@ VkInstance create_instance(const engine::info& info) noexcept {
     return instance;
 }
 
-std::vector<vulkan::utils::physical_device> populate_physical_devices(
+std::vector<utils::physical_device> populate_physical_devices(
     VkInstance instance) noexcept {
     if (instance == nullptr)
         return {};
@@ -80,7 +80,7 @@ std::vector<vulkan::utils::physical_device> populate_physical_devices(
 //        std::begin(devices), std::end(devices)};
 //    auto chosen = std::max_element(std::begin(scorers), std::end(scorers));
 //    const auto index = std::distance(scorers.begin(), chosen);
-//    return std::make_shared<vulkan::device>(instance, devices[index]);
+//    return std::make_shared<device>(instance, devices[index]);
 //}
 
 } // namespace
@@ -92,7 +92,7 @@ engine::~engine() noexcept { cleanup(); }
 void engine::initialize() noexcept {
     instance_ = create_instance(info_);
     if (instance_ != nullptr && info_.debug_layer)
-        debugger_ = std::make_optional<vulkan::debug::messenger>(instance_);
+        debugger_ = std::make_optional<debug::messenger>(instance_);
     physical_devices_ = populate_physical_devices(instance_);
 }
 
@@ -106,13 +106,14 @@ void engine::cleanup() noexcept {
     }
 }
 
-std::shared_ptr<vulkan::device> engine::promote(
+std::shared_ptr<device> engine::promote(
     physical_device_iterator physical_device,
-    const vulkan::utils::queue_family_properties& family_props) noexcept {
+    utils::queue_family_properties family_props) noexcept {
     // TODO: get a better query parameter.
     platform::render::parameters params{true};
     platform::render::query query{params};
-    devices_.emplace_back(instance_, physical_device, family_props, query);
+    devices_.push_back(std::make_shared<device>(
+        instance_, *physical_device, family_props, query));
     physical_devices_.erase(physical_device);
     return devices_.back();
 }

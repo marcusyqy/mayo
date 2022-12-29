@@ -2,11 +2,11 @@
 
 #include <optional>
 
+#include "device.hpp"
 #include "main/application.hpp"
-#include "vulkan/device.hpp"
 #include <vulkan/vulkan.h>
 
-#include "render/vulkan/debug/messenger.hpp"
+#include "render/debug/messenger.hpp"
 
 namespace zoo::render {
 
@@ -23,7 +23,7 @@ class engine {
 public:
     using info = engine_detail::info;
     using physical_device_iterator =
-        typename std::vector<vulkan::utils::physical_device>::const_iterator;
+        typename std::vector<utils::physical_device>::const_iterator;
 
     engine(const info& info) noexcept;
     ~engine() noexcept;
@@ -36,19 +36,17 @@ public:
     engine(engine&&) noexcept = delete;
     engine& operator=(engine&&) noexcept = delete;
 
-    const std::vector<vulkan::utils::physical_device>&
+    const std::vector<utils::physical_device>&
     physical_devices() const noexcept {
         return physical_devices_;
     }
 
-    const std::vector<std::shared_ptr<vulkan::device>>&
-    devices() const noexcept {
+    const std::vector<std::shared_ptr<device>>& devices() const noexcept {
         return devices_;
     }
 
-    std::shared_ptr<vulkan::device> promote(
-        physical_device_iterator physical_device,
-        const vulkan::utils::queue_family_properties& family_props) noexcept;
+    std::shared_ptr<device> promote(physical_device_iterator physical_device,
+        utils::queue_family_properties family_props) noexcept;
 
     VkInstance vk_instance() const noexcept { return instance_; }
 
@@ -60,12 +58,12 @@ private:
     // stores all the physical devices.
     // could be stored in another class that can show more intent
     // and possibly have a better syntax as compared to this.
-    std::vector<vulkan::utils::physical_device> physical_devices_{};
-    std::vector<std::shared_ptr<vulkan::device>> devices_{};
+    std::vector<utils::physical_device> physical_devices_{};
+    std::vector<std::shared_ptr<device>> devices_{};
 
     // debugger may be named incorrectly
     // TODO: change this name to something that is more correct
-    std::optional<vulkan::debug::messenger> debugger_ = std::nullopt;
+    std::optional<debug::messenger> debugger_ = std::nullopt;
 };
 
 } // namespace zoo::render
