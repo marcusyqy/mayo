@@ -97,7 +97,6 @@ void engine::initialize() noexcept {
 }
 
 void engine::cleanup() noexcept {
-    devices_.clear();
     debugger_.reset();
 
     if (instance_ != nullptr) {
@@ -106,15 +105,4 @@ void engine::cleanup() noexcept {
     }
 }
 
-std::shared_ptr<device> engine::promote(
-    physical_device_iterator physical_device,
-    utils::queue_family_properties family_props) noexcept {
-    // TODO: get a better query parameter.
-    platform::render::parameters params{true};
-    platform::render::query query{params};
-    devices_.push_back(std::make_shared<device>(
-        instance_, *physical_device, family_props, query));
-    physical_devices_.erase(physical_device);
-    return devices_.back();
-}
 } // namespace zoo::render

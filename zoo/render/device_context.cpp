@@ -1,4 +1,4 @@
-#include "device.hpp"
+#include "device_context.hpp"
 #include "render/fwd.hpp"
 
 namespace zoo::render {
@@ -9,11 +9,11 @@ const char* device_extension{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 // TODO: since we need to create the queues at the start should we also just
 // initialize the engine with settings that will determine the queues that
 // is important to us?
-device::device([[maybe_unused]] VkInstance instance,
+device_context::device_context([[maybe_unused]] VkInstance instance,
     utils::physical_device pdevice,
     const utils::queue_family_properties& family_props,
-    const platform::render::query& query) noexcept
-    : physical_(pdevice) {
+    const platform::render::query& query) noexcept :
+    physical_(pdevice) {
 
     // https://vulkan-tutorial.com/en/Drawing_a_triangle/Setup/Logical_device_and_queues
     VkDeviceQueueCreateInfo queue_create_info{};
@@ -64,19 +64,19 @@ device::device([[maybe_unused]] VkInstance instance,
     vkGetDeviceQueue(logical_, family_props.index(), 0, &queue_);
 }
 
-void device::reset() noexcept {
+void device_context::reset() noexcept {
     if (logical_ != nullptr) {
         vkDestroyDevice(logical_, nullptr);
         logical_ = nullptr;
     }
 }
 
-device::~device() noexcept { reset(); }
+device_context::~device_context() noexcept { reset(); }
 
 /*
     release device resources for each vulkan resource
 */
-void device::release_device_resource(VkFence fence) noexcept {
+void device_context::release_device_resource(VkFence fence) noexcept {
     if (fence != nullptr)
         vkDestroyFence(logical_, fence, nullptr);
 }

@@ -57,8 +57,8 @@ void destroy_debug_utils_messenger_ext(VkInstance instance,
 }
 } // namespace
 
-messenger::messenger(VkInstance instance) noexcept
-    : instance_(instance), debug_messenger_(nullptr) {
+messenger::messenger(VkInstance instance) noexcept :
+    instance_(instance), debug_messenger_(nullptr) {
 
     VkDebugUtilsMessengerCreateInfoEXT create_info{};
     {
@@ -98,8 +98,8 @@ void messenger::reset() noexcept {
     }
 }
 
-messenger::messenger(messenger&& other) noexcept
-    : instance_(nullptr), debug_messenger_(nullptr) {
+messenger::messenger(messenger&& other) noexcept :
+    instance_(nullptr), debug_messenger_(nullptr) {
     *this = std::move(other);
 }
 

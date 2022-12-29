@@ -9,25 +9,30 @@
 
 namespace zoo::render {
 
-class device : std::enable_shared_from_this<device> {
+class device_context : std::enable_shared_from_this<device_context> {
 public:
-    device(VkInstance instance, utils::physical_device pdevice,
+    // traits (?)
+
+    device_context(VkInstance instance, utils::physical_device pdevice,
         const utils::queue_family_properties& family_props,
         const platform::render::query& query) noexcept;
 
-    ~device() noexcept;
+    ~device_context() noexcept;
 
-    device(const device& other) noexcept = delete;
-    device(device&& other) noexcept = delete;
+    device_context(const device_context& other) noexcept = delete;
+    device_context(device_context&& other) noexcept = delete;
 
-    device& operator=(const device& other) noexcept = delete;
-    device& operator=(device&& other) noexcept = delete;
+    device_context& operator=(const device_context& other) noexcept = delete;
+    device_context& operator=(device_context&& other) noexcept = delete;
 
     void reset() noexcept;
 
     operator const utils::physical_device&() const noexcept { return get(); }
     const utils::physical_device& get() const noexcept { return physical_; }
 
+    template<typename T>
+    T create() const noexcept {}
+    // release resource
     void release_device_resource(VkFence fence) noexcept;
 
 private:

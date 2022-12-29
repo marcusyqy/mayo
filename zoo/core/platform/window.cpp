@@ -1,7 +1,7 @@
 #include "window.hpp"
 #include "core/log.hpp"
 
-#include "render/device.hpp"
+#include "render/device_context.hpp"
 #include "render/fwd.hpp"
 
 #define VK_USE_PLATFORM_WIN32_KHR
@@ -62,11 +62,17 @@ void window::context::poll_events() noexcept { glfwPollEvents(); }
 void window::context::wait_for_vsync() const noexcept { glfwSwapInterval(1); }
 
 window::window(render::engine& engine, std::shared_ptr<context> context,
-    const traits& traits, input_callback callback) noexcept
-    : context_{context}, traits_{traits}, callback_{std::move(callback)},
-      impl_{glfwCreateWindow(traits_.size_.x_, traits_.size_.y_,
-          traits_.name_.data(), NULL, NULL)},
-      context_set_{false}, instance_(engine.vk_instance()), surface_(nullptr) {
+    const traits& traits, input_callback callback) noexcept :
+    context_{context},
+    traits_{traits}, callback_{std::move(callback)},
+    impl_{glfwCreateWindow(
+        traits_.size_.x_, traits_.size_.y_, traits_.name_.data(), NULL, NULL)},
+    context_set_{false}, instance_(engine.vk_instance()), surface_([this]() {
+        VkSurfaceKHR surface{};
+        VK_EXPECT_SUCCESS(
+            glfwCreateWindowSurface(instance_, impl_, nullptr, &surface));
+        return surface;
+    }()) {
 
     glfwSetWindowUserPointer(impl_, this);
     glfwSetKeyCallback(impl_, [](GLFWwindow* glfw_window, int key, int scancode,
@@ -79,35 +85,23 @@ window::window(render::engine& engine, std::shared_ptr<context> context,
     });
 
     // TODO: look into allocations for vulkan
-    VK_EXPECT_SUCCESS(
-        glfwCreateWindowSurface(instance_, impl_, nullptr, &surface_));
 
-    // query for suitable device from engine
-    auto [chosen_device, queue_index] =
-        [&]() -> std::pair<std::shared_ptr<render::device>, size_t> {
-        for (const auto& device : engine.devices()) {
-            if (auto index = get_queue_index_if_physical_device_is_chosen(
-                    device->get(), surface_))
-                return std::make_pair(device, *index);
-        }
-        return std::make_pair(nullptr, 0);
-    }();
+    // should query for suitable device from engine
+    /*
+       const auto& physical_devices = engine.physical_devices();
 
-    if (!chosen_device) {
-        const auto& physical_devices = engine.physical_devices();
-
-        for (auto begin = std::begin(physical_devices),
-                  end = std::end(physical_devices);
-             begin != end; ++begin) {
-            if (auto index = get_queue_index_if_physical_device_is_chosen(
-                    *begin, surface_)) {
-                chosen_device =
-                    engine.promote(begin, begin->queue_properties()[*index]);
-                queue_index = *index;
-                break;
-            }
-        }
-    }
+       for (auto begin = std::begin(physical_devices),
+                 end = std::end(physical_devices);
+            begin != end; ++begin) {
+           if (auto index = get_queue_index_if_physical_device_is_chosen(
+                   *begin, surface_)) {
+               chosen_device =
+                   engine.promote(begin, begin->queue_properties()[*index]);
+               queue_index = *index;
+               break;
+           }
+       }
+       */
 }
 
 void window::deallocate_render_resources() noexcept {
@@ -147,8 +141,8 @@ namespace window_detail {
 
 context::~context() noexcept { glfwTerminate(); }
 
-factory::factory(std::shared_ptr<context> context) noexcept
-    : context_(std::move(context)), windows_() {}
+factory::factory(std::shared_ptr<context> context) noexcept :
+    context_(std::move(context)), windows_() {}
 
 factory::~factory() noexcept = default;
 

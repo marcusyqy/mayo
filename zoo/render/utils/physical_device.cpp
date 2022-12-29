@@ -4,8 +4,8 @@
 
 namespace zoo::render::utils {
 
-physical_device::physical_device(underlying_type underlying) noexcept
-    : underlying_{underlying} {
+physical_device::physical_device(underlying_type underlying) noexcept :
+    underlying_{underlying} {
     query_properties_and_features();
 }
 

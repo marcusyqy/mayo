@@ -57,8 +57,8 @@ public:
     constexpr expected(const unexpected<OtherError>& ut) : value_{ut.error()} {}
 
     template<typename OtherError>
-    constexpr expected(unexpected<OtherError>&& ut)
-        : value_{std::move(ut.error())} {}
+    constexpr expected(unexpected<OtherError>&& ut) :
+        value_{std::move(ut.error())} {}
 
     constexpr expected(const expected& other) : value_(other.value_) {}
     constexpr expected(expected&& other) : value_(std::move(other.value_)) {}

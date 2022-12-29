@@ -2,8 +2,8 @@
 
 #include <optional>
 
-#include "device.hpp"
 #include "main/application.hpp"
+#include "utils/physical_device.hpp"
 #include <vulkan/vulkan.h>
 
 #include "render/debug/messenger.hpp"
@@ -19,6 +19,10 @@ struct info {
 
 } // namespace engine_detail
 
+// this class should be just to query for properties that are related to
+// rendering
+//
+// all other rendering logic should be in `device_context`
 class engine {
 public:
     using info = engine_detail::info;
@@ -41,13 +45,6 @@ public:
         return physical_devices_;
     }
 
-    const std::vector<std::shared_ptr<device>>& devices() const noexcept {
-        return devices_;
-    }
-
-    std::shared_ptr<device> promote(physical_device_iterator physical_device,
-        utils::queue_family_properties family_props) noexcept;
-
     VkInstance vk_instance() const noexcept { return instance_; }
 
 private:
@@ -59,7 +56,6 @@ private:
     // could be stored in another class that can show more intent
     // and possibly have a better syntax as compared to this.
     std::vector<utils::physical_device> physical_devices_{};
-    std::vector<std::shared_ptr<device>> devices_{};
 
     // debugger may be named incorrectly
     // TODO: change this name to something that is more correct
