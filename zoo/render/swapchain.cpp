@@ -160,7 +160,7 @@ bool swapchain::create_swapchain_and_resources() noexcept {
             description_.capabilities.minImageCount,
             description_.capabilities.minImageCount);
 
-    VkSwapchainCreateInfoKHR create_info;
+    VkSwapchainCreateInfoKHR create_info{};
     create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     create_info.flags = 0;
     create_info.surface = surface_;
