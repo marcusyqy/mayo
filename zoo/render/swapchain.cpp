@@ -115,7 +115,7 @@ VkExtent2D choose_extent(const VkSurfaceCapabilitiesKHR& capabilities,
 swapchain::~swapchain() noexcept {
     // we will not call resize here because swapchain will be gracefully removed
     // using the create_info struct.
-    vkDestroySwapchainKHR(*context_, underlying_, nullptr);
+    cleanup_swapchain_and_resources();
     reset();
 }
 //
@@ -151,7 +151,7 @@ swapchain::swapchain(const render::engine& engine,
     // don't set  x and y so that resize can check for new setting
     resize(x, y);
 }
-bool swapchain::create_swapchain() noexcept {
+bool swapchain::create_swapchain_and_resources() noexcept {
     VkExtent2D extent =
         choose_extent(description_.capabilities, size_.x, size_.y);
 
@@ -183,7 +183,55 @@ bool swapchain::create_swapchain() noexcept {
         vkCreateSwapchainKHR(*context_, &create_info, nullptr, &underlying_),
         [&failed](VkResult /* result */) { failed = true; });
 
+    // retrieve images
+    vkGetSwapchainImagesKHR(*context_, underlying_, &image_count, nullptr);
+    images_.resize(image_count);
+    vkGetSwapchainImagesKHR(
+        *context_, underlying_, &image_count, images_.data());
+
+    for (auto view : views_) {
+        vkDestroyImageView(*context_, view, nullptr);
+    }
+    views_.resize(image_count);
+
+    auto view = views_.data();
+    for (const auto& image : images_) {
+        VkImageViewCreateInfo view_create_info{};
+        view_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        view_create_info.image = image;
+        view_create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        view_create_info.format = description_.surface_format.format;
+
+        view_create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+        view_create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+        view_create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+        view_create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+
+        view_create_info.subresourceRange.aspectMask =
+            VK_IMAGE_ASPECT_COLOR_BIT;
+        view_create_info.subresourceRange.baseMipLevel = 0;
+        view_create_info.subresourceRange.levelCount = 1;
+        view_create_info.subresourceRange.baseArrayLayer = 0;
+        view_create_info.subresourceRange.layerCount = 1;
+
+        VK_EXPECT_SUCCESS(
+            vkCreateImageView(*context_, &view_create_info, nullptr, view++),
+            [&view, this, &failed](VkResult /* result */) {
+                ZOO_LOG_ERROR("Failed to create image views! For index",
+                    std::distance(views_.data(), view - 1));
+                failed = true;
+            });
+    }
+
     return !failed;
+}
+
+void swapchain::cleanup_swapchain_and_resources() noexcept {
+    vkDestroySwapchainKHR(*context_, underlying_, nullptr);
+
+    for (auto view : views_) {
+        vkDestroyImageView(*context_, view, nullptr);
+    }
 }
 
 bool swapchain::resize(width_type x, width_type y) noexcept {
@@ -194,17 +242,7 @@ bool swapchain::resize(width_type x, width_type y) noexcept {
     size_.x = x;
     size_.y = y;
 
-    if (!create_swapchain())
-        return false;
-
-    // retrieve images
-    uint32_t image_count{};
-    vkGetSwapchainImagesKHR(*context_, underlying_, &image_count, nullptr);
-    images_.resize(image_count);
-    vkGetSwapchainImagesKHR(
-        *context_, underlying_, &image_count, images_.data());
-
-    return true;
+    return create_swapchain_and_resources();
 }
 
 void swapchain::reset() noexcept {

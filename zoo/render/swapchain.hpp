@@ -24,7 +24,8 @@ public:
     void reset() noexcept;
 
 private:
-    bool create_swapchain() noexcept;
+    bool create_swapchain_and_resources() noexcept;
+    void cleanup_swapchain_and_resources() noexcept;
 
 private:
     VkInstance instance_ = nullptr;
@@ -42,7 +43,9 @@ private:
         VkPresentModeKHR present_mode;
         VkSurfaceCapabilitiesKHR capabilities;
     } description_ = {};
+
     std::vector<VkImage> images_;
+    std::vector<VkImageView> views_;
 
     // context
     // std::vector<frame> frames_;
