@@ -162,6 +162,7 @@ bool swapchain::create_swapchain_and_resources() noexcept {
 
     VkSwapchainCreateInfoKHR create_info;
     create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+    create_info.flags = 0;
     create_info.surface = surface_;
     create_info.minImageCount = image_count;
     create_info.imageFormat = description_.surface_format.format;
@@ -177,6 +178,7 @@ bool swapchain::create_swapchain_and_resources() noexcept {
     create_info.presentMode = description_.present_mode;
     create_info.clipped = VK_TRUE;
     create_info.oldSwapchain = underlying_;
+    create_info.pNext = nullptr;
 
     bool failed = false;
     VK_EXPECT_SUCCESS(

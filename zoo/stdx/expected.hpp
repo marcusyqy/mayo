@@ -1,16 +1,10 @@
 #pragma once
 
+#include <exception>
 #include <string>
 #include <variant>
 
 namespace stdx {
-
-namespace detail::error {
-
-struct error_t {
-    std::string error_msg;
-};
-} // namespace detail::error
 
 template<typename Error>
 class unexpected {
@@ -25,13 +19,17 @@ public:
     }
     constexpr error_type&& error() && noexcept { return std::move(error_); }
 
+    unexpected(const error_type& error) noexcept : error_(error) {}
+
+    unexpected(error_type&& error) noexcept : error_(std::move(error)) {}
+
     unexpected& operator=(const error_type& error) noexcept {
         error_ = error;
         return *this;
     }
 
     unexpected& operator=(error_type&& error) noexcept {
-        std::swap(error_, error);
+        error_ = std::move(error);
         return *this;
     }
 
@@ -39,7 +37,10 @@ private:
     error_type error_;
 };
 
-template<typename ValueType, typename Error = detail::error::error_t>
+template<typename Error>
+unexpected(Error e) -> unexpected<std::decay_t<Error>>;
+
+template<typename ValueType, typename Error = std::exception>
 class expected {
 public:
     using value_type = ValueType;
@@ -115,7 +116,7 @@ public:
         value_ = other.value_;
     }
     expected& operator=(expected&& other) noexcept {
-        std::swap(value_, other.value_);
+        value_ = std::move(other.value_);
     }
 
     template<typename OtherError>
