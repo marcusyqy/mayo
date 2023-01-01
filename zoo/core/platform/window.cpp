@@ -58,18 +58,6 @@ void window::close() noexcept {
     }
 }
 
-bool window::is_current_context() const noexcept {
-    return impl_ == glfwGetCurrentContext();
-}
-
-void window::current_context_here() noexcept {
-    if (context_set_)
-        ZOO_LOG_WARN("cannot set context twice!");
-
-    glfwMakeContextCurrent(impl_);
-    context_set_ = true;
-}
-
 void window::swap_buffers() noexcept {
     // swap buffer for vulkan here.
 }

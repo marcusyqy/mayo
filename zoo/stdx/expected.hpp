@@ -147,4 +147,7 @@ private:
     std::variant<value_type, error_type> value_;
 };
 
+// TODO : write (expect) function so that we can still code that throws but
+// wraps it into an expected call instead
+
 } // namespace stdx

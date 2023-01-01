@@ -42,7 +42,7 @@ application::exit_status main(application::settings args) noexcept {
     render::engine render_engine(render_engine_info);
 
     window main_window{render_engine, win_context,
-        window::traits{window::size{640, 480}, false, "zoo"},
+        window::traits{window::size{1280, 960}, false, "zoo"},
         [](window& win, input::key_code keycode) {
             if (keycode.key_ == input::key::escape &&
                 keycode.action_ == input::action::pressed) {
@@ -52,11 +52,6 @@ application::exit_status main(application::settings args) noexcept {
 
     // for threading
     // TODO: remove this and use a more vulkan approach
-    /*if (!main_window.is_current_context()) {
-        main_window.current_context_here();
-    }*/
-
-    // win_context->wait_for_vsync();
 
     auto vertex_bytes = read_file("static/shaders/vert.spv");
     auto fragment_bytes = read_file("static/shaders/frag.spv");

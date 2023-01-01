@@ -2,9 +2,9 @@
 
 #include <optional>
 
+#include "fwd.hpp"
 #include "main/application.hpp"
 #include "utils/physical_device.hpp"
-#include <vulkan/vulkan.h>
 
 #include "render/debug/messenger.hpp"
 

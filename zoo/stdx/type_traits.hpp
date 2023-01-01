@@ -1,5 +1,6 @@
 #pragma once
 #include <type_traits>
+#include <utility>
 
 namespace stdx {
 template<typename Type>
@@ -47,4 +48,31 @@ template<typename T>
 using nullptr_check_exists_t =
     condition_type_t<null_value_check_exists_v<T, nullptr>>;
 
+template<typename T>
+struct is_container {
+    using type = std::void_t<decltype(std::declval<T>().begin()),
+        decltype(std::declval<T>().end())>;
+};
+
+template<typename T>
+using is_container_t = typename is_container<T>::type;
+
+template<typename T>
+struct is_contiguous_container {
+    using type = std::void_t<typename T::value_type,
+        std::enable_if<std::is_same_v<decltype(std::declval<T>().data()),
+                           typename T::pointer>,
+            bool>,
+        std::enable_if<
+            std::is_same_v<decltype(std::as_const(std::declval<T>()).data()),
+                typename T::const_pointer>,
+            bool>,
+        std::enable_if<std::is_same_v<decltype(std::declval<T>().size()),
+                           typename T::size_type>,
+            bool>,
+        stdx::is_container_t<T>>;
+};
+
+template<typename T>
+using is_contiguous_container_t = typename is_contiguous_container<T>::type;
 } // namespace stdx

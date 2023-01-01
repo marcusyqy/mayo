@@ -3,9 +3,9 @@
 #include "utils/physical_device.hpp"
 
 #include "core/platform/query.hpp"
+#include "fwd.hpp"
 #include <memory>
 #include <string_view>
-#include <vulkan/vulkan.h>
 
 namespace zoo::render {
 

@@ -1,10 +1,10 @@
 #pragma once
 #include "queue_family_properties.hpp"
+#include "render/fwd.hpp"
 
 #include <string_view>
 #include <unordered_set>
 #include <vector>
-#include <vulkan/vulkan.h>
 
 namespace zoo::render::utils {
 

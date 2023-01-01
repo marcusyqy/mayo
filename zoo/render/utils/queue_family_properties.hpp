@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
+#include "render/fwd.hpp"
 
 namespace zoo::render::utils {
 

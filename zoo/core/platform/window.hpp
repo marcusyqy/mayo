@@ -40,9 +40,6 @@ public:
 
     [[nodiscard]] bool is_open() const noexcept;
 
-    bool is_current_context() const noexcept;
-    void current_context_here() noexcept;
-
     void swap_buffers() noexcept;
     void close() noexcept;
 

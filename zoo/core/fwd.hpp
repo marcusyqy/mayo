@@ -1,4 +1,5 @@
 #pragma once
+#include <cassert>
 #include <cstdint>
 #include <string_view>
 
@@ -16,3 +17,5 @@ constexpr std::string_view name = "zoo_engine";
 } // namespace engine
 
 } // namespace zoo::core
+
+#define ZOO_ASSERT(condition, message) assert(!(condition) && message)

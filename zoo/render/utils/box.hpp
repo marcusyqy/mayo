@@ -1,9 +1,9 @@
 #pragma once
 
 #include "render/device_context.hpp"
+#include "render/fwd.hpp"
 #include "stdx/type_traits.hpp"
 #include <memory>
-#include <vulkan/vulkan.h>
 
 namespace zoo::render::utils {
 

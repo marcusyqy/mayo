@@ -1,10 +1,10 @@
 #pragma once
 
 #include "core/platform/window/detail.hpp"
-#include "render/device_context.hpp"
-#include "render/engine.hpp"
+#include "device_context.hpp"
+#include "engine.hpp"
+#include "fwd.hpp"
 #include <cstdint>
-#include <vulkan/vulkan.h>
 
 namespace zoo::render {
 
