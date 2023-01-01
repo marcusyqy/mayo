@@ -31,12 +31,12 @@ private:
         data_(data), curr_(idx) {}
 
 public:
-    this_type operator++() noexcept { return ++curr_, *this; }
-    this_type operator++(int) noexcept { return {data_, curr_++}; }
+    this_type& operator++() noexcept { return ++curr_, *this; }
+    this_type& operator++(int) noexcept { return {data_, curr_++}; }
 
     // should probably check for 0
-    this_type operator--() noexcept { return --curr_, *this; }
-    this_type operator--(int) noexcept { return {data_, curr_--}; }
+    this_type& operator--() noexcept { return --curr_, *this; }
+    this_type& operator--(int) noexcept { return {data_, curr_--}; }
 
     reference operator*() noexcept { return data_[curr_]; }
     const_reference operator*() const noexcept { return data_[curr_]; }
