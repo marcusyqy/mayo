@@ -18,4 +18,4 @@ constexpr std::string_view name = "zoo_engine";
 
 } // namespace zoo::core
 
-#define ZOO_ASSERT(condition, message) assert(!(condition) && message)
+#define ZOO_ASSERT(condition, message) assert((condition) && message)
