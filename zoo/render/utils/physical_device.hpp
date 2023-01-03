@@ -41,7 +41,7 @@ public:
     }
 
     [[nodiscard]] bool has_present(const queue_family_properties& family_props,
-        VkSurfaceKHR surface) const noexcept;
+        VkInstance instance) const noexcept;
 
     bool has_required_extension(std::string_view extension_name) const noexcept;
 

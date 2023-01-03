@@ -2,6 +2,12 @@
 #include <algorithm>
 #include <iterator>
 
+// #define VK_USE_PLATFORM_WIN32_KHR
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
+// #define GLFW_EXPOSE_NATIVE_WIN32
+// #include <GLFW/glfw3native.h>
+
 namespace zoo::render::utils {
 
 physical_device::physical_device(underlying_type underlying) noexcept :
@@ -85,11 +91,9 @@ bool physical_device::has_geometry_shader() const noexcept {
 }
 
 bool physical_device::has_present(const queue_family_properties& family_props,
-    VkSurfaceKHR surface) const noexcept {
-    VkBool32 present_support = false;
-    vkGetPhysicalDeviceSurfaceSupportKHR(
-        underlying_, family_props.index(), surface, &present_support);
-    return static_cast<bool>(present_support);
+    VkInstance instance) const noexcept {
+    return glfwGetPhysicalDevicePresentationSupport(
+               instance, underlying_, family_props.index()) == GLFW_TRUE;
 }
 
 bool physical_device::has_required_extension(

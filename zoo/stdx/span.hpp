@@ -43,7 +43,7 @@ public:
 
     bool operator==(const this_type& other) const noexcept {
         STDX_ASSERT(data_ == other.data_,
-            "Not even comparing iterators from the same span!");
+            "Not even comparing iterators from the same container!");
         return curr_ == other.curr_;
     }
 
@@ -53,13 +53,13 @@ public:
 
     bool operator<(const this_type& other) const noexcept {
         STDX_ASSERT(data_ == other.data_,
-            "Not even comparing iterators from the same span!");
+            "Not even comparing iterators from the same container!");
         return curr_ < other.curr_;
     }
 
     bool operator>(const this_type& other) const noexcept {
         STDX_ASSERT(data_ == other.data_,
-            "Not even comparing iterators from the same span!");
+            "Not even comparing iterators from the same container!");
         return curr_ > other.curr_;
     }
 
@@ -76,12 +76,17 @@ private:
     index_type curr_;
 };
 
+constexpr auto dynamic_extent = std::numeric_limits<size_t>::max();
+
+template<typename T, size_t N = stdx::dynamic_extent>
+class span;
+
 template<typename T>
-class span final {
-public:
+struct span_traits {
     static constexpr bool is_const = std::is_const_v<T>;
     using size_type = size_t;
-    using value_type = std::remove_const_t<T>;
+    using element_type = T;
+    using value_type = std::remove_cv_t<T>;
     using const_pointer = const value_type*;
     using const_reference = const value_type&;
     using pointer = std::conditional_t<is_const, const_pointer, value_type*>;
@@ -91,8 +96,93 @@ public:
     using iterator_category = std::random_access_iterator_tag;
     using index_type = size_type;
 
-    using iterator = contiguous_iterator<false, span<T>>;
     using const_iterator = contiguous_iterator<true, span<T>>;
+    using iterator = contiguous_iterator<false, span<T>>;
+};
+
+template<typename T, size_t N>
+class span {
+public:
+    using size_type = typename span_traits<T>::size_type;
+    using element_type = typename span_traits<T>::element_type;
+    using value_type = typename span_traits<T>::value_type;
+    using const_pointer = typename span_traits<T>::const_pointer;
+    using const_reference = typename span_traits<T>::const_reference;
+    using pointer = typename span_traits<T>::pointer;
+    using reference = typename span_traits<T>::reference;
+    using difference_type = typename span_traits<T>::difference_type;
+    using iterator_category = typename span_traits<T>::iterator_category;
+    using index_type = typename span_traits<T>::index_type;
+    using const_iterator = typename span_traits<T>::const_iterator;
+    using iterator = typename span_traits<T>::iterator;
+
+    iterator begin() noexcept { return {start_, 0}; }
+    iterator end() noexcept { return {start_, N}; }
+
+    const_iterator begin() const noexcept { return {start_, 0}; }
+    const_iterator end() const noexcept { return {start_, N}; }
+
+    const_iterator cbegin() const noexcept { return {start_, 0}; }
+    const_iterator cend() const noexcept { return {start_, N}; }
+
+    size_type size() const noexcept { return N; }
+    pointer data() const noexcept { return start_; }
+
+    reference operator[](index_type idx) noexcept {
+        return const_cast<reference>(std::as_const(*this)[idx]);
+    }
+
+    const_reference operator[](index_type idx) const noexcept {
+        STDX_ASSERT(idx < N, "span operator[] index out of size");
+        return start_[idx];
+    }
+
+    reference at(index_type idx) {
+        return const_cast<reference>(std::as_const(*this).at(idx));
+    }
+
+    const_reference at(index_type idx) const {
+        if (idx < N) {
+            return start_[idx];
+        }
+        // throwing out of range out of courtesy
+        throw std::out_of_range("Out of range for span<T> `at` function");
+    }
+
+    span(pointer data, [[maybe_unused]] size_type size) noexcept :
+        start_(data) {}
+
+    ~span() noexcept = default;
+
+    template<typename V, typename = stdx::is_container_t<V>>
+    span(const V& container) : start_(container.data()) {
+        STDX_ASSERT(container.size() >= N, "N cannot be greater than size");
+    }
+
+    template<typename V, typename = stdx::is_container_t<V>>
+    span(V& container) : start_(container.data()) {
+        STDX_ASSERT(container.size() >= N, "N cannot be greater than size");
+    }
+
+private:
+    pointer start_;
+};
+
+template<typename T>
+class span<T, stdx::dynamic_extent> {
+public:
+    using size_type = typename span_traits<T>::size_type;
+    using element_type = typename span_traits<T>::element_type;
+    using value_type = typename span_traits<T>::value_type;
+    using const_pointer = typename span_traits<T>::const_pointer;
+    using const_reference = typename span_traits<T>::const_reference;
+    using pointer = typename span_traits<T>::pointer;
+    using reference = typename span_traits<T>::reference;
+    using difference_type = typename span_traits<T>::difference_type;
+    using iterator_category = typename span_traits<T>::iterator_category;
+    using index_type = typename span_traits<T>::index_type;
+    using const_iterator = typename span_traits<T>::const_iterator;
+    using iterator = typename span_traits<T>::iterator;
 
     iterator begin() noexcept { return {start_, 0}; }
     iterator end() noexcept { return {start_, size_}; }

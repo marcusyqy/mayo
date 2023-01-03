@@ -1,45 +1,28 @@
 #include "swapchain.hpp"
 #include "render/fwd.hpp"
 
-#define VK_USE_PLATFORM_WIN32_KHR
+// #define VK_USE_PLATFORM_WIN32_KHR
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-#define GLFW_EXPOSE_NATIVE_WIN32
-#include <GLFW/glfw3native.h>
+// #define GLFW_EXPOSE_NATIVE_WIN32
+// #include <GLFW/glfw3native.h>
 
 #include <optional>
 
 namespace zoo::render {
 
 namespace {
-std::optional<size_t> get_queue_index_if_physical_device_is_chosen(
-    const render::utils::physical_device& physical_device,
-    VkSurfaceKHR surface) noexcept {
-    if (!physical_device.has_geometry_shader() &&
-        physical_device.has_required_extension(VK_KHR_SWAPCHAIN_EXTENSION_NAME))
-        return std::nullopt;
-
-    size_t index{};
-    for (const auto& queue_properties : physical_device.queue_properties()) {
-        if (queue_properties.has_graphics() &&
-            physical_device.has_present(queue_properties, surface))
-            return std::make_optional(index);
-        ++index;
-    }
-    return std::nullopt;
-}
 
 struct swapchain_support_details {
     VkSurfaceCapabilitiesKHR capabilities;
     std::vector<VkSurfaceFormatKHR> formats;
     std::vector<VkPresentModeKHR> present_modes;
 
-    swapchain_support_details& update(
-        const utils::physical_device& physical_device,
+    swapchain_support_details(const utils::physical_device& physical_device,
         VkSurfaceKHR surface) noexcept;
 };
 
-swapchain_support_details& swapchain_support_details::update(
+swapchain_support_details::swapchain_support_details(
     const utils::physical_device& physical_device,
     VkSurfaceKHR surface) noexcept {
 
@@ -65,7 +48,6 @@ swapchain_support_details& swapchain_support_details::update(
         vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface,
             &present_mode_count, present_modes.data());
     }
-    return *this;
 }
 
 bool is_device_compatible(const swapchain_support_details& details) noexcept {
@@ -121,28 +103,32 @@ swapchain::~swapchain() noexcept {
 //
 swapchain::swapchain(const render::engine& engine,
     underlying_window_type glfw_window, width_type x, width_type y) noexcept :
-    instance_(engine.vk_instance()) {
+    instance_(engine.vk_instance()),
+    context_(engine.context()) {
     // create surface first
     VK_EXPECT_SUCCESS(
         glfwCreateWindowSurface(instance_, glfw_window, nullptr, &surface_));
 
-    // choose device first
-    // call resize;
+    swapchain_support_details details{context_->physical(), surface_};
 
-    platform::render::parameters params{true};
-    platform::render::query query{params};
+    ZOO_ASSERT(is_device_compatible(details),
+        "Device chosen must be compatible with the swapchain!");
 
-    swapchain_support_details details{};
-    for (const auto& pd : engine.physical_devices()) {
-        auto optional_index =
-            get_queue_index_if_physical_device_is_chosen(pd, surface_);
-        if (optional_index &&
-            is_device_compatible(details.update(pd, surface_))) {
-            context_ = std::make_shared<device_context>(
-                instance_, pd, pd.queue_properties()[*optional_index], query);
-            break;
-        }
-    }
+    ZOO_ASSERT(
+        [this]() {
+            for (const auto& queue_properties :
+                context_->physical().queue_properties()) {
+                VkBool32 is_present_supported{VK_FALSE};
+                vkGetPhysicalDeviceSurfaceSupportKHR(context_->physical(),
+                    queue_properties.index(), surface_, &is_present_supported);
+
+                if (VK_TRUE == is_present_supported)
+                    return true;
+            }
+            return false;
+        }(),
+        "Must support present on at least one queue!");
+
     description_.surface_format = choose_surface_format(details.formats);
     description_.present_mode = choose_present_mode(details.present_modes);
     description_.capabilities = std::move(details.capabilities);

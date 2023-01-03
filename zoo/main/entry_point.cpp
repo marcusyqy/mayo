@@ -3,6 +3,7 @@
 
 #include "core/platform/window.hpp"
 #include "render/engine.hpp"
+#include "render/pipeline.hpp"
 
 #include "stdx/expected.hpp"
 #include <fstream>
@@ -54,7 +55,13 @@ application::exit_status main(application::settings args) noexcept {
     // TODO: remove this and use a more vulkan approach
 
     auto vertex_bytes = read_file("static/shaders/vert.spv");
+    ZOO_ASSERT(vertex_bytes, "vertex shader must have value!");
     auto fragment_bytes = read_file("static/shaders/frag.spv");
+    ZOO_ASSERT(fragment_bytes, "fragment shader must have value!");
+    auto context = render_engine.context();
+
+    render::shader vertex{context, *fragment_bytes, "main"};
+    render::shader fragment{context, *fragment_bytes, "main"};
 
     while (main_window.is_open()) {
         main_window.swap_buffers();

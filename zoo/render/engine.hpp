@@ -2,6 +2,7 @@
 
 #include <optional>
 
+#include "device_context.hpp"
 #include "fwd.hpp"
 #include "main/application.hpp"
 #include "utils/physical_device.hpp"
@@ -44,6 +45,16 @@ public:
 
     VkInstance vk_instance() const noexcept { return instance_; }
 
+    // TODO : write allocator
+    const VkAllocationCallbacks* allocator() const noexcept {
+        return callbacks_ ? std::addressof(callbacks_.value()) : nullptr;
+    }
+
+    std::shared_ptr<device_context>& context() noexcept { return context_; }
+    const std::shared_ptr<device_context>& context() const noexcept {
+        return context_;
+    }
+
 private:
     void initialize() noexcept;
     void cleanup() noexcept;
@@ -57,10 +68,13 @@ private:
     // could be stored in another class that can show more intent
     // and possibly have a better syntax as compared to this.
     std::vector<utils::physical_device> physical_devices_{};
+    std::shared_ptr<device_context> context_;
 
     // debugger may be named incorrectly
     // TODO: change this name to something that is more correct
     std::optional<debug::messenger> debugger_ = std::nullopt;
+
+    std::optional<VkAllocationCallbacks> callbacks_ = std::nullopt;
 };
 
 } // namespace zoo::render

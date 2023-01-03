@@ -11,6 +11,26 @@ namespace zoo::render {
 
 namespace {
 
+platform::render::parameters params{true};
+platform::render::query query{params};
+
+std::optional<size_t> get_queue_index_if_physical_device_is_chosen(
+    const render::utils::physical_device& physical_device,
+    VkInstance instance) noexcept {
+    if (!physical_device.has_geometry_shader() &&
+        physical_device.has_required_extension(VK_KHR_SWAPCHAIN_EXTENSION_NAME))
+        return std::nullopt;
+
+    size_t index{};
+    for (const auto& queue_properties : physical_device.queue_properties()) {
+        if (queue_properties.has_graphics() &&
+            physical_device.has_present(queue_properties, instance))
+            return std::make_optional(index);
+        ++index;
+    }
+    return std::nullopt;
+}
+
 uint32_t make_version(core::version version) noexcept {
     return VK_MAKE_VERSION(version.major, version.minor, version.patch);
 }
@@ -28,9 +48,6 @@ VkInstance create_instance(const engine::info& info) noexcept {
     }
 
     VkInstanceCreateInfo create_info{};
-
-    platform::render::parameters params{true};
-    platform::render::query query{params};
 
     platform::render::info query_info = query.get_info();
     const auto& enabled_layers = query_info.layers_;
@@ -96,6 +113,16 @@ void engine::initialize() noexcept {
     if (instance_ != nullptr && info_.debug_layer)
         debugger_ = std::make_optional<debug::messenger>(instance_);
     physical_devices_ = populate_physical_devices(instance_);
+
+    for (const auto& pd : physical_devices_) {
+        auto optional_index =
+            get_queue_index_if_physical_device_is_chosen(pd, instance_);
+        if (optional_index) {
+            context_ = std::make_shared<device_context>(
+                instance_, pd, pd.queue_properties()[*optional_index], query);
+            break;
+        }
+    }
 }
 
 void engine::cleanup() noexcept {
