@@ -6,6 +6,8 @@
 #include "fwd.hpp"
 #include <cstdint>
 
+#include "renderpass.hpp"
+
 namespace zoo::render {
 
 class swapchain {
@@ -31,6 +33,11 @@ public:
         return {size_.x, size_.y};
     }
 
+    // renderpass& renderpass() noexcept { return renderpass_; }
+    [[nodiscard]] const renderpass& renderpass() const noexcept {
+        return renderpass_;
+    }
+
 private:
     bool create_swapchain_and_resources() noexcept;
     void cleanup_swapchain_and_resources() noexcept;
@@ -52,8 +59,11 @@ private:
         VkSurfaceCapabilitiesKHR capabilities;
     } description_ = {};
 
+    // frame specific stuff
     std::vector<VkImage> images_;
     std::vector<VkImageView> views_;
+    std::vector<VkFramebuffer> framebuffers_;
+    class renderpass renderpass_; // has a default renderpass in swapchain
 
     // context
     // std::vector<frame> frames_;

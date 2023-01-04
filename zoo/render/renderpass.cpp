@@ -44,6 +44,7 @@ renderpass::renderpass(
     underlying_type(context, create_vk_renderpass(context, format)) {}
 
 renderpass& renderpass::operator=(renderpass&& renderpass) noexcept {
+    underlying_type::reset();
     underlying_type::operator=(std::move(renderpass));
     std::ignore = renderpass.release();
     return *this;

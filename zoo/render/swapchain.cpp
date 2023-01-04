@@ -132,11 +132,13 @@ swapchain::swapchain(const render::engine& engine,
     description_.surface_format = choose_surface_format(details.formats);
     description_.present_mode = choose_present_mode(details.present_modes);
     description_.capabilities = std::move(details.capabilities);
+    renderpass_ = {context_, description_.surface_format.format};
 
     // should work correctly
     // don't set  x and y so that resize can check for new setting
     resize(x, y);
 }
+
 bool swapchain::create_swapchain_and_resources() noexcept {
     VkExtent2D extent =
         choose_extent(description_.capabilities, size_.x, size_.y);
@@ -211,6 +213,27 @@ bool swapchain::create_swapchain_and_resources() noexcept {
             });
     }
 
+    for (auto fb : framebuffers_) {
+        vkDestroyFramebuffer(*context_, fb, nullptr);
+    }
+    framebuffers_.resize(image_count);
+
+    for (size_t i = 0; i < std::size(views_); i++) {
+        VkFramebufferCreateInfo framebuffer_create_info{};
+        framebuffer_create_info.sType =
+            VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebuffer_create_info.renderPass = renderpass_;
+        framebuffer_create_info.attachmentCount = 1;
+        framebuffer_create_info.pAttachments = std::addressof(views_[i]);
+        framebuffer_create_info.width = size_.x;
+        framebuffer_create_info.height = size_.y;
+        framebuffer_create_info.layers = 1;
+
+        VK_EXPECT_SUCCESS(
+            vkCreateFramebuffer(*context_, &framebuffer_create_info, nullptr,
+                std::addressof(framebuffers_[i])));
+    }
+
     return !failed;
 }
 
@@ -219,6 +242,10 @@ void swapchain::cleanup_swapchain_and_resources() noexcept {
 
     for (auto view : views_) {
         vkDestroyImageView(*context_, view, nullptr);
+    }
+
+    for (auto fb : framebuffers_) {
+        vkDestroyFramebuffer(*context_, fb, nullptr);
     }
 }
 
