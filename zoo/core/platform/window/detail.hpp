@@ -16,7 +16,7 @@ namespace zoo {
 class window;
 namespace detail {
 
-using window_size_type = std::uint16_t;
+using window_size_type = std::uint32_t;
 
 struct size {
     window_size_type x;

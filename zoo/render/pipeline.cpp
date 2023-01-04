@@ -48,7 +48,7 @@ shader::~shader() noexcept { reset(); }
 // TODO: do some cleanup in this area.
 pipeline::pipeline(std::shared_ptr<device_context> context,
     const shader_stages_specifications& specifications,
-    const viewport_info& viewport_info) noexcept :
+    const viewport_info& viewport_info, const renderpass& renderpass) noexcept :
     context_(context) {
 
     constexpr uint32_t vertex_stage = 0;
@@ -177,12 +177,41 @@ pipeline::pipeline(std::shared_ptr<device_context> context,
         [](VkResult /* result */) {
             ZOO_LOG_ERROR("Pipeline layout creation failed, maybe we should "
                           "assert here?");
-        })
+        });
+
+    VkGraphicsPipelineCreateInfo graphics_pipeline_create_info{};
+    graphics_pipeline_create_info.sType =
+        VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    graphics_pipeline_create_info.stageCount = 2;
+    graphics_pipeline_create_info.pStages = +shaders_create_info;
+    graphics_pipeline_create_info.pVertexInputState =
+        &vertex_input_state_create_info;
+    graphics_pipeline_create_info.pInputAssemblyState =
+        &input_assembly_create_info;
+    graphics_pipeline_create_info.pViewportState = &viewport_state_create_info;
+    graphics_pipeline_create_info.pRasterizationState = &rasterizer_create_info;
+    graphics_pipeline_create_info.pMultisampleState =
+        &multisampling_create_info;
+    graphics_pipeline_create_info.pDepthStencilState = nullptr; // Optional
+    graphics_pipeline_create_info.pColorBlendState =
+        &color_blend_state_create_info;
+    graphics_pipeline_create_info.pDynamicState = &dynamic_state;
+    graphics_pipeline_create_info.layout = layout_;
+    graphics_pipeline_create_info.renderPass = renderpass;
+    graphics_pipeline_create_info.subpass = 0;
+    graphics_pipeline_create_info.basePipelineHandle =
+        VK_NULL_HANDLE;                                   // Optional
+    graphics_pipeline_create_info.basePipelineIndex = -1; // Optional
+
+    VK_EXPECT_SUCCESS(vkCreateGraphicsPipelines(*context_, nullptr, 1,
+        &graphics_pipeline_create_info, nullptr, &underlying_));
 }
 
 pipeline::~pipeline() noexcept {
-    if (context_)
+    if (context_) {
         vkDestroyPipelineLayout(*context_, layout_, nullptr);
+        vkDestroyPipeline(*context_, underlying_, nullptr);
+    }
 }
 
 } // namespace zoo::render

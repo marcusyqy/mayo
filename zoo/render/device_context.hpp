@@ -39,8 +39,10 @@ public:
 
     template<typename T>
     T create() const noexcept {}
+
     // release resource
     void release_device_resource(VkFence fence) noexcept;
+    void release_device_resource(VkRenderPass renderpass) noexcept;
 
 private:
     utils::physical_device physical_ = nullptr;

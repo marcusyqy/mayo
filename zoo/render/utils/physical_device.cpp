@@ -92,11 +92,13 @@ bool physical_device::has_geometry_shader() const noexcept {
 
 bool physical_device::has_present(const queue_family_properties& family_props,
     VkInstance instance) const noexcept {
-    // glfwGetPhysicalDevicePresentationSupport is merely an abstraction of the corresponding platform-specific functions 
-    // vkGetPhysicalDeviceWin32PresentationSupportKHR, 
-    // vkGetPhysicalDeviceXlibPresentationSupportKHR, 
-    // vkGetPhysicalDeviceWaylandPresentationSupportKHR and 
-    // vkGetPhysicalDeviceMirPresentationSupportKHR and is meant for use before surface creation.
+    // glfwGetPhysicalDevicePresentationSupport is merely an abstraction of the
+    // corresponding platform-specific functions
+    // vkGetPhysicalDeviceWin32PresentationSupportKHR,
+    // vkGetPhysicalDeviceXlibPresentationSupportKHR,
+    // vkGetPhysicalDeviceWaylandPresentationSupportKHR and
+    // vkGetPhysicalDeviceMirPresentationSupportKHR and is meant for use before
+    // surface creation.
     return glfwGetPhysicalDevicePresentationSupport(
                instance, underlying_, family_props.index()) == GLFW_TRUE;
 }

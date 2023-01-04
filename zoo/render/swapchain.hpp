@@ -23,6 +23,14 @@ public:
     bool resize(width_type x, width_type y) noexcept;
     void reset() noexcept;
 
+    [[nodiscard]] VkFormat format() const noexcept {
+        return description_.surface_format.format;
+    }
+
+    [[nodiscard]] VkExtent2D extent() const noexcept {
+        return {size_.x, size_.y};
+    }
+
 private:
     bool create_swapchain_and_resources() noexcept;
     void cleanup_swapchain_and_resources() noexcept;

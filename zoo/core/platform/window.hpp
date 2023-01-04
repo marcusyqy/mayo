@@ -46,6 +46,9 @@ public:
     bool valid() const noexcept { return impl_ != nullptr; }
     operator bool() const noexcept { return valid(); }
 
+    render::swapchain& swapchain() noexcept { return swapchain_; }
+    const render::swapchain& swapchain() const noexcept { return swapchain_; }
+
 private:
     std::shared_ptr<context> context_;
     traits traits_;

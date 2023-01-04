@@ -83,4 +83,9 @@ void device_context::release_device_resource(VkFence fence) noexcept {
         vkDestroyFence(logical_, fence, nullptr);
 }
 
+void device_context::release_device_resource(VkRenderPass renderpass) noexcept {
+    if (renderpass != nullptr)
+        vkDestroyRenderPass(logical_, renderpass, nullptr);
+}
+
 } // namespace zoo::render

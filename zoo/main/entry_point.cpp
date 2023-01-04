@@ -58,10 +58,27 @@ application::exit_status main(application::settings args) noexcept {
     ZOO_ASSERT(vertex_bytes, "vertex shader must have value!");
     auto fragment_bytes = read_file("static/shaders/frag.spv");
     ZOO_ASSERT(fragment_bytes, "fragment shader must have value!");
-    auto context = render_engine.context();
 
+    auto context = render_engine.context();
     render::shader vertex{context, *fragment_bytes, "main"};
     render::shader fragment{context, *fragment_bytes, "main"};
+
+    render::renderpass renderpass{context, main_window.swapchain().format()};
+    render::pipeline pipeline{context,
+        render::shader_stages_specifications{vertex, fragment},
+        render::viewport_info{
+            VkViewport{
+                0.0f, // x;
+                0.0f, // y;
+                static_cast<float>(
+                    main_window.swapchain().extent().width), // width;
+                static_cast<float>(
+                    main_window.swapchain().extent().height), // height;
+                0.0f,                                         // minDepth;
+                1.0f                                          // maxDepth;
+            },
+            VkRect2D{VkOffset2D{0, 0}, main_window.swapchain().extent()}},
+        renderpass};
 
     while (main_window.is_open()) {
         main_window.swap_buffers();

@@ -1,6 +1,7 @@
 #pragma once
 #include "device_context.hpp"
 #include "fwd.hpp"
+#include "renderpass.hpp"
 #include "stdx/span.hpp"
 
 namespace zoo::render {
@@ -50,7 +51,8 @@ public:
 
     pipeline(std::shared_ptr<device_context> context,
         const shader_stages_specifications& specifications,
-        const viewport_info& viewport_info) noexcept;
+        const viewport_info& viewport_info,
+        const renderpass& renderpass) noexcept;
 
     ~pipeline() noexcept;
 
