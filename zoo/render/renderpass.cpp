@@ -39,9 +39,11 @@ VkRenderPass create_vk_renderpass(
 
 } // namespace
 
+renderpass::renderpass() noexcept : underlying_type() {}
+
 renderpass::renderpass(
-    std::shared_ptr<device_context> context, VkFormat format) noexcept :
-    underlying_type(context, create_vk_renderpass(context, format)) {}
+    std::shared_ptr<device_context> context, VkFormat format) noexcept
+    : underlying_type(context, create_vk_renderpass(context, format)) {}
 
 renderpass& renderpass::operator=(renderpass&& renderpass) noexcept {
     underlying_type::reset();
@@ -50,9 +52,11 @@ renderpass& renderpass::operator=(renderpass&& renderpass) noexcept {
     return *this;
 }
 
-renderpass::renderpass(renderpass&& renderpass) noexcept :
-    underlying_type(std::move(renderpass)) {
+renderpass::renderpass(renderpass&& renderpass) noexcept
+    : underlying_type(std::move(renderpass)) {
     std::ignore = renderpass.release();
 }
+
+renderpass ::~renderpass() = default;
 
 } // namespace zoo::render

@@ -27,8 +27,8 @@ struct contiguous_iterator {
 
 private:
     friend owner_type;
-    contiguous_iterator(pointer data, index_type idx) noexcept :
-        data_(data), curr_(idx) {}
+    contiguous_iterator(pointer data, index_type idx) noexcept
+        : data_(data), curr_(idx) {}
 
 public:
     this_type& operator++() noexcept { return ++curr_, *this; }
@@ -149,8 +149,8 @@ public:
         throw std::out_of_range("Out of range for span<T> `at` function");
     }
 
-    span(pointer data, [[maybe_unused]] size_type size) noexcept :
-        start_(data) {}
+    span(pointer data, [[maybe_unused]] size_type size) noexcept
+        : start_(data) {}
 
     ~span() noexcept = default;
 
@@ -221,8 +221,8 @@ public:
     ~span() noexcept = default;
 
     template<typename V, typename = stdx::is_container_t<V>>
-    span(const V& container) :
-        start_(container.data()), size_(container.size()) {}
+    span(const V& container)
+        : start_(container.data()), size_(container.size()) {}
 
     template<typename V, typename = stdx::is_container_t<V>>
     span(V& container) : start_(container.data()), size_(container.size()) {}

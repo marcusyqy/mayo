@@ -10,6 +10,7 @@ class renderpass : public utils::box<VkRenderPass> {
 public:
     using underlying_type = utils::box<VkRenderPass>;
 
+    renderpass() noexcept;
     renderpass(
         std::shared_ptr<device_context> context, VkFormat format) noexcept;
     ~renderpass() noexcept;

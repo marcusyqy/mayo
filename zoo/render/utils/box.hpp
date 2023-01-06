@@ -19,10 +19,7 @@ using device_context_release_resource_exist_t =
     typename device_context_release_resource_exist<T>::type;
 
 template<typename T>
-using is_valid_device_obj_t =
-    std::void_t<device_context_release_resource_exist_t<T>,
-        stdx::nullptr_check_exists_t<T>,
-        stdx::condition_type_t<std::is_trivially_copyable_v<T>>>;
+using is_valid_device_obj_t = device_context_release_resource_exist_t<T>;
 
 template<typename T, typename = is_valid_device_obj_t<T>>
 class box {
@@ -30,17 +27,18 @@ public:
     using value_type = T;
 
     box() noexcept : context_(nullptr), type_(nullptr) {}
-    box(std::shared_ptr<device_context> device, T type) :
-        context_(std::move(device)), type_(type) {}
+    box(std::shared_ptr<device_context> device, T type)
+        : context_(std::move(device)), type_(type) {}
 
     box(const box& other) noexcept = delete;
     box& operator=(const box& other) noexcept = delete;
 
-    box(box&& other) noexcept : box() { this = std::move(other); }
+    box(box&& other) noexcept : box() { *this = std::move(other); }
 
     box& operator=(box&& other) noexcept {
         std::swap(context_, other.context_);
         std::swap(type_, other.type_);
+        return *this;
     }
 
     void set(std::shared_ptr<device_context> device, T type) {
@@ -58,8 +56,7 @@ public:
 
     void reset() noexcept {
         if (context_) {
-            context_->release_device_resource(type_);
-            type_ = nullptr;
+            context_->release_device_resource(release());
         }
     }
 

@@ -37,8 +37,7 @@ public:
     operator const VkDevice&() const noexcept { return logical(); }
     const VkDevice& logical() const noexcept { return logical_; }
 
-    template<typename T>
-    T create() const noexcept {}
+    VkCommandBuffer buffer_from_pool() const noexcept;
 
     // release resource
     void release_device_resource(VkFence fence) noexcept;
@@ -48,6 +47,8 @@ private:
     utils::physical_device physical_ = nullptr;
     VkDevice logical_ = nullptr;
     VkQueue queue_ = nullptr;
+    utils::queue_family_properties queue_properties_;
+    VkCommandPool command_pool_ = nullptr;
 };
 
 } // namespace zoo::render

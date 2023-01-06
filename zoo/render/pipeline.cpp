@@ -10,9 +10,8 @@ void shader::reset() noexcept {
 }
 
 shader::shader(std::shared_ptr<device_context> context, stdx::span<char> code,
-    std::string_view entry_point) noexcept :
-    context_(context),
-    module_(nullptr), entry_point_(entry_point) {
+    std::string_view entry_point) noexcept
+    : context_(context), module_(nullptr), entry_point_(entry_point) {
     VkShaderModuleCreateInfo create_info{};
     create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     create_info.codeSize = code.size();
@@ -22,12 +21,12 @@ shader::shader(std::shared_ptr<device_context> context, stdx::span<char> code,
         vkCreateShaderModule(*context_, &create_info, nullptr, &module_));
 }
 
-shader::shader() noexcept :
-    context_(nullptr), module_(nullptr), entry_point_() {}
+shader::shader() noexcept
+    : context_(nullptr), module_(nullptr), entry_point_() {}
 
-shader::shader(shader&& other) noexcept :
-    context_(std::move(other.context_)), module_(std::move(other.module_)),
-    entry_point_(std::move(other.entry_point_)) {
+shader::shader(shader&& other) noexcept
+    : context_(std::move(other.context_)), module_(std::move(other.module_)),
+      entry_point_(std::move(other.entry_point_)) {
     other.context_ = nullptr;
     other.module_ = nullptr;
     other.entry_point_.clear();
@@ -48,14 +47,14 @@ shader::~shader() noexcept { reset(); }
 // TODO: do some cleanup in this area.
 pipeline::pipeline(std::shared_ptr<device_context> context,
     const shader_stages_specifications& specifications,
-    const viewport_info& viewport_info, const renderpass& renderpass) noexcept :
-    context_(context) {
+    const viewport_info& viewport_info, const renderpass& renderpass) noexcept
+    : context_(context) {
 
     constexpr uint32_t vertex_stage = 0;
     constexpr uint32_t fragment_stage = 1;
     constexpr uint32_t shader_stages = 2;
 
-    VkPipelineShaderStageCreateInfo shaders_create_info[shader_stages];
+    VkPipelineShaderStageCreateInfo shaders_create_info[shader_stages]{};
     {
         VkPipelineShaderStageCreateInfo& vertex_create_info{
             shaders_create_info[vertex_stage]};
@@ -70,7 +69,7 @@ pipeline::pipeline(std::shared_ptr<device_context> context,
             shaders_create_info[fragment_stage]};
         fragment_create_info.sType =
             VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        fragment_create_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
+        fragment_create_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
         fragment_create_info.module = specifications.fragment;
         fragment_create_info.pName =
             specifications.fragment.entry_point().data();

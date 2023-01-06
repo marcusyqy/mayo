@@ -7,13 +7,12 @@
 namespace zoo {
 
 window::window(const render::engine& engine, std::shared_ptr<context> context,
-    const traits& traits, input_callback callback) noexcept :
-    context_{context},
-    traits_{traits}, callback_{std::move(callback)},
-    impl_{glfwCreateWindow(
-        traits_.size.x, traits_.size.y, traits_.name.data(), NULL, NULL)},
-    context_set_{false},
-    swapchain_(engine, impl_, traits_.size.x, traits_.size.y) {
+    const traits& traits, input_callback callback) noexcept
+    : context_{context}, traits_{traits}, callback_{std::move(callback)},
+      impl_{glfwCreateWindow(
+          traits_.size.x, traits_.size.y, traits_.name.data(), NULL, NULL)},
+      context_set_{false},
+      swapchain_(engine, impl_, traits_.size.x, traits_.size.y) {
 
     glfwSetWindowUserPointer(impl_, this);
     glfwSetKeyCallback(impl_, [](GLFWwindow* glfw_window, int key, int scancode,

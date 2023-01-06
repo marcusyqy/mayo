@@ -34,7 +34,7 @@ public:
     }
 
     // renderpass& renderpass() noexcept { return renderpass_; }
-    [[nodiscard]] const renderpass& renderpass() const noexcept {
+    [[nodiscard]] const renderpass& get_renderpass() const noexcept {
         return renderpass_;
     }
 

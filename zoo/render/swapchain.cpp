@@ -102,9 +102,8 @@ swapchain::~swapchain() noexcept {
 }
 //
 swapchain::swapchain(const render::engine& engine,
-    underlying_window_type glfw_window, width_type x, width_type y) noexcept :
-    instance_(engine.vk_instance()),
-    context_(engine.context()) {
+    underlying_window_type glfw_window, width_type x, width_type y) noexcept
+    : instance_(engine.vk_instance()), context_(engine.context()) {
     // create surface first
     VK_EXPECT_SUCCESS(
         glfwCreateWindowSurface(instance_, glfw_window, nullptr, &surface_));
@@ -239,11 +238,9 @@ bool swapchain::create_swapchain_and_resources() noexcept {
 
 void swapchain::cleanup_swapchain_and_resources() noexcept {
     vkDestroySwapchainKHR(*context_, underlying_, nullptr);
-
     for (auto view : views_) {
         vkDestroyImageView(*context_, view, nullptr);
     }
-
     for (auto fb : framebuffers_) {
         vkDestroyFramebuffer(*context_, fb, nullptr);
     }

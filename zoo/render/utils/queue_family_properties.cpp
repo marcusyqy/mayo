@@ -3,9 +3,8 @@
 namespace zoo::render::utils {
 
 queue_family_properties::queue_family_properties(
-    uint32_t queue_index, VkQueueFamilyProperties properties) noexcept :
-    queue_index_(queue_index),
-    properties_(properties) {}
+    uint32_t queue_index, VkQueueFamilyProperties properties) noexcept
+    : queue_index_(queue_index), properties_(properties) {}
 
 bool queue_family_properties::has_compute() const noexcept {
     return properties_.queueFlags & VK_QUEUE_COMPUTE_BIT;

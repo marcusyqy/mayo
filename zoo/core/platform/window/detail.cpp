@@ -41,8 +41,8 @@ void context::wait_for_vsync() const noexcept { glfwSwapInterval(1); }
 context::~context() noexcept { glfwTerminate(); }
 
 // factory
-factory::factory(std::shared_ptr<context> context) noexcept :
-    context_(std::move(context)), windows_() {}
+factory::factory(std::shared_ptr<context> context) noexcept
+    : context_(std::move(context)), windows_() {}
 
 factory::~factory() noexcept = default;
 

@@ -62,7 +62,7 @@ application::exit_status main(application::settings args) noexcept {
     auto context = render_engine.context();
 
     // these are here for now.
-    render::shader vertex{context, *fragment_bytes, "main"};
+    render::shader vertex{context, *vertex_bytes, "main"};
     render::shader fragment{context, *fragment_bytes, "main"};
 
     auto& swapchain = main_window.swapchain();
@@ -78,7 +78,7 @@ application::exit_status main(application::settings args) noexcept {
                 1.0f                                           // maxDepth;
             },
             VkRect2D{VkOffset2D{0, 0}, swapchain.extent()}},
-        swapchain.renderpass()};
+        swapchain.get_renderpass()};
 
     while (main_window.is_open()) {
         main_window.swap_buffers();
