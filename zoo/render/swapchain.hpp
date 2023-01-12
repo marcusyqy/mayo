@@ -38,6 +38,8 @@ public:
         return renderpass_;
     }
 
+    [[nodiscard]] viewport_info get_viewport_info() const noexcept;
+
 private:
     bool create_swapchain_and_resources() noexcept;
     void cleanup_swapchain_and_resources() noexcept;

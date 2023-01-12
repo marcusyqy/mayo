@@ -261,4 +261,16 @@ void swapchain::reset() noexcept {
     vkDestroySurfaceKHR(instance_, surface_, nullptr);
 }
 
+viewport_info swapchain::get_viewport_info() const noexcept {
+    return {VkViewport{
+                0.0f,                        // x;
+                0.0f,                        // y;
+                static_cast<float>(size_.x), // width;
+                static_cast<float>(size_.y), // height;
+                0.0f,                        // minDepth;
+                1.0f                         // maxDepth;
+            },
+        VkRect2D{VkOffset2D{0, 0}, extent()}};
+}
+
 } // namespace zoo::render

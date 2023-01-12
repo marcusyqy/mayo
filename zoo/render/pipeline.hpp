@@ -40,11 +40,6 @@ struct shader_stages_specifications {
     const shader& fragment;
 };
 
-struct viewport_info {
-    VkViewport viewport;
-    VkRect2D scissor;
-};
-
 class pipeline {
 public:
     using underlying_type = VkPipeline;

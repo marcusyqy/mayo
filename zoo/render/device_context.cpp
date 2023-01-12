@@ -97,6 +97,7 @@ VkCommandBuffer device_context::buffer_from_pool() const noexcept {
     VkCommandBuffer command_buffer{};
     VK_EXPECT_SUCCESS(
         vkAllocateCommandBuffers(logical_, &alloc_info, &command_buffer));
+
     return command_buffer;
 }
 

@@ -24,3 +24,12 @@ void maybe_invoke(VkResult result, Call then, Args&&... args) noexcept {
             string_VkResult(result));                                          \
         zoo::render::hidden::detail::maybe_invoke(result, __VA_ARGS__);        \
     }
+
+namespace zoo::render {
+
+struct viewport_info {
+    VkViewport viewport;
+    VkRect2D scissor;
+};
+
+} // namespace zoo::render

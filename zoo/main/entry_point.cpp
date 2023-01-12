@@ -68,17 +68,7 @@ application::exit_status main(application::settings args) noexcept {
     auto& swapchain = main_window.swapchain();
     render::pipeline pipeline{context,
         render::shader_stages_specifications{vertex, fragment},
-        render::viewport_info{
-            VkViewport{
-                0.0f,                                          // x;
-                0.0f,                                          // y;
-                static_cast<float>(swapchain.extent().width),  // width;
-                static_cast<float>(swapchain.extent().height), // height;
-                0.0f,                                          // minDepth;
-                1.0f                                           // maxDepth;
-            },
-            VkRect2D{VkOffset2D{0, 0}, swapchain.extent()}},
-        swapchain.get_renderpass()};
+        swapchain.get_viewport_info(), swapchain.get_renderpass()};
 
     while (main_window.is_open()) {
         main_window.swap_buffers();
