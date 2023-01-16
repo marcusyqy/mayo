@@ -76,13 +76,11 @@ application::exit_status main(application::settings args) noexcept {
     auto populate_command_ctx =
         [&](render::scene::command_buffer& command_context,
             VkRenderPassBeginInfo renderpass_info) {
-            command_context.record([&]() {
-                command_context.set_viewport(viewport_info.viewport);
-                command_context.set_scissor(viewport_info.scissor);
-                command_context.exec(renderpass_info, [&]() {
-                    command_context.bind(pipeline);
-                    command_context.draw(3, 1, 0, 0);
-                });
+            command_context.set_viewport(viewport_info.viewport);
+            command_context.set_scissor(viewport_info.scissor);
+            command_context.exec(renderpass_info, [&]() {
+                command_context.bind(pipeline);
+                command_context.draw(3, 1, 0, 0);
             });
         };
 

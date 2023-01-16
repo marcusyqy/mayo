@@ -298,7 +298,9 @@ void swapchain::for_each(
         renderpass_info.clearValueCount = 1;
         renderpass_info.pClearValues = &clear_color;
 
-        exec(command_buffers_[i++], renderpass_info);
+        command_buffers_[i].record(
+            [&] { exec(command_buffers_[i], renderpass_info); });
+        ++i;
     }
 }
 

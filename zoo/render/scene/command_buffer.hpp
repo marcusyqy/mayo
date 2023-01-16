@@ -31,7 +31,7 @@ public:
         uint32_t first_vertex, uint32_t first_instance) noexcept;
 
     template<typename Call>
-    void exec(const VkRenderPassBeginInfo& begin_info, Call c) noexcept {
+    void exec(const VkRenderPassBeginInfo& begin_info, Call&& c) noexcept {
         begin_renderpass(begin_info);
         c();
         end_renderpass();
