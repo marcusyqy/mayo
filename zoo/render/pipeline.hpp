@@ -51,6 +51,9 @@ public:
 
     ~pipeline() noexcept;
 
+    operator underlying_type() const { return get(); }
+    underlying_type get() const { return underlying_; }
+
 private:
     std::shared_ptr<device_context> context_;
     underlying_type underlying_ = nullptr;

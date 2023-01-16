@@ -33,49 +33,41 @@ VkCommandBuffer command_buffer::release() noexcept {
 }
 
 void command_buffer::start_record() noexcept {
-    switch (state_) {
-    case state::STARTED:
-        ZOO_LOG_WARN("Starting a command buffer that has already started!");
-        return;
-    case state::ENDED:
-        ZOO_LOG_WARN(
-            "Starting a command buffer that has ended but not submitted!");
-        return;
-    default:
-        break;
-    }
-
     VkCommandBufferBeginInfo begin_info{};
     begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     begin_info.pInheritanceInfo = nullptr;
 
     VK_EXPECT_SUCCESS(vkBeginCommandBuffer(underlying_, &begin_info),
-        [this](VkResult /* result */) { state_ = state::UNKNOWN; })
-
-    state_ = state::STARTED;
+        [](VkResult /* result */) {})
 }
 
 void command_buffer::end_record() noexcept {
-    if (state_ == state::STARTED) {
-        VK_EXPECT_SUCCESS(vkEndCommandBuffer(underlying_),
-            [this](VkResult /* result */) { state_ = state::UNKNOWN; });
-        state_ = state::ENDED;
-    } else {
-        ZOO_LOG_WARN("Ending a command buffer that hasn't started!");
-    }
+    VK_EXPECT_SUCCESS(
+        vkEndCommandBuffer(underlying_), [](VkResult /* result */) {});
 }
 
 void command_buffer::submit() noexcept {
-    if (state_ == state::STARTED)
-        end_record();
-
-    ZOO_ASSERT(state_ == state::ENDED, "State must end before submission");
-
     // add submit code here
 }
 
-void command_buffer::consume(
-    [[maybe_unused]] renderpass render_context) noexcept {}
+void command_buffer::draw(uint32_t vertex_count, uint32_t instance_count,
+    uint32_t first_vertex, uint32_t first_instance) noexcept {
+    vkCmdDraw(underlying_, vertex_count, instance_count, first_vertex,
+        first_instance);
+}
+
+void command_buffer::bind(const render::pipeline& pipeline) noexcept {
+    vkCmdBindPipeline(underlying_, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+}
+
+void command_buffer::begin_renderpass(
+    const VkRenderPassBeginInfo& begin_info) noexcept {
+    vkCmdBeginRenderPass(underlying_, &begin_info, VK_SUBPASS_CONTENTS_INLINE);
+}
+
+void command_buffer::end_renderpass() noexcept {
+    vkCmdEndRenderPass(underlying_);
+}
 
 } // namespace zoo::render::scene

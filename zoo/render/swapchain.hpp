@@ -4,6 +4,7 @@
 #include "device_context.hpp"
 #include "engine.hpp"
 #include "fwd.hpp"
+#include "render/scene/command_buffer.hpp"
 #include <cstdint>
 
 #include "renderpass.hpp"
@@ -40,9 +41,17 @@ public:
 
     [[nodiscard]] viewport_info get_viewport_info() const noexcept;
 
+    void for_each(
+        std::function<void(render::scene::command_buffer& command_context,
+            VkRenderPassBeginInfo renderpass_info)>
+            exec) noexcept;
+
 private:
     bool create_swapchain_and_resources() noexcept;
     void cleanup_swapchain_and_resources() noexcept;
+
+    void begin_frame() noexcept;
+    void end_frame() noexcept;
 
 private:
     VkInstance instance_ = nullptr;
@@ -63,11 +72,17 @@ private:
 
     // frame specific stuff
     std::vector<VkImage> images_;
+
+    // TODO: merge all relevant stuff into a single struct
+    // struct frame_details {
+    //     VkImageView view;
+    //     VkFramebuffer framebuffer;
+    //     render::scene::command_buffer command_buffer;
+    // };
+
     std::vector<VkImageView> views_;
     std::vector<VkFramebuffer> framebuffers_;
+    std::vector<render::scene::command_buffer> command_buffers_;
     class renderpass renderpass_; // has a default renderpass in swapchain
-
-    // context
-    // std::vector<frame> frames_;
 };
 } // namespace zoo::render

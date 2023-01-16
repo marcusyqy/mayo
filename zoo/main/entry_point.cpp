@@ -4,6 +4,7 @@
 #include "core/platform/window.hpp"
 #include "render/engine.hpp"
 #include "render/pipeline.hpp"
+#include "render/scene/command_buffer.hpp"
 
 #include "stdx/expected.hpp"
 #include <fstream>
@@ -40,7 +41,7 @@ application::exit_status main(application::settings args) noexcept {
     std::shared_ptr<window::context> win_context =
         std::make_shared<window::context>();
 
-    render::engine render_engine(render_engine_info);
+    render::engine render_engine{render_engine_info};
 
     window main_window{render_engine, win_context,
         window::traits{window::size{1280, 960}, false, "zoo"},
@@ -70,7 +71,25 @@ application::exit_status main(application::settings args) noexcept {
         render::shader_stages_specifications{vertex, fragment},
         swapchain.get_viewport_info(), swapchain.get_renderpass()};
 
+    const auto& viewport_info = swapchain.get_viewport_info();
+
+    auto populate_command_ctx =
+        [&](render::scene::command_buffer& command_context,
+            VkRenderPassBeginInfo renderpass_info) {
+            command_context.record([&]() {
+                command_context.set_viewport(viewport_info.viewport);
+                command_context.set_scissor(viewport_info.scissor);
+                command_context.exec(renderpass_info, [&]() {
+                    command_context.bind(pipeline);
+                    command_context.draw(3, 1, 0, 0);
+                });
+            });
+        };
+
+    swapchain.for_each(populate_command_ctx);
+
     while (main_window.is_open()) {
+        swapchain.get_next_frame();
         main_window.swap_buffers();
         win_context->poll_events();
     }

@@ -215,6 +215,7 @@ bool swapchain::create_swapchain_and_resources() noexcept {
     for (auto fb : framebuffers_) {
         vkDestroyFramebuffer(*context_, fb, nullptr);
     }
+
     framebuffers_.resize(image_count);
 
     for (size_t i = 0; i < std::size(views_); i++) {
@@ -231,6 +232,10 @@ bool swapchain::create_swapchain_and_resources() noexcept {
         VK_EXPECT_SUCCESS(
             vkCreateFramebuffer(*context_, &framebuffer_create_info, nullptr,
                 std::addressof(framebuffers_[i])));
+    }
+
+    while (command_buffers_.size() < image_count) {
+        command_buffers_.emplace_back(context_);
     }
 
     return !failed;
@@ -271,6 +276,36 @@ viewport_info swapchain::get_viewport_info() const noexcept {
                 1.0f                         // maxDepth;
             },
         VkRect2D{VkOffset2D{0, 0}, extent()}};
+}
+
+void swapchain::for_each(
+    std::function<void(render::scene::command_buffer& command_context,
+        VkRenderPassBeginInfo renderpass_info)>
+        exec) noexcept {
+    auto extent = this->extent();
+
+    std::uint32_t i{};
+    for (const auto& fb : framebuffers_) {
+        VkRenderPassBeginInfo renderpass_info{};
+        renderpass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        renderpass_info.renderPass = renderpass_;
+        renderpass_info.framebuffer = fb;
+        renderpass_info.renderArea.offset = {0, 0};
+        renderpass_info.renderArea.extent = extent;
+        renderpass_info.pNext = nullptr;
+
+        static const VkClearValue clear_color = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
+        renderpass_info.clearValueCount = 1;
+        renderpass_info.pClearValues = &clear_color;
+
+        exec(command_buffers_[i++], renderpass_info);
+    }
+}
+
+void swapchain::begin_frame(uint32_t i) noexcept {}
+
+void swapchain::end_frame(uint32_t i) noexcept {
+    context_->submit(command_buffer_[i]);
 }
 
 } // namespace zoo::render
