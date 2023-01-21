@@ -14,6 +14,14 @@ VkRenderPass create_vk_renderpass(
     color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
+    VkSubpassDependency dependency{};
+    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    dependency.dstSubpass = 0;
+    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.srcAccessMask = 0;
+    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
     VkAttachmentReference color_attachment_ref{};
     color_attachment_ref.attachment = 0;
     color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
@@ -29,6 +37,8 @@ VkRenderPass create_vk_renderpass(
     renderpass_info.pAttachments = &color_attachment;
     renderpass_info.subpassCount = 1;
     renderpass_info.pSubpasses = &subpass;
+    renderpass_info.dependencyCount = 1;
+    renderpass_info.pDependencies = &dependency;
 
     VkRenderPass renderpass{};
     VK_EXPECT_SUCCESS(

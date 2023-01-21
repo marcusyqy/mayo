@@ -18,6 +18,9 @@ public:
     renderpass& operator=(renderpass&& renderpass) noexcept;
     renderpass(renderpass&& renderpass) noexcept;
 
+    renderpass& operator=(const renderpass&& renderpass) noexcept = delete;
+    renderpass(const renderpass&& renderpass) noexcept = delete;
+
     using underlying_type::get;
     using underlying_type::operator underlying_type::value_type;
     using underlying_type::emplace;

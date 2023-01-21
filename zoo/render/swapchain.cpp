@@ -239,6 +239,9 @@ bool swapchain::create_swapchain_and_resources() noexcept {
         command_buffers_.emplace_back(context_);
     }
 
+    VK_EXPECT_SUCCESS(vkAcquireNextImageKHR(*context_, underlying_, UINT64_MAX,
+        sync_objects_.image_avail, VK_NULL_HANDLE, &current_frame_));
+
     return !failed;
 }
 
@@ -303,6 +306,34 @@ void swapchain::for_each(
             [&] { exec(command_buffers_[i], renderpass_info); });
         ++i;
     }
+}
+
+void swapchain::finish() noexcept {
+    VkSemaphore wait_semaphores[] = {sync_objects_.image_avail};
+    VkPipelineStageFlags wait_stages[] = {
+        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    VkSemaphore signal_semaphores[] = {sync_objects_.render_done};
+    command_buffers_[current_frame_].submit(
+        operation::graphics, wait_semaphores, wait_stages, signal_semaphores);
+}
+
+void swapchain::present() noexcept {
+    VkSwapchainKHR swapchains[] = {underlying_};
+    VkSemaphore signal_semaphores[] = {sync_objects_.render_done};
+    VkPresentInfoKHR present_info{};
+    present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+    present_info.waitSemaphoreCount = 1;
+    present_info.pWaitSemaphores = signal_semaphores;
+    present_info.swapchainCount = 1;
+    present_info.pSwapchains = swapchains;
+    present_info.pImageIndices = &current_frame_;
+
+    auto queue = context_->retrieve(operation::graphics);
+    vkQueuePresentKHR(queue, &present_info);
+
+    VK_EXPECT_SUCCESS(vkAcquireNextImageKHR(*context_, underlying_, UINT64_MAX,
+        sync_objects_.image_avail, VK_NULL_HANDLE, &current_frame_));
 }
 
 } // namespace zoo::render

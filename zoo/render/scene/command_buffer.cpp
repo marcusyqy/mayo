@@ -90,4 +90,28 @@ void command_buffer::exec(const VkRenderPassBeginInfo& begin_info,
     end_renderpass();
 }
 
+void command_buffer::submit(operation op_type,
+    stdx::span<VkSemaphore> wait_semaphores,
+    stdx::span<VkPipelineStageFlags> wait_for_pipeline_stages,
+    stdx::span<VkSemaphore> signal_semaphores) noexcept {
+
+    ZOO_ASSERT(wait_semaphores.size() == wait_for_pipeline_stages.size(),
+        "Wait semaphores must contain the same amount of elements as wait for "
+        "pipelines stages flags!");
+
+    auto queue = context_->retrieve(op_type);
+    VkSubmitInfo submit_info{};
+    submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submit_info.waitSemaphoreCount = wait_semaphores.size();
+    submit_info.pWaitSemaphores = wait_semaphores.data();
+    submit_info.pWaitDstStageMask = wait_for_pipeline_stages.data();
+    submit_info.commandBufferCount = 1;
+    submit_info.pCommandBuffers = &underlying_;
+    submit_info.signalSemaphoreCount = signal_semaphores.size();
+    submit_info.pSignalSemaphores = signal_semaphores.data();
+
+    // TODO: determine if we really need a fence here
+    VK_EXPECT_SUCCESS(vkQueueSubmit(queue, 1, &submit_info, nullptr));
+}
+
 } // namespace zoo::render::scene

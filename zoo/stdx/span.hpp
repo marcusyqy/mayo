@@ -154,14 +154,19 @@ public:
 
     ~span() noexcept = default;
 
-    template<typename V, typename = stdx::is_container_t<V>>
+    template<typename V, typename = stdx::is_container<V>>
     span(const V& container) : start_(container.data()) {
         STDX_ASSERT(container.size() >= N, "N cannot be greater than size");
     }
 
-    template<typename V, typename = stdx::is_container_t<V>>
+    template<typename V, typename = stdx::is_container<V>>
     span(V& container) : start_(container.data()) {
         STDX_ASSERT(container.size() >= N, "N cannot be greater than size");
+    }
+
+    template<typename TT, size_t NN>
+    span(TT (&arr)[NN]) noexcept : span(arr, N) {
+        static_assert(N <= NN, "Must be larger or equal to N");
     }
 
 private:
@@ -220,22 +225,29 @@ public:
     span(pointer data, size_type size) noexcept : start_(data), size_(size) {}
     ~span() noexcept = default;
 
-    template<typename V, typename = stdx::is_container_t<V>>
-    span(const V& container)
+    template<typename V, typename = stdx::is_container<V>>
+    span(const V& container) noexcept
         : start_(container.data()), size_(container.size()) {}
 
-    template<typename V, typename = stdx::is_container_t<V>>
-    span(V& container) : start_(container.data()), size_(container.size()) {}
+    template<typename V, typename = stdx::is_container<V>>
+    span(V& container) noexcept
+        : start_(container.data()), size_(container.size()) {}
+
+    template<typename TT, size_t N>
+    span(TT (&arr)[N]) noexcept : span(arr, N) {}
 
 private:
     pointer start_;
     size_type size_;
 };
 
-template<typename V, typename = stdx::is_contiguous_container_t<V>>
+template<typename TT, size_t N>
+span(TT (&arr)[N]) -> span<TT, N>;
+
+template<typename V, typename = stdx::is_contiguous_container<V>>
 span(V&) -> span<typename V::value_type>;
 
-template<typename V, typename = stdx::is_contiguous_container_t<V>>
+template<typename V, typename = stdx::is_contiguous_container<V>>
 span(const V&) -> span<const typename V::value_type>;
 
 } // namespace stdx

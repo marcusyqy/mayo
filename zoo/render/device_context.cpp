@@ -1,4 +1,5 @@
 #include "device_context.hpp"
+#include "core/fwd.hpp"
 #include "render/fwd.hpp"
 #include "scene/command_buffer.hpp"
 
@@ -118,6 +119,18 @@ void device_context::release_device_resource(VkRenderPass renderpass) noexcept {
 void device_context::release_device_resource(VkSemaphore semaphore) noexcept {
     if (semaphore != nullptr)
         vkDestroySemaphore(logical_, semaphore, nullptr);
+}
+
+VkQueue device_context::retrieve(operation op) const noexcept {
+
+    switch (op) {
+    case operation::graphics:
+        return queue_;
+    default:
+        ZOO_ASSERT(false, "not supporting other queue types yet.");
+        break;
+    }
+    return queue_;
 }
 
 } // namespace zoo::render

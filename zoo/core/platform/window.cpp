@@ -23,25 +23,6 @@ window::window(const render::engine& engine, std::shared_ptr<context> context,
             input::glfw_layer::convert(
                 input::glfw_layer::key_code{key, scancode, action, mods}));
     });
-
-    // TODO: look into allocations for vulkan
-
-    // should query for suitable device from engine
-    /*
-       const auto& physical_devices = engine.physical_devices();
-
-       for (auto begin = std::begin(physical_devices),
-                 end = std::end(physical_devices);
-            begin != end; ++begin) {
-           if (auto index = get_queue_index_if_physical_device_is_chosen(
-                   *begin, surface_)) {
-               chosen_device =
-                   engine.promote(begin, begin->queue_properties()[*index]);
-               queue_index = *index;
-               break;
-           }
-       }
-       */
 }
 
 window::~window() noexcept { close(); }
@@ -59,7 +40,7 @@ void window::close() noexcept {
 
 void window::swap_buffers() noexcept {
     // swap buffer for vulkan here.
-    swapchain.present();
+    swapchain_.present();
 }
 
 } // namespace zoo

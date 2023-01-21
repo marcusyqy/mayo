@@ -39,6 +39,8 @@ public:
 
     VkCommandBuffer buffer_from_pool() const noexcept;
 
+    VkQueue retrieve(operation op) const noexcept;
+
     // release resource
     void release_device_resource(VkFence fence) noexcept;
     void release_device_resource(VkRenderPass renderpass) noexcept;

@@ -47,6 +47,9 @@ public:
             VkRenderPassBeginInfo renderpass_info)>
             exec) noexcept;
 
+    void finish() noexcept;
+    void present() noexcept;
+
 private:
     bool create_swapchain_and_resources() noexcept;
     void cleanup_swapchain_and_resources() noexcept;
@@ -83,5 +86,7 @@ private:
     std::vector<VkFramebuffer> framebuffers_;
     std::vector<render::scene::command_buffer> command_buffers_;
     class renderpass renderpass_; // has a default renderpass in swapchain
+
+    uint32_t current_frame_ = 0; // TODO: change this
 };
 } // namespace zoo::render

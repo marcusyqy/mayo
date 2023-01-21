@@ -34,7 +34,9 @@ public:
         stdx::function_ref<void()> c) noexcept;
     void record(stdx::function_ref<void()> c) noexcept;
 
+    // TODO: find a better way to do this.
     void submit(operation op_type, stdx::span<VkSemaphore> wait_semaphores,
+        stdx::span<VkPipelineStageFlags> wait_for_pipeline_stages,
         stdx::span<VkSemaphore> signal_semaphores) noexcept;
 
 private:
