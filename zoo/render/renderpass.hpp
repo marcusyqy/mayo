@@ -20,6 +20,7 @@ public:
 
     using underlying_type::get;
     using underlying_type::operator underlying_type::value_type;
+    using underlying_type::emplace;
 };
 
 } // namespace zoo::render

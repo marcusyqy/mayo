@@ -26,6 +26,8 @@ void command_buffer::reset() noexcept {
     underlying_ = nullptr;
 }
 
+void command_buffer::clear() noexcept { vkResetCommandBuffer(underlying_, 0); }
+
 VkCommandBuffer command_buffer::release() noexcept {
     VkCommandBuffer ret = underlying_;
     reset();
@@ -38,6 +40,7 @@ void command_buffer::start_record() noexcept {
     begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     begin_info.pInheritanceInfo = nullptr;
 
+    clear();
     VK_EXPECT_SUCCESS(vkBeginCommandBuffer(underlying_, &begin_info),
         [](VkResult /* result */) {})
 }
@@ -45,10 +48,6 @@ void command_buffer::start_record() noexcept {
 void command_buffer::end_record() noexcept {
     VK_EXPECT_SUCCESS(
         vkEndCommandBuffer(underlying_), [](VkResult /* result */) {});
-}
-
-void command_buffer::submit() noexcept {
-    // add submit code here
 }
 
 void command_buffer::draw(uint32_t vertex_count, uint32_t instance_count,
@@ -68,6 +67,27 @@ void command_buffer::begin_renderpass(
 
 void command_buffer::end_renderpass() noexcept {
     vkCmdEndRenderPass(underlying_);
+}
+
+void command_buffer::set_viewport(const VkViewport& viewport) noexcept {
+    vkCmdSetViewport(underlying_, 0, 1, std::addressof(viewport));
+}
+
+void command_buffer::set_scissor(const VkRect2D& scissor) noexcept {
+    vkCmdSetScissor(underlying_, 0, 1, std::addressof(scissor));
+}
+
+void command_buffer::record(stdx::function_ref<void()> c) noexcept {
+    start_record();
+    c();
+    end_record();
+}
+
+void command_buffer::exec(const VkRenderPassBeginInfo& begin_info,
+    stdx::function_ref<void()> c) noexcept {
+    begin_renderpass(begin_info);
+    c();
+    end_renderpass();
 }
 
 } // namespace zoo::render::scene

@@ -32,4 +32,8 @@ struct viewport_info {
     VkRect2D scissor;
 };
 
+/*
+ * Dictates the type of queue being used
+ * */
+enum class operation : uint32_t { graphics, compute, transfer };
 } // namespace zoo::render

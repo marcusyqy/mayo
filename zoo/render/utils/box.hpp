@@ -38,10 +38,11 @@ public:
     box& operator=(box&& other) noexcept {
         std::swap(context_, other.context_);
         std::swap(type_, other.type_);
+        other.reset();
         return *this;
     }
 
-    void set(std::shared_ptr<device_context> device, T type) {
+    void emplace(std::shared_ptr<device_context> device, T type) {
         context_ = std::move(device);
         type_ = type;
     }
@@ -65,7 +66,7 @@ public:
     [[nodiscard]] operator value_type() const noexcept { return type_; }
     [[nodiscard]] value_type get() const noexcept { return type_; }
 
-private:
+protected:
     std::shared_ptr<device_context> context_;
     T type_;
 };

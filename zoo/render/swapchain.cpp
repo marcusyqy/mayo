@@ -103,7 +103,8 @@ swapchain::~swapchain() noexcept {
 //
 swapchain::swapchain(const render::engine& engine,
     underlying_window_type glfw_window, width_type x, width_type y) noexcept
-    : instance_(engine.vk_instance()), context_(engine.context()) {
+    : instance_(engine.vk_instance()),
+      context_(engine.context()), sync_objects_{context_, context_} {
     // create surface first
     VK_EXPECT_SUCCESS(
         glfwCreateWindowSurface(instance_, glfw_window, nullptr, &surface_));
@@ -131,7 +132,7 @@ swapchain::swapchain(const render::engine& engine,
     description_.surface_format = choose_surface_format(details.formats);
     description_.present_mode = choose_present_mode(details.present_modes);
     description_.capabilities = std::move(details.capabilities);
-    renderpass_ = {context_, description_.surface_format.format};
+    renderpass_ = renderpass{context_, description_.surface_format.format};
 
     // should work correctly
     // don't set  x and y so that resize can check for new setting
@@ -302,12 +303,6 @@ void swapchain::for_each(
             [&] { exec(command_buffers_[i], renderpass_info); });
         ++i;
     }
-}
-
-void swapchain::begin_frame(uint32_t i) noexcept {}
-
-void swapchain::end_frame(uint32_t i) noexcept {
-    context_->submit(command_buffer_[i]);
 }
 
 } // namespace zoo::render

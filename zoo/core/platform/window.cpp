@@ -59,7 +59,7 @@ void window::close() noexcept {
 
 void window::swap_buffers() noexcept {
     // swap buffer for vulkan here.
-    // swapchain.present();
+    swapchain.present();
 }
 
 } // namespace zoo

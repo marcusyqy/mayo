@@ -1,5 +1,6 @@
 #include "device_context.hpp"
 #include "render/fwd.hpp"
+#include "scene/command_buffer.hpp"
 
 namespace zoo::render {
 namespace {
@@ -112,6 +113,11 @@ void device_context::release_device_resource(VkFence fence) noexcept {
 void device_context::release_device_resource(VkRenderPass renderpass) noexcept {
     if (renderpass != nullptr)
         vkDestroyRenderPass(logical_, renderpass, nullptr);
+}
+
+void device_context::release_device_resource(VkSemaphore semaphore) noexcept {
+    if (semaphore != nullptr)
+        vkDestroySemaphore(logical_, semaphore, nullptr);
 }
 
 } // namespace zoo::render

@@ -8,6 +8,7 @@
 #include <cstdint>
 
 #include "renderpass.hpp"
+#include "sync/semaphore.hpp"
 
 namespace zoo::render {
 
@@ -50,8 +51,8 @@ private:
     bool create_swapchain_and_resources() noexcept;
     void cleanup_swapchain_and_resources() noexcept;
 
-    void begin_frame() noexcept;
-    void end_frame() noexcept;
+    void create_sync_objects() noexcept;
+    void cleanup_sync_objects() noexcept;
 
 private:
     VkInstance instance_ = nullptr;
@@ -73,12 +74,10 @@ private:
     // frame specific stuff
     std::vector<VkImage> images_;
 
-    // TODO: merge all relevant stuff into a single struct
-    // struct frame_details {
-    //     VkImageView view;
-    //     VkFramebuffer framebuffer;
-    //     render::scene::command_buffer command_buffer;
-    // };
+    struct {
+        sync::semaphore image_avail;
+        sync::semaphore render_done;
+    } sync_objects_;
 
     std::vector<VkImageView> views_;
     std::vector<VkFramebuffer> framebuffers_;

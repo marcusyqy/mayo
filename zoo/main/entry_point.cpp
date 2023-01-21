@@ -43,6 +43,7 @@ application::exit_status main(application::settings args) noexcept {
 
     render::engine render_engine{render_engine_info};
 
+    // TODO: I think we should just merge swapchain and window
     window main_window{render_engine, win_context,
         window::traits{window::size{1280, 960}, false, "zoo"},
         [](window& win, input::key_code keycode) {
@@ -87,7 +88,6 @@ application::exit_status main(application::settings args) noexcept {
     swapchain.for_each(populate_command_ctx);
 
     while (main_window.is_open()) {
-        swapchain.get_next_frame();
         main_window.swap_buffers();
         win_context->poll_events();
     }

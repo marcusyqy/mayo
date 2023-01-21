@@ -42,6 +42,7 @@ public:
     // release resource
     void release_device_resource(VkFence fence) noexcept;
     void release_device_resource(VkRenderPass renderpass) noexcept;
+    void release_device_resource(VkSemaphore semaphore) noexcept;
 
 private:
     utils::physical_device physical_ = nullptr;
