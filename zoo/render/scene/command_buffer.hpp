@@ -37,7 +37,7 @@ public:
     // TODO: find a better way to do this.
     void submit(operation op_type, stdx::span<VkSemaphore> wait_semaphores,
         stdx::span<VkPipelineStageFlags> wait_for_pipeline_stages,
-        stdx::span<VkSemaphore> signal_semaphores) noexcept;
+        stdx::span<VkSemaphore> signal_semaphores, VkFence fence) noexcept;
 
 private:
     void start_record() noexcept;

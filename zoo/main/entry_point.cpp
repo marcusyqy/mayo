@@ -81,6 +81,7 @@ application::exit_status main(application::settings args) noexcept {
             command_context.set_scissor(viewport_info.scissor);
             command_context.exec(renderpass_info, [&]() {
                 command_context.bind(pipeline);
+                // RENDERING TRIANGLE
                 command_context.draw(3, 1, 0, 0);
             });
         };
@@ -92,6 +93,10 @@ application::exit_status main(application::settings args) noexcept {
         main_window.swap_buffers();
         win_context->poll_events();
     }
+
+    // TODO: we can remove this after we find out how to properly tie resources
+    // to each frame.
+    context->wait();
 
     return application::exit_status::ok;
 }

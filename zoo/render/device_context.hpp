@@ -46,6 +46,8 @@ public:
     void release_device_resource(VkRenderPass renderpass) noexcept;
     void release_device_resource(VkSemaphore semaphore) noexcept;
 
+    void wait() noexcept;
+
 private:
     utils::physical_device physical_ = nullptr;
     VkDevice logical_ = nullptr;

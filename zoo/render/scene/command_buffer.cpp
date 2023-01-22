@@ -37,7 +37,7 @@ VkCommandBuffer command_buffer::release() noexcept {
 void command_buffer::start_record() noexcept {
     VkCommandBufferBeginInfo begin_info{};
     begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    begin_info.flags = 0; // VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     begin_info.pInheritanceInfo = nullptr;
 
     clear();
@@ -93,7 +93,7 @@ void command_buffer::exec(const VkRenderPassBeginInfo& begin_info,
 void command_buffer::submit(operation op_type,
     stdx::span<VkSemaphore> wait_semaphores,
     stdx::span<VkPipelineStageFlags> wait_for_pipeline_stages,
-    stdx::span<VkSemaphore> signal_semaphores) noexcept {
+    stdx::span<VkSemaphore> signal_semaphores, VkFence fence) noexcept {
 
     ZOO_ASSERT(wait_semaphores.size() == wait_for_pipeline_stages.size(),
         "Wait semaphores must contain the same amount of elements as wait for "
@@ -111,7 +111,7 @@ void command_buffer::submit(operation op_type,
     submit_info.pSignalSemaphores = signal_semaphores.data();
 
     // TODO: determine if we really need a fence here
-    VK_EXPECT_SUCCESS(vkQueueSubmit(queue, 1, &submit_info, nullptr));
+    VK_EXPECT_SUCCESS(vkQueueSubmit(queue, 1, &submit_info, fence));
 }
 
 } // namespace zoo::render::scene

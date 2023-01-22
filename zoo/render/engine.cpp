@@ -127,6 +127,7 @@ void engine::initialize() noexcept {
 
 void engine::cleanup() noexcept {
     debugger_.reset();
+    context_->reset();
 
     if (instance_ != nullptr) {
         instance_ = nullptr;

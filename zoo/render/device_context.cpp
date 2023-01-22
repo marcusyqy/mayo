@@ -78,6 +78,7 @@ device_context::device_context([[maybe_unused]] VkInstance instance,
 
 void device_context::reset() noexcept {
     if (logical_ != nullptr) {
+        wait();
         if (command_pool_ != nullptr)
             vkDestroyCommandPool(logical_, command_pool_, nullptr);
 
@@ -89,7 +90,6 @@ void device_context::reset() noexcept {
 device_context::~device_context() noexcept { reset(); }
 
 VkCommandBuffer device_context::buffer_from_pool() const noexcept {
-
     VkCommandBufferAllocateInfo alloc_info{};
     alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     alloc_info.commandPool = command_pool_;
@@ -125,12 +125,21 @@ VkQueue device_context::retrieve(operation op) const noexcept {
 
     switch (op) {
     case operation::graphics:
+        [[fallthrough]];
+    case operation::present:
         return queue_;
     default:
         ZOO_ASSERT(false, "not supporting other queue types yet.");
         break;
     }
     return queue_;
+}
+
+void device_context::wait() noexcept {
+    if (logical_ != nullptr)
+        vkDeviceWaitIdle(logical_);
+    else
+        ZOO_LOG_ERROR("Calling wait on a already deallocated device_context!");
 }
 
 } // namespace zoo::render
