@@ -246,15 +246,21 @@ bool swapchain::create_swapchain_and_resources() noexcept {
     // reset
     sync_objects_.clear();
     sync_objects_.reserve(std::size(images_));
+
     stdx::irange(0, std::size(images_)).for_each([this](auto) {
         sync_objects_.push_back(sync_objects{context_, context_, context_});
     });
 
     current_sync_objects_index_ = 0;
-    VK_EXPECT_SUCCESS(vkAcquireNextImageKHR(*context_, underlying_,
-        std::numeric_limits<std::uint64_t>::max(),
-        sync_objects_[current_sync_objects_index_].image_avail, nullptr,
-        &current_frame_));
+    VK_EXPECT_SUCCESS(
+        vkAcquireNextImageKHR(*context_, underlying_,
+            std::numeric_limits<std::uint64_t>::max(),
+            sync_objects_[current_sync_objects_index_].image_avail, nullptr,
+            &current_frame_),
+        [/* this */](VkResult result) {
+            if (result != VK_SUBOPTIMAL_KHR || result != VK_SUCCESS)
+                ZOO_LOG_ERROR("should not be other success");
+        });
 
     return !failed;
 }
@@ -276,7 +282,6 @@ bool swapchain::resize(width_type x, width_type y) noexcept {
     }
     size_.x = x;
     size_.y = y;
-
     return create_swapchain_and_resources();
 }
 

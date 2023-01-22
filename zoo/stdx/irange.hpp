@@ -58,9 +58,7 @@ public:
     const_iterator end() const noexcept { return end_; }
 
     void for_each(stdx::function_ref<void(I)> f) noexcept {
-        for (auto i : *this) {
-            f(i);
-        }
+        std::for_each(std::begin(*this), std::end(*this), f);
     }
 
     integer_range(I begin, I end) : begin_(begin), end_(end) {}
@@ -71,8 +69,17 @@ private:
 };
 
 template<typename I>
-integer_range<I> irange(stdx::type_identity_t<I> begin, I end) noexcept {
+integer_range<I> irange(I begin, I end) noexcept {
     return {begin, end};
+}
+
+// TODO: right now we're just assigning the bigger size number into I for
+// integer_range but we should also compare signedness and unsignedness
+template<typename I1, typename I2>
+decltype(auto) irange(I1 begin, I2 end) noexcept {
+    using I = std::conditional_t<sizeof(I1) < sizeof(I2), I2, I1>;
+    // surpress warnings;
+    return irange(static_cast<I>(begin), static_cast<I>(end));
 }
 
 } // namespace stdx
