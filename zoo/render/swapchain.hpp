@@ -8,6 +8,7 @@
 #include <cstdint>
 
 #include "renderpass.hpp"
+#include "sync/fence.hpp"
 #include "sync/semaphore.hpp"
 
 namespace zoo::render {
@@ -74,13 +75,16 @@ private:
         VkSurfaceCapabilitiesKHR capabilities;
     } description_ = {};
 
-    // frame specific stuff
-    std::vector<VkImage> images_;
-
-    struct {
+    struct sync_objects {
         sync::semaphore image_avail;
         sync::semaphore render_done;
-    } sync_objects_;
+        sync::fence in_flight_fence;
+    };
+
+    // frame specific stuff
+    std::vector<VkImage> images_;
+    std::vector<sync_objects> sync_objects_;
+    size_t current_sync_objects_index_ = {};
 
     std::vector<VkImageView> views_;
     std::vector<VkFramebuffer> framebuffers_;

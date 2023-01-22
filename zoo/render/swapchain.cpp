@@ -7,6 +7,7 @@
 // #define GLFW_EXPOSE_NATIVE_WIN32
 // #include <GLFW/glfw3native.h>
 
+#include "stdx/irange.hpp"
 #include <optional>
 
 namespace zoo::render {
@@ -104,7 +105,7 @@ swapchain::~swapchain() noexcept {
 swapchain::swapchain(const render::engine& engine,
     underlying_window_type glfw_window, width_type x, width_type y) noexcept
     : instance_(engine.vk_instance()),
-      context_(engine.context()), sync_objects_{context_, context_} {
+      context_(engine.context()), sync_objects_{} {
     // create surface first
     VK_EXPECT_SUCCESS(
         glfwCreateWindowSurface(instance_, glfw_window, nullptr, &surface_));
@@ -140,6 +141,9 @@ swapchain::swapchain(const render::engine& engine,
 }
 
 bool swapchain::create_swapchain_and_resources() noexcept {
+    // wait for resources to be done
+    context_->wait();
+
     VkExtent2D extent =
         choose_extent(description_.capabilities, size_.x, size_.y);
 
@@ -239,20 +243,30 @@ bool swapchain::create_swapchain_and_resources() noexcept {
         command_buffers_.emplace_back(context_);
     }
 
-    VK_EXPECT_SUCCESS(vkAcquireNextImageKHR(*context_, underlying_, UINT64_MAX,
-        sync_objects_.image_avail, VK_NULL_HANDLE, &current_frame_));
+    // reset
+    sync_objects_.clear();
+    sync_objects_.reserve(std::size(images_));
+    stdx::irange(0, std::size(images_)).for_each([this](auto) {
+        sync_objects_.push_back(sync_objects{context_, context_, context_});
+    });
+
+    current_sync_objects_index_ = 0;
+    VK_EXPECT_SUCCESS(vkAcquireNextImageKHR(*context_, underlying_,
+        std::numeric_limits<std::uint64_t>::max(),
+        sync_objects_[current_sync_objects_index_].image_avail, nullptr,
+        &current_frame_));
 
     return !failed;
 }
 
 void swapchain::cleanup_swapchain_and_resources() noexcept {
-    vkDestroySwapchainKHR(*context_, underlying_, nullptr);
     for (auto view : views_) {
         vkDestroyImageView(*context_, view, nullptr);
     }
     for (auto fb : framebuffers_) {
         vkDestroyFramebuffer(*context_, fb, nullptr);
     }
+    vkDestroySwapchainKHR(*context_, underlying_, nullptr);
 }
 
 bool swapchain::resize(width_type x, width_type y) noexcept {
@@ -298,7 +312,7 @@ void swapchain::for_each(
         renderpass_info.renderArea.extent = extent;
         renderpass_info.pNext = nullptr;
 
-        static const VkClearValue clear_color = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
+        static const VkClearValue clear_color = {{{0.1f, 0.1f, 0.1f, 1.0f}}};
         renderpass_info.clearValueCount = 1;
         renderpass_info.pClearValues = &clear_color;
 
@@ -308,18 +322,27 @@ void swapchain::for_each(
     }
 }
 
+// TODO: we can actually add some sort of intermediate submission and use
 void swapchain::finish() noexcept {
-    VkSemaphore wait_semaphores[] = {sync_objects_.image_avail};
+    // wait for last frame to finish
+    sync_objects_[current_sync_objects_index_].in_flight_fence.wait();
+    sync_objects_[current_sync_objects_index_].in_flight_fence.reset();
+
+    VkSemaphore wait_semaphores[] = {
+        sync_objects_[current_sync_objects_index_].image_avail};
     VkPipelineStageFlags wait_stages[] = {
         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-    VkSemaphore signal_semaphores[] = {sync_objects_.render_done};
-    command_buffers_[current_frame_].submit(
-        operation::graphics, wait_semaphores, wait_stages, signal_semaphores);
+    VkSemaphore signal_semaphores[] = {
+        sync_objects_[current_sync_objects_index_].render_done};
+    command_buffers_[current_frame_].submit(operation::graphics,
+        wait_semaphores, wait_stages, signal_semaphores,
+        sync_objects_[current_sync_objects_index_].in_flight_fence);
 }
 
 void swapchain::present() noexcept {
     VkSwapchainKHR swapchains[] = {underlying_};
-    VkSemaphore signal_semaphores[] = {sync_objects_.render_done};
+    VkSemaphore signal_semaphores[] = {
+        sync_objects_[current_sync_objects_index_].render_done};
     VkPresentInfoKHR present_info{};
     present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
@@ -329,11 +352,22 @@ void swapchain::present() noexcept {
     present_info.pSwapchains = swapchains;
     present_info.pImageIndices = &current_frame_;
 
-    auto queue = context_->retrieve(operation::graphics);
+    auto queue = context_->retrieve(operation::present);
     vkQueuePresentKHR(queue, &present_info);
 
-    VK_EXPECT_SUCCESS(vkAcquireNextImageKHR(*context_, underlying_, UINT64_MAX,
-        sync_objects_.image_avail, VK_NULL_HANDLE, &current_frame_));
+    // increment to get next sync object
+    current_sync_objects_index_ =
+        (current_sync_objects_index_ + 1) % std::size(sync_objects_);
+
+    VK_EXPECT_SUCCESS(
+        vkAcquireNextImageKHR(*context_, underlying_,
+            std::numeric_limits<std::uint64_t>::max(),
+            sync_objects_[current_sync_objects_index_].image_avail, nullptr,
+            &current_frame_),
+        [/* this */](VkResult result) {
+            if (result != VK_SUBOPTIMAL_KHR || result != VK_SUCCESS)
+                ZOO_LOG_ERROR("should not be other success");
+        });
 }
 
 } // namespace zoo::render
