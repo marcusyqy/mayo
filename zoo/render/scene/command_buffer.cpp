@@ -102,12 +102,14 @@ void command_buffer::submit(operation op_type,
     auto queue = context_->retrieve(op_type);
     VkSubmitInfo submit_info{};
     submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submit_info.waitSemaphoreCount = static_cast<uint32_t>(wait_semaphores.size());
+    submit_info.waitSemaphoreCount =
+        static_cast<uint32_t>(wait_semaphores.size());
     submit_info.pWaitSemaphores = wait_semaphores.data();
     submit_info.pWaitDstStageMask = wait_for_pipeline_stages.data();
     submit_info.commandBufferCount = 1;
     submit_info.pCommandBuffers = &underlying_;
-    submit_info.signalSemaphoreCount = static_cast<uint32_t>(signal_semaphores.size());
+    submit_info.signalSemaphoreCount =
+        static_cast<uint32_t>(signal_semaphores.size());
     submit_info.pSignalSemaphores = signal_semaphores.data();
 
     // TODO: determine if we really need a fence here

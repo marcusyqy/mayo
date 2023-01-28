@@ -24,8 +24,8 @@ window::window(const render::engine& engine, std::shared_ptr<context> context,
                 input::glfw_layer::key_code{key, scancode, action, mods}));
     });
 
-    glfwSetFramebufferSizeCallback(
-        impl_, []([[maybe_unused]] GLFWwindow* glfw_window, int width, int height) {
+    glfwSetFramebufferSizeCallback(impl_,
+        []([[maybe_unused]] GLFWwindow* glfw_window, int width, int height) {
             window* self =
                 static_cast<window*>(glfwGetWindowUserPointer(glfw_window));
             self->swapchain_.resize(
