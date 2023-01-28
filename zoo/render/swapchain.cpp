@@ -106,35 +106,10 @@ swapchain::swapchain(const render::engine& engine,
     underlying_window_type glfw_window, width_type x, width_type y) noexcept
     : instance_(engine.vk_instance()), window_(glfw_window),
       context_(engine.context()), sync_objects_{} {
+
     // create surface first
     VK_EXPECT_SUCCESS(
-        glfwCreateWindowSurface(instance_, glfw_window, nullptr, &surface_));
-
-    // swapchain_support_details details{context_->physical(), surface_};
-    //
-    // ZOO_ASSERT(is_device_compatible(details),
-    //     "Device chosen must be compatible with the swapchain!");
-    //
-    // ZOO_ASSERT(
-    //     [this]() {
-    //         for (const auto& queue_properties :
-    //             context_->physical().queue_properties()) {
-    //             VkBool32 is_present_supported{VK_FALSE};
-    //             vkGetPhysicalDeviceSurfaceSupportKHR(context_->physical(),
-    //                 queue_properties.index(), surface_,
-    //                 &is_present_supported);
-    //
-    //             if (VK_TRUE == is_present_supported)
-    //                 return true;
-    //         }
-    //         return false;
-    //     }(),
-    //     "Must support present on at least one queue!");
-    //
-    // description_.surface_format = choose_surface_format(details.formats);
-    // description_.present_mode = choose_present_mode(details.present_modes);
-    // description_.capabilities = std::move(details.capabilities);
-    // renderpass_ = renderpass{context_, description_.surface_format.format};
+        glfwCreateWindowSurface(instance_, window_, nullptr, &surface_));
 
     ZOO_ASSERT(
         [this]() {
@@ -157,11 +132,8 @@ swapchain::swapchain(const render::engine& engine,
 }
 
 bool swapchain::create_swapchain_and_resources() noexcept {
-    // wait for all fences
-    for (auto& so : sync_objects_) {
-        so.in_flight_fence.wait();
-        so.in_flight_fence.reset();
-    }
+
+    // wait for device to be idle
     context_->wait();
 
     swapchain_support_details details{context_->physical(), surface_};
@@ -284,7 +256,9 @@ bool swapchain::create_swapchain_and_resources() noexcept {
         sync_objects_.push_back(sync_objects{context_, context_, context_});
     });
 
-    ZOO_ASSERT(current_sync_objects_index_ < std::size(sync_objects_), "Has to be within the sync objects");
+    // reset sync object index so that we don't have to care about size of the
+    // vector
+    current_sync_objects_index_ = 0;
     assure(vkAcquireNextImageKHR(*context_, underlying_,
         std::numeric_limits<std::uint64_t>::max(),
         sync_objects_[current_sync_objects_index_].image_avail, nullptr,
@@ -317,21 +291,17 @@ void swapchain::cleanup_swapchain_and_resources() noexcept {
     underlying_ = nullptr;
 }
 
-void swapchain::resize([[maybe_unused]] width_type x, [[maybe_unused]] width_type y) noexcept {
-    // if (x == size_.x && y == size_.y) {
-    //     // don't need to resize if sizes are the same.
-    //     return;
-    // }
-    // size_.x = x;
-    // size_.y = y;
+void swapchain::resize(
+    [[maybe_unused]] width_type x, [[maybe_unused]] width_type y) noexcept {
     should_resize_ = true;
 }
 
-void swapchain::resize_impl() noexcept {
+void swapchain::force_resize() noexcept {
     int width = 0, height = 0;
     while (width == 0 || height == 0) {
         glfwGetFramebufferSize(window_, &width, &height);
-        glfwWaitEvents();
+        // TODO: This may actually cause problems when having multiple windows
+        glfwWaitEvents(); // this should be done outside (maybe)
     }
     glfwGetFramebufferSize(window_, &width, &height);
     size_.x = static_cast<uint32_t>(width);
@@ -394,7 +364,6 @@ void swapchain::for_each(
     std::function<void(render::scene::command_buffer& command_context,
         VkRenderPassBeginInfo renderpass_info)>
         exec) noexcept {
-    auto extent = this->extent();
 
     std::uint32_t i{};
     for (const auto& fb : framebuffers_) {
@@ -403,7 +372,7 @@ void swapchain::for_each(
         renderpass_info.renderPass = renderpass_;
         renderpass_info.framebuffer = fb;
         renderpass_info.renderArea.offset = {0, 0};
-        renderpass_info.renderArea.extent = extent;
+        renderpass_info.renderArea.extent = {size_.x, size_.y};
         renderpass_info.pNext = nullptr;
 
         static const VkClearValue clear_color = {{{0.1f, 0.1f, 0.1f, 1.0f}}};
@@ -442,13 +411,13 @@ void swapchain::present() noexcept {
             sync_objects_[current_sync_objects_index_].image_avail, nullptr,
             &current_frame_));
     else
-        resize_impl();
+        force_resize();
 }
 
 void swapchain::assure(VkResult result) noexcept {
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         ZOO_LOG_INFO("Should recreate");
-        resize_impl();
+        force_resize();
     } else if (result != VK_SUBOPTIMAL_KHR && result != VK_SUCCESS)
         ZOO_LOG_ERROR("FAILED with {}", string_VkResult(result));
 }

@@ -60,7 +60,7 @@ private:
 
     void create_sync_objects() noexcept;
     void cleanup_sync_objects() noexcept;
-    void resize_impl() noexcept;
+    void force_resize() noexcept;
     void assure(VkResult result) noexcept;
 
 private:
