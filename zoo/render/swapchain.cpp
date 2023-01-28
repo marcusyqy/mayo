@@ -104,16 +104,37 @@ swapchain::~swapchain() noexcept {
 //
 swapchain::swapchain(const render::engine& engine,
     underlying_window_type glfw_window, width_type x, width_type y) noexcept
-    : instance_(engine.vk_instance()),
+    : instance_(engine.vk_instance()), window_(glfw_window),
       context_(engine.context()), sync_objects_{} {
     // create surface first
     VK_EXPECT_SUCCESS(
         glfwCreateWindowSurface(instance_, glfw_window, nullptr, &surface_));
 
-    swapchain_support_details details{context_->physical(), surface_};
-
-    ZOO_ASSERT(is_device_compatible(details),
-        "Device chosen must be compatible with the swapchain!");
+    // swapchain_support_details details{context_->physical(), surface_};
+    //
+    // ZOO_ASSERT(is_device_compatible(details),
+    //     "Device chosen must be compatible with the swapchain!");
+    //
+    // ZOO_ASSERT(
+    //     [this]() {
+    //         for (const auto& queue_properties :
+    //             context_->physical().queue_properties()) {
+    //             VkBool32 is_present_supported{VK_FALSE};
+    //             vkGetPhysicalDeviceSurfaceSupportKHR(context_->physical(),
+    //                 queue_properties.index(), surface_,
+    //                 &is_present_supported);
+    //
+    //             if (VK_TRUE == is_present_supported)
+    //                 return true;
+    //         }
+    //         return false;
+    //     }(),
+    //     "Must support present on at least one queue!");
+    //
+    // description_.surface_format = choose_surface_format(details.formats);
+    // description_.present_mode = choose_present_mode(details.present_modes);
+    // description_.capabilities = std::move(details.capabilities);
+    // renderpass_ = renderpass{context_, description_.surface_format.format};
 
     ZOO_ASSERT(
         [this]() {
@@ -130,27 +151,39 @@ swapchain::swapchain(const render::engine& engine,
         }(),
         "Must support present on at least one queue!");
 
+    size_.x = x;
+    size_.y = y;
+    create_swapchain_and_resources();
+}
+
+bool swapchain::create_swapchain_and_resources() noexcept {
+    // wait for all fences
+    for (auto& so : sync_objects_) {
+        so.in_flight_fence.wait();
+        so.in_flight_fence.reset();
+    }
+    context_->wait();
+
+    swapchain_support_details details{context_->physical(), surface_};
+    ZOO_ASSERT(is_device_compatible(details),
+        "Device chosen must be compatible with the swapchain!");
+
     description_.surface_format = choose_surface_format(details.formats);
     description_.present_mode = choose_present_mode(details.present_modes);
     description_.capabilities = std::move(details.capabilities);
     renderpass_ = renderpass{context_, description_.surface_format.format};
 
-    // should work correctly
-    // don't set  x and y so that resize can check for new setting
-    resize(x, y);
-}
-
-bool swapchain::create_swapchain_and_resources() noexcept {
-    // wait for resources to be done
-    context_->wait();
-
     VkExtent2D extent =
         choose_extent(description_.capabilities, size_.x, size_.y);
+
+    // set to the right extent
+    size_.x = extent.width;
+    size_.y = extent.height;
 
     uint32_t image_count =
         std::clamp(description_.capabilities.minImageCount + 1,
             description_.capabilities.minImageCount,
-            description_.capabilities.minImageCount);
+            description_.capabilities.maxImageCount);
 
     VkSwapchainCreateInfoKHR create_info{};
     create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -251,41 +284,63 @@ bool swapchain::create_swapchain_and_resources() noexcept {
         sync_objects_.push_back(sync_objects{context_, context_, context_});
     });
 
-    current_sync_objects_index_ = 0;
-    VK_EXPECT_SUCCESS(
-        vkAcquireNextImageKHR(*context_, underlying_,
-            std::numeric_limits<std::uint64_t>::max(),
-            sync_objects_[current_sync_objects_index_].image_avail, nullptr,
-            &current_frame_),
-        [/* this */](VkResult result) {
-            if (result != VK_SUBOPTIMAL_KHR || result != VK_SUCCESS)
-                ZOO_LOG_ERROR("should not be other success");
-        });
+    ZOO_ASSERT(current_sync_objects_index_ < std::size(sync_objects_), "Has to be within the sync objects");
+    assure(vkAcquireNextImageKHR(*context_, underlying_,
+        std::numeric_limits<std::uint64_t>::max(),
+        sync_objects_[current_sync_objects_index_].image_avail, nullptr,
+        &current_frame_));
 
     return !failed;
 }
 
-void swapchain::cleanup_swapchain_and_resources() noexcept {
+void swapchain::cleanup_resources() noexcept {
+    // wait for resources to be done
+    context_->wait();
     for (auto view : views_) {
         vkDestroyImageView(*context_, view, nullptr);
     }
+    views_.clear();
+
     for (auto fb : framebuffers_) {
         vkDestroyFramebuffer(*context_, fb, nullptr);
     }
-    vkDestroySwapchainKHR(*context_, underlying_, nullptr);
+    framebuffers_.clear();
+    sync_objects_.clear();
+    images_.clear();
+    command_buffers_.clear();
 }
 
-bool swapchain::resize(width_type x, width_type y) noexcept {
-    if (x == size_.x && y == size_.y) {
-        // don't need to resize if sizes are the same.
-        return false;
+void swapchain::cleanup_swapchain_and_resources() noexcept {
+    // not waiting here because cleanup waits
+    cleanup_resources();
+    vkDestroySwapchainKHR(*context_, underlying_, nullptr);
+    underlying_ = nullptr;
+}
+
+void swapchain::resize([[maybe_unused]] width_type x, [[maybe_unused]] width_type y) noexcept {
+    // if (x == size_.x && y == size_.y) {
+    //     // don't need to resize if sizes are the same.
+    //     return;
+    // }
+    // size_.x = x;
+    // size_.y = y;
+    should_resize_ = true;
+}
+
+void swapchain::resize_impl() noexcept {
+    int width = 0, height = 0;
+    while (width == 0 || height == 0) {
+        glfwGetFramebufferSize(window_, &width, &height);
+        glfwWaitEvents();
     }
-    size_.x = x;
-    size_.y = y;
-    return create_swapchain_and_resources();
+    glfwGetFramebufferSize(window_, &width, &height);
+    size_.x = static_cast<uint32_t>(width);
+    size_.y = static_cast<uint32_t>(height);
+    create_swapchain_and_resources();
 }
 
 void swapchain::reset() noexcept {
+    cleanup_swapchain_and_resources();
     vkDestroySurfaceKHR(instance_, surface_, nullptr);
 }
 
@@ -299,6 +354,40 @@ viewport_info swapchain::get_viewport_info() const noexcept {
                 1.0f                         // maxDepth;
             },
         VkRect2D{VkOffset2D{0, 0}, extent()}};
+}
+
+void swapchain::render(
+    std::function<void(render::scene::command_buffer& command_context,
+        VkRenderPassBeginInfo renderpass_info)>
+        exec) noexcept {
+    // wait for last frame to finish
+    sync_objects_[current_sync_objects_index_].in_flight_fence.wait();
+    sync_objects_[current_sync_objects_index_].in_flight_fence.reset();
+
+    VkRenderPassBeginInfo renderpass_info{};
+    renderpass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderpass_info.renderPass = renderpass_;
+    renderpass_info.framebuffer = framebuffers_[current_frame_];
+    renderpass_info.renderArea.offset = {0, 0};
+    renderpass_info.renderArea.extent = {size_.x, size_.y};
+    renderpass_info.pNext = nullptr;
+
+    static const VkClearValue clear_color = {{{0.1f, 0.1f, 0.1f, 1.0f}}};
+    renderpass_info.clearValueCount = 1;
+    renderpass_info.pClearValues = &clear_color;
+
+    command_buffers_[current_frame_].record(
+        [&] { exec(command_buffers_[current_frame_], renderpass_info); });
+
+    VkSemaphore wait_semaphores[] = {
+        sync_objects_[current_sync_objects_index_].image_avail};
+    VkPipelineStageFlags wait_stages[] = {
+        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    VkSemaphore signal_semaphores[] = {
+        sync_objects_[current_sync_objects_index_].render_done};
+    command_buffers_[current_frame_].submit(operation::graphics,
+        wait_semaphores, wait_stages, signal_semaphores,
+        sync_objects_[current_sync_objects_index_].in_flight_fence);
 }
 
 void swapchain::for_each(
@@ -327,23 +416,6 @@ void swapchain::for_each(
     }
 }
 
-// TODO: we can actually add some sort of intermediate submission and use
-void swapchain::finish() noexcept {
-    // wait for last frame to finish
-    sync_objects_[current_sync_objects_index_].in_flight_fence.wait();
-    sync_objects_[current_sync_objects_index_].in_flight_fence.reset();
-
-    VkSemaphore wait_semaphores[] = {
-        sync_objects_[current_sync_objects_index_].image_avail};
-    VkPipelineStageFlags wait_stages[] = {
-        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-    VkSemaphore signal_semaphores[] = {
-        sync_objects_[current_sync_objects_index_].render_done};
-    command_buffers_[current_frame_].submit(operation::graphics,
-        wait_semaphores, wait_stages, signal_semaphores,
-        sync_objects_[current_sync_objects_index_].in_flight_fence);
-}
-
 void swapchain::present() noexcept {
     VkSwapchainKHR swapchains[] = {underlying_};
     VkSemaphore signal_semaphores[] = {
@@ -358,21 +430,27 @@ void swapchain::present() noexcept {
     present_info.pImageIndices = &current_frame_;
 
     auto queue = context_->retrieve(operation::present);
-    vkQueuePresentKHR(queue, &present_info);
+    VkResult result = vkQueuePresentKHR(queue, &present_info);
 
     // increment to get next sync object
     current_sync_objects_index_ =
         (current_sync_objects_index_ + 1) % std::size(sync_objects_);
 
-    VK_EXPECT_SUCCESS(
-        vkAcquireNextImageKHR(*context_, underlying_,
+    if (!should_resize_ || result == VK_SUCCESS)
+        assure(vkAcquireNextImageKHR(*context_, underlying_,
             std::numeric_limits<std::uint64_t>::max(),
             sync_objects_[current_sync_objects_index_].image_avail, nullptr,
-            &current_frame_),
-        [/* this */](VkResult result) {
-            if (result != VK_SUBOPTIMAL_KHR || result != VK_SUCCESS)
-                ZOO_LOG_ERROR("should not be other success");
-        });
+            &current_frame_));
+    else
+        resize_impl();
+}
+
+void swapchain::assure(VkResult result) noexcept {
+    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+        ZOO_LOG_INFO("Should recreate");
+        resize_impl();
+    } else if (result != VK_SUBOPTIMAL_KHR && result != VK_SUCCESS)
+        ZOO_LOG_ERROR("FAILED with {}", string_VkResult(result));
 }
 
 } // namespace zoo::render

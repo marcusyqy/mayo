@@ -25,7 +25,7 @@ public:
         width_type x, width_type y) noexcept;
     ~swapchain() noexcept;
 
-    bool resize(width_type x, width_type y) noexcept;
+    void resize(width_type x, width_type y) noexcept;
     void reset() noexcept;
 
     [[nodiscard]] VkFormat format() const noexcept {
@@ -48,19 +48,25 @@ public:
             VkRenderPassBeginInfo renderpass_info)>
             exec) noexcept;
 
-    void finish() noexcept;
     void present() noexcept;
+    void render(std::function<void(render::scene::command_buffer& command_context,
+            VkRenderPassBeginInfo renderpass_info)>
+            exec) noexcept;
 
 private:
     bool create_swapchain_and_resources() noexcept;
     void cleanup_swapchain_and_resources() noexcept;
+    void cleanup_resources() noexcept;
 
     void create_sync_objects() noexcept;
     void cleanup_sync_objects() noexcept;
+    void resize_impl() noexcept;
+    void assure(VkResult result) noexcept;
 
 private:
     VkInstance instance_ = nullptr;
     surface_type surface_ = nullptr;
+    GLFWwindow* window_ = nullptr;
     underlying_type underlying_ = nullptr;
     std::shared_ptr<device_context> context_ = nullptr;
 
@@ -92,5 +98,7 @@ private:
     class renderpass renderpass_; // has a default renderpass in swapchain
 
     uint32_t current_frame_ = 0; // TODO: change this
+                                 //
+    bool should_resize_ = false;
 };
 } // namespace zoo::render

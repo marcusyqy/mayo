@@ -31,7 +31,7 @@ context::context() noexcept {
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
     // disable resizing for now
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 }
 
 void context::poll_events() noexcept { glfwPollEvents(); }

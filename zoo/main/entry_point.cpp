@@ -86,11 +86,11 @@ application::exit_status main(application::settings args) noexcept {
             });
         };
 
-    swapchain.for_each(populate_command_ctx);
+    // swapchain.for_each(populate_command_ctx);
 
     while (main_window.is_open()) {
-        swapchain.finish();
-        main_window.swap_buffers();
+        swapchain.render(populate_command_ctx);
+        swapchain.present();
         win_context->poll_events();
     }
 
