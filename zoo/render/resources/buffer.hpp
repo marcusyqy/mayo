@@ -6,16 +6,11 @@
 
 namespace zoo::render::resources {
 
-class buffer {
+class buffer : utils::box<VkBuffer> {
 public:
-    using buffer_handle_t = utils::box<VkBuffer>;
-    using memory_handle_t = utils::box<VkDeviceMemory>;
+    using underlying_type = utils::box<VkBuffer>;
     buffer(std::shared_ptr<device_context> context, size_t size,
         VkBufferUsageFlags usage, VkSharingMode sharing_mode) noexcept;
-
-private:
-    buffer_handle_t buffer_;
-    memory_handle_t memory_;
 };
 
 } // namespace zoo::render::resources

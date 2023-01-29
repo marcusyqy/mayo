@@ -2,6 +2,67 @@
 #include "pipeline.hpp"
 namespace zoo::render {
 
+namespace {
+
+template<shader_type t>
+struct converter;
+
+template<>
+struct converter<shader_type::f32> {
+    static constexpr VkFormat value = VK_FORMAT_R32_SFLOAT;
+};
+
+template<>
+struct converter<shader_type::vec2> {
+    static constexpr VkFormat value = VK_FORMAT_R32G32_SFLOAT;
+};
+
+template<>
+struct converter<shader_type::vec3> {
+    static constexpr VkFormat value = VK_FORMAT_R32G32B32_SFLOAT;
+};
+
+template<>
+struct converter<shader_type::vec4> {
+    static constexpr VkFormat value = VK_FORMAT_R32G32B32A32_SFLOAT;
+};
+
+template<>
+struct converter<shader_type::ivec2> {
+    static constexpr VkFormat value = VK_FORMAT_R32G32_SINT;
+};
+
+template<>
+struct converter<shader_type::uvec4> {
+    static constexpr VkFormat value = VK_FORMAT_R32G32B32A32_UINT;
+};
+
+template<>
+struct converter<shader_type::f64> {
+    static constexpr VkFormat value = VK_FORMAT_R64_SFLOAT;
+};
+
+VkFormat convert_to_shader_stage(shader_type t) {
+    switch (t) {
+    case shader_type::f32:
+        return converter<shader_type::f32>::value;
+    case shader_type::vec2:
+        return converter<shader_type::vec2>::value;
+    case shader_type::vec3:
+        return converter<shader_type::vec3>::value;
+    case shader_type::vec4:
+        return converter<shader_type::vec4>::value;
+    case shader_type::ivec2:
+        return converter<shader_type::ivec2>::value;
+    case shader_type::uvec4:
+        return converter<shader_type::uvec4>::value;
+    case shader_type::f64:
+        return converter<shader_type::f64>::value;
+    }
+}
+
+} // namespace
+
 void shader::reset() noexcept {
     if (module_ != nullptr && context_)
         vkDestroyShaderModule(*context_, module_, nullptr);
@@ -50,9 +111,11 @@ pipeline::pipeline(std::shared_ptr<device_context> context,
     const viewport_info& viewport_info, const renderpass& renderpass) noexcept
     : context_(context) {
 
-    constexpr uint32_t vertex_stage = 0;
-    constexpr uint32_t fragment_stage = 1;
-    constexpr uint32_t shader_stages = 2;
+    enum _shader_stages : uint32_t {
+        vertex_stage = 0,
+        fragment_stage = 1,
+        shader_stages = 2
+    };
 
     VkPipelineShaderStageCreateInfo shaders_create_info[shader_stages]{};
     {
@@ -95,15 +158,43 @@ pipeline::pipeline(std::shared_ptr<device_context> context,
     viewport_state_create_info.scissorCount = 1;
     viewport_state_create_info.pScissors = &scissor;
 
+    // this should not be a bottle neck and if it becomes it then maybe we can
+    // just try to guess how many attributes we will max use and use an array
+    std::vector<VkVertexInputAttributeDescription> vk_vertex_input_attr_desc{};
+    std::vector<VkVertexInputBindingDescription> vk_vertex_input_bind_desc{};
+    const auto& vertex_description = specifications.description;
+
+    // TODO: test this out.
+    uint32_t binding{};
+    for (const auto& desc : vertex_description) {
+        for (const auto& buf_desc : desc.buffer_description) {
+            VkVertexInputAttributeDescription vk_vertex_input_attr;
+            vk_vertex_input_attr.binding = binding;
+            vk_vertex_input_attr.location = desc.location;
+            vk_vertex_input_attr.format =
+                convert_to_shader_stage(buf_desc.type);
+            vk_vertex_input_attr.offset = buf_desc.offset;
+            vk_vertex_input_attr_desc.push_back(vk_vertex_input_attr);
+        }
+        VkVertexInputBindingDescription vk_vertex_input_bind;
+        vk_vertex_input_bind.binding = binding;
+        vk_vertex_input_bind.inputRate = desc.input_rate;
+        vk_vertex_input_bind.stride = desc.stride;
+        vk_vertex_input_bind_desc.push_back(vk_vertex_input_bind);
+        ++binding;
+    }
+
     VkPipelineVertexInputStateCreateInfo vertex_input_state_create_info{};
     vertex_input_state_create_info.sType =
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertex_input_state_create_info.vertexBindingDescriptionCount = 0;
+    vertex_input_state_create_info.vertexBindingDescriptionCount =
+        static_cast<uint32_t>(std::size(vk_vertex_input_bind_desc));
     vertex_input_state_create_info.pVertexBindingDescriptions =
-        nullptr; // Optional
-    vertex_input_state_create_info.vertexAttributeDescriptionCount = 0;
+        vk_vertex_input_bind_desc.data(); // Optional
+    vertex_input_state_create_info.vertexAttributeDescriptionCount =
+        static_cast<uint32_t>(std::size(vk_vertex_input_attr_desc));
     vertex_input_state_create_info.pVertexAttributeDescriptions =
-        nullptr; // Optional
+        vk_vertex_input_attr_desc.data(); // Optional
 
     VkPipelineInputAssemblyStateCreateInfo input_assembly_create_info{};
     input_assembly_create_info.sType =

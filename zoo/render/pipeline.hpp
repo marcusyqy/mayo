@@ -35,9 +35,34 @@ private:
     std::string entry_point_;
 };
 
+enum class shader_type {
+    f32, // float
+    vec2,
+    vec3,
+    vec4,
+    ivec2,
+    uvec4,
+    f64 // double
+};
+
+// can these be automated?
+struct vertex_buffer_description {
+    shader_type type;
+    uint32_t offset;
+};
+
+struct vertex_input_description {
+    uint32_t location;
+    uint32_t stride;
+    stdx::span<vertex_buffer_description> buffer_description;
+    VkVertexInputRate input_rate = {VK_VERTEX_INPUT_RATE_VERTEX};
+};
+
 struct shader_stages_specifications {
     const shader& vertex;
     const shader& fragment;
+    // needs to be in order of vertex buffer supplied
+    stdx::span<vertex_input_description> description;
 };
 
 class pipeline {
