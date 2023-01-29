@@ -121,6 +121,16 @@ void device_context::release_device_resource(VkSemaphore semaphore) noexcept {
         vkDestroySemaphore(logical_, semaphore, nullptr);
 }
 
+void device_context::release_device_resource(VkBuffer buffer) noexcept {
+    if(buffer != nullptr)
+        vkDestroyBuffer(logical_, buffer, nullptr);
+}
+
+void device_context::release_device_resource(VkDeviceMemory device_memory) noexcept {
+    if(device_memory != nullptr)
+        vkFreeMemory(logical_, device_memory, nullptr);
+}
+
 VkQueue device_context::retrieve(operation op) const noexcept {
 
     switch (op) {

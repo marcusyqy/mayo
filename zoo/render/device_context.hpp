@@ -45,6 +45,8 @@ public:
     void release_device_resource(VkFence fence) noexcept;
     void release_device_resource(VkRenderPass renderpass) noexcept;
     void release_device_resource(VkSemaphore semaphore) noexcept;
+    void release_device_resource(VkBuffer buffer) noexcept;
+    void release_device_resource(VkDeviceMemory device_memory) noexcept;
 
     void wait() noexcept;
 
