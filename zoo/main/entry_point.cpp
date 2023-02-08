@@ -9,10 +9,18 @@
 #include "stdx/expected.hpp"
 #include <fstream>
 #include <string_view>
+#include <array>
+
+#include <glm/glm.hpp>
 
 namespace zoo {
 
 namespace {
+
+    struct vertex {
+        glm::vec2 pos;
+        glm::vec3 color;
+    };
 
 stdx::expected<std::vector<char>, std::runtime_error> read_file(
     std::string_view filename) noexcept {
@@ -64,12 +72,23 @@ application::exit_status main(application::settings args) noexcept {
     auto context = render_engine.context();
 
     // these are here for now.
-    render::shader vertex{context, *vertex_bytes, "main"};
-    render::shader fragment{context, *fragment_bytes, "main"};
+    render::shader vertex_shader{context, *vertex_bytes, "main"};
+    render::shader fragment_shader{context, *fragment_bytes, "main"};
 
     auto& swapchain = main_window.swapchain();
+
+    std::array buffer_description = {
+       render::vertex_buffer_description{render::shader_type::vec2, offsetof(struct vertex, pos)},
+       render::vertex_buffer_description{render::shader_type::vec3, offsetof(struct vertex, color)}
+    };
+
+    std::array vertex_description = {
+        render::vertex_input_description{
+        0, sizeof(vertex_shader), buffer_description, VK_VERTEX_INPUT_RATE_VERTEX
+    }};
+
     render::pipeline pipeline{context,
-        render::shader_stages_specifications{vertex, fragment},
+        render::shader_stages_specifications{vertex_shader, fragment_shader, vertex_description},
         swapchain.get_viewport_info(), swapchain.get_renderpass()};
 
     const auto& viewport_info = swapchain.get_viewport_info();

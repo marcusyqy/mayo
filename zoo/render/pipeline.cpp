@@ -225,7 +225,7 @@ pipeline::pipeline(std::shared_ptr<device_context> context,
     multisampling_create_info.pSampleMask = nullptr;            // Optional
     multisampling_create_info.alphaToCoverageEnable = VK_FALSE; // Optional
     multisampling_create_info.alphaToOneEnable = VK_FALSE;      // Optional
-    //
+
     VkPipelineColorBlendAttachmentState color_blend_attachment_state{};
     color_blend_attachment_state.colorWriteMask =
         VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
