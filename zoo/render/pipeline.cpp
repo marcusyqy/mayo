@@ -59,6 +59,8 @@ VkFormat convert_to_shader_stage(shader_type t) {
     case shader_type::f64:
         return converter<shader_type::f64>::value;
     }
+
+    return VK_FORMAT_UNDEFINED;
 }
 
 } // namespace
