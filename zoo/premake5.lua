@@ -24,6 +24,7 @@ project "zoo"
 
     links {
         "GLFW",
+        "vma",
         "%{library_dir.vulkan}"
     }
 
