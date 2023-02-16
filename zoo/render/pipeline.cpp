@@ -72,13 +72,13 @@ void shader::reset() noexcept {
     module_ = nullptr;
 }
 
-shader::shader(std::shared_ptr<device_context> context, stdx::span<char> code,
+shader::shader(std::shared_ptr<device_context> context, stdx::span<uint32_t> code,
     std::string_view entry_point) noexcept
     : context_(context), module_(nullptr), entry_point_(entry_point) {
     VkShaderModuleCreateInfo create_info{};
     create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    create_info.codeSize = code.size();
-    create_info.pCode = reinterpret_cast<const uint32_t*>(code.data());
+    create_info.codeSize = sizeof(uint32_t) * code.size();
+    create_info.pCode = code.data();
     // TODO : write allocator
     VK_EXPECT_SUCCESS(
         vkCreateShaderModule(*context_, &create_info, nullptr, &module_));

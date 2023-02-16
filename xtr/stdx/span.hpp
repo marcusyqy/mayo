@@ -6,81 +6,13 @@
 #include <stdexcept>
 #include <vector>
 
+#include "contiguous_iterator.hpp"
+
 namespace stdx {
-
-template<bool Const, typename Owner>
-struct contiguous_iterator {
-    using owner_type = Owner;
-    using this_type = contiguous_iterator<Const, owner_type>;
-    using other_this_type = contiguous_iterator<!Const, owner_type>;
-    using value_type = typename owner_type::value_type;
-    using iterator_category = typename owner_type::iterator_category;
-    using difference_type = typename owner_type::difference_type;
-    using const_reference = typename owner_type::const_reference;
-    using const_pointer = typename owner_type::const_pointer;
-    using size_type = typename owner_type::size_type;
-    using index_type = size_type;
-    using reference = std::conditional_t<Const,
-        typename owner_type::const_reference, typename owner_type::reference>;
-    using pointer = std::conditional_t<Const,
-        typename owner_type::const_pointer, typename owner_type::pointer>;
-
-private:
-    friend owner_type;
-    contiguous_iterator(pointer data, index_type idx) noexcept
-        : data_(data), curr_(idx) {}
-
-public:
-    this_type& operator++() noexcept { return ++curr_, *this; }
-    this_type operator++(int) noexcept { return {data_, curr_++}; }
-
-    // should probably check for 0
-    this_type& operator--() noexcept { return --curr_, *this; }
-    this_type operator--(int) noexcept { return {data_, curr_--}; }
-
-    reference operator*() noexcept { return data_[curr_]; }
-    const_reference operator*() const noexcept { return data_[curr_]; }
-
-    bool operator==(const this_type& other) const noexcept {
-        STDX_ASSERT(data_ == other.data_,
-            "Not even comparing iterators from the same container!");
-        return curr_ == other.curr_;
-    }
-
-    bool operator!=(const this_type& other) const noexcept {
-        return !(*this == other);
-    }
-
-    bool operator<(const this_type& other) const noexcept {
-        STDX_ASSERT(data_ == other.data_,
-            "Not even comparing iterators from the same container!");
-        return curr_ < other.curr_;
-    }
-
-    bool operator>(const this_type& other) const noexcept {
-        STDX_ASSERT(data_ == other.data_,
-            "Not even comparing iterators from the same container!");
-        return curr_ > other.curr_;
-    }
-
-    bool operator<=(const this_type& other) const noexcept {
-        return !(*this > other);
-    }
-
-    bool operator>=(const this_type& other) const noexcept {
-        return !(*this < other);
-    }
-
-private:
-    pointer data_;
-    index_type curr_;
-};
 
 constexpr auto dynamic_extent = std::numeric_limits<size_t>::max();
 
-template<typename T, size_t N = stdx::dynamic_extent>
-class span;
-
+namespace detail {
 template<typename T>
 struct span_traits {
     static constexpr bool is_const = std::is_const_v<T>;
@@ -95,26 +27,25 @@ struct span_traits {
     using difference_type = std::ptrdiff_t;
     using iterator_category = std::random_access_iterator_tag;
     using index_type = size_type;
-
-    using const_iterator = contiguous_iterator<true, span<T>>;
-    using iterator = contiguous_iterator<false, span<T>>;
 };
+} // namespace detail
 
-template<typename T, size_t N>
+template<typename T, size_t N = stdx::dynamic_extent>
 class span {
 public:
-    using size_type = typename span_traits<T>::size_type;
-    using element_type = typename span_traits<T>::element_type;
-    using value_type = typename span_traits<T>::value_type;
-    using const_pointer = typename span_traits<T>::const_pointer;
-    using const_reference = typename span_traits<T>::const_reference;
-    using pointer = typename span_traits<T>::pointer;
-    using reference = typename span_traits<T>::reference;
-    using difference_type = typename span_traits<T>::difference_type;
-    using iterator_category = typename span_traits<T>::iterator_category;
-    using index_type = typename span_traits<T>::index_type;
-    using const_iterator = typename span_traits<T>::const_iterator;
-    using iterator = typename span_traits<T>::iterator;
+    using size_type = typename detail::span_traits<T>::size_type;
+    using element_type = typename detail::span_traits<T>::element_type;
+    using value_type = typename detail::span_traits<T>::value_type;
+    using const_pointer = typename detail::span_traits<T>::const_pointer;
+    using const_reference = typename detail::span_traits<T>::const_reference;
+    using pointer = typename detail::span_traits<T>::pointer;
+    using reference = typename detail::span_traits<T>::reference;
+    using difference_type = typename detail::span_traits<T>::difference_type;
+    using iterator_category =
+        typename detail::span_traits<T>::iterator_category;
+    using index_type = typename detail::span_traits<T>::index_type;
+    using const_iterator = contiguous_iterator<true, detail::span_traits<T>>;
+    using iterator = contiguous_iterator<false, detail::span_traits<T>>;
 
     iterator begin() noexcept { return {start_, 0}; }
     iterator end() noexcept { return {start_, N}; }
@@ -176,18 +107,19 @@ private:
 template<typename T>
 class span<T, stdx::dynamic_extent> {
 public:
-    using size_type = typename span_traits<T>::size_type;
-    using element_type = typename span_traits<T>::element_type;
-    using value_type = typename span_traits<T>::value_type;
-    using const_pointer = typename span_traits<T>::const_pointer;
-    using const_reference = typename span_traits<T>::const_reference;
-    using pointer = typename span_traits<T>::pointer;
-    using reference = typename span_traits<T>::reference;
-    using difference_type = typename span_traits<T>::difference_type;
-    using iterator_category = typename span_traits<T>::iterator_category;
-    using index_type = typename span_traits<T>::index_type;
-    using const_iterator = typename span_traits<T>::const_iterator;
-    using iterator = typename span_traits<T>::iterator;
+    using size_type = typename detail::span_traits<T>::size_type;
+    using element_type = typename detail::span_traits<T>::element_type;
+    using value_type = typename detail::span_traits<T>::value_type;
+    using const_pointer = typename detail::span_traits<T>::const_pointer;
+    using const_reference = typename detail::span_traits<T>::const_reference;
+    using pointer = typename detail::span_traits<T>::pointer;
+    using reference = typename detail::span_traits<T>::reference;
+    using difference_type = typename detail::span_traits<T>::difference_type;
+    using iterator_category =
+        typename detail::span_traits<T>::iterator_category;
+    using index_type = typename detail::span_traits<T>::index_type;
+    using const_iterator = contiguous_iterator<true, detail::span_traits<T>>;
+    using iterator = contiguous_iterator<false, detail::span_traits<T>>;
 
     iterator begin() noexcept { return {start_, 0}; }
     iterator end() noexcept { return {start_, size_}; }
@@ -222,6 +154,7 @@ public:
         throw std::out_of_range("Out of range for span<T> `at` function");
     }
 
+    span() noexcept : start_(nullptr), size_(0) {}
     span(pointer data, size_type size) noexcept : start_(data), size_(size) {}
     ~span() noexcept = default;
 

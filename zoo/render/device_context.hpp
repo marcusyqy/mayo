@@ -1,15 +1,15 @@
 #pragma once
+#include "zoo.hpp"
 
 #include "utils/physical_device.hpp"
 
 #include "core/platform/query.hpp"
 #include "fwd.hpp"
 #include <memory>
-#include <string_view>
 
 namespace zoo::render {
 
-class device_context : std::enable_shared_from_this<device_context> {
+class device_context : enable_ref_from_this<device_context> {
 public:
     // traits (?)
 

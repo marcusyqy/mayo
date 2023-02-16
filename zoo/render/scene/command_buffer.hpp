@@ -1,4 +1,5 @@
 #pragma once
+#include "zoo.hpp"
 #include "render/device_context.hpp"
 #include "render/fwd.hpp"
 #include "render/pipeline.hpp"
@@ -47,7 +48,7 @@ private:
     void end_renderpass() noexcept;
 
 private:
-    std::shared_ptr<device_context> context_;
+    ref<device_context> context_;
     underlying_type underlying_;
 };
 } // namespace zoo::render::scene

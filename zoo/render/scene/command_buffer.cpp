@@ -3,7 +3,7 @@
 
 namespace zoo::render::scene {
 
-command_buffer::command_buffer(std::shared_ptr<device_context> context) noexcept
+command_buffer::command_buffer(ref<device_context> context) noexcept
     : context_{context}, underlying_{context_->buffer_from_pool()} {}
 
 command_buffer::command_buffer(command_buffer&& other) noexcept

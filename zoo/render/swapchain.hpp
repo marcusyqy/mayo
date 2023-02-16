@@ -1,4 +1,5 @@
 #pragma once
+#include "zoo.hpp"
 
 #include "core/platform/window/detail.hpp"
 #include "device_context.hpp"
@@ -69,7 +70,7 @@ private:
     surface_type surface_ = nullptr;
     GLFWwindow* window_ = nullptr;
     underlying_type underlying_ = nullptr;
-    std::shared_ptr<device_context> context_ = nullptr;
+    ref<device_context> context_ = nullptr;
 
     struct {
         width_type x;
@@ -89,13 +90,13 @@ private:
     };
 
     // frame specific stuff
-    std::vector<VkImage> images_;
-    std::vector<sync_objects> sync_objects_;
+    zoo::dyn_array<VkImage> images_;
+    zoo::dyn_array<sync_objects> sync_objects_;
     size_t current_sync_objects_index_ = {};
 
-    std::vector<VkImageView> views_;
-    std::vector<VkFramebuffer> framebuffers_;
-    std::vector<render::scene::command_buffer> command_buffers_;
+    zoo::dyn_array<VkImageView> views_;
+    zoo::dyn_array<VkFramebuffer> framebuffers_;
+    zoo::dyn_array<render::scene::command_buffer> command_buffers_;
     class renderpass renderpass_; // has a default renderpass in swapchain
 
     uint32_t current_frame_ = 0; // TODO: change this

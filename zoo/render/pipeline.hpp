@@ -17,7 +17,7 @@ public:
 
     void reset() noexcept;
 
-    shader(std::shared_ptr<device_context> context, stdx::span<char> code,
+    shader(ref<device_context> context, stdx::span<uint32_t> code,
         std::string_view entry_point) noexcept;
 
     shader() noexcept;
@@ -62,7 +62,7 @@ struct shader_stages_specifications {
     const shader& vertex;
     const shader& fragment;
     // needs to be in order of vertex buffer supplied
-    stdx::span<vertex_input_description> description;
+    stdx::span<vertex_input_description> description = {};
 };
 
 class pipeline {
