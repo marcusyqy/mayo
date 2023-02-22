@@ -16,7 +16,7 @@ struct shader_work {
     shaderc_shader_kind kind;
     std::string name;
     std::string bytes;
-    stdx::span<shader_define_type> defines = {};
+    stdx::span<shader_define_type> defines = {}
 };
 
 class shader_compiler {
