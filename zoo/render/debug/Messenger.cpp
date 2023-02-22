@@ -1,4 +1,4 @@
-#include "messenger.hpp"
+#include "Messenger.hpp"
 #include <vulkan/vk_enum_string_helper.h>
 
 namespace zoo::render::debug {
@@ -57,7 +57,7 @@ void destroy_debug_utils_messenger_ext(VkInstance instance,
 }
 } // namespace
 
-messenger::messenger(VkInstance instance) noexcept
+Messenger::Messenger(VkInstance instance) noexcept
     : instance_(instance), debug_messenger_(nullptr) {
 
     VkDebugUtilsMessengerCreateInfoEXT create_info{};
@@ -89,21 +89,21 @@ messenger::messenger(VkInstance instance) noexcept
     }
 }
 
-messenger::~messenger() noexcept { reset(); }
+Messenger::~Messenger() noexcept { reset(); }
 
-void messenger::reset() noexcept {
+void Messenger::reset() noexcept {
     if (debug_messenger_ != nullptr) {
         destroy_debug_utils_messenger_ext(instance_, debug_messenger_, nullptr);
         debug_messenger_ = nullptr;
     }
 }
 
-messenger::messenger(messenger&& other) noexcept
+Messenger::Messenger(Messenger&& other) noexcept
     : instance_(nullptr), debug_messenger_(nullptr) {
     *this = std::move(other);
 }
 
-messenger& messenger::operator=(messenger&& other) noexcept {
+Messenger& Messenger::operator=(Messenger&& other) noexcept {
     instance_ = other.instance_;
     debug_messenger_ = other.debug_messenger_;
 

@@ -3,7 +3,7 @@
 
 namespace zoo::render::scene {
 
-class frame_context {
+class FrameContext {
 public:
 private:
 };

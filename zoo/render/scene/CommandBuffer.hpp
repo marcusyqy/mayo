@@ -1,14 +1,14 @@
 #pragma once
-#include "zoo.hpp"
-#include "render/device_context.hpp"
+#include "render/DeviceContext.hpp"
+#include "render/Pipeline.hpp"
+#include "render/Renderpass.hpp"
 #include "render/fwd.hpp"
-#include "render/pipeline.hpp"
-#include "render/renderpass.hpp"
 #include "stdx/function_ref.hpp"
+#include "zoo.hpp"
 
 namespace zoo::render::scene {
 
-class command_buffer {
+class CommandBuffer {
 public:
     using underlying_type = VkCommandBuffer;
 
@@ -16,16 +16,16 @@ public:
     void reset() noexcept;
     void clear() noexcept;
 
-    command_buffer(std::shared_ptr<device_context> context) noexcept;
-    command_buffer(command_buffer&& other) noexcept;
-    command_buffer& operator=(command_buffer&& other) noexcept;
-    ~command_buffer() noexcept;
+    CommandBuffer(std::shared_ptr<DeviceContext> context) noexcept;
+    CommandBuffer(CommandBuffer&& other) noexcept;
+    CommandBuffer& operator=(CommandBuffer&& other) noexcept;
+    ~CommandBuffer() noexcept;
 
     void set_viewport(const VkViewport& viewport) noexcept;
     void set_scissor(const VkRect2D& scissor) noexcept;
 
     // bindings
-    void bind(const render::pipeline& pipeline) noexcept;
+    void bind(const render::Pipeline& pipeline) noexcept;
 
     // maybe struct?
     void draw(uint32_t vertex_count, uint32_t instance_count,
@@ -36,7 +36,7 @@ public:
     void record(stdx::function_ref<void()> c) noexcept;
 
     // TODO: find a better way to do this.
-    void submit(operation op_type, stdx::span<VkSemaphore> wait_semaphores,
+    void submit(Operation op_type, stdx::span<VkSemaphore> wait_semaphores,
         stdx::span<VkPipelineStageFlags> wait_for_pipeline_stages,
         stdx::span<VkSemaphore> signal_semaphores, VkFence fence) noexcept;
 
@@ -48,7 +48,7 @@ private:
     void end_renderpass() noexcept;
 
 private:
-    ref<device_context> context_;
+    ref<DeviceContext> context_;
     underlying_type underlying_;
 };
 } // namespace zoo::render::scene

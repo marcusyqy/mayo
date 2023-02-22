@@ -1,15 +1,15 @@
 
 #pragma once
-#include "render/device_context.hpp"
+#include "render/DeviceContext.hpp"
 #include "render/fwd.hpp"
-#include "render/utils/box.hpp"
+#include "render/utils/Box.hpp"
 
 namespace zoo::render::resources {
 
-class buffer : utils::box<VkBuffer> {
+class Buffer : utils::Box<VkBuffer> {
 public:
-    using underlying_type = utils::box<VkBuffer>;
-    buffer(std::shared_ptr<device_context> context, size_t size,
+    using underlying_type = utils::Box<VkBuffer>;
+    Buffer(std::shared_ptr<DeviceContext> context, size_t size,
         VkBufferUsageFlags usage, VkSharingMode sharing_mode) noexcept;
 };
 

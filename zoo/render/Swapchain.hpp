@@ -1,20 +1,20 @@
 #pragma once
 #include "zoo.hpp"
 
-#include "core/platform/window/detail.hpp"
-#include "device_context.hpp"
-#include "engine.hpp"
+#include "DeviceContext.hpp"
+#include "Engine.hpp"
+#include "core/platform/window/Detail.hpp"
 #include "fwd.hpp"
-#include "render/scene/command_buffer.hpp"
+#include "render/scene/CommandBuffer.hpp"
 #include <cstdint>
 
-#include "renderpass.hpp"
-#include "sync/fence.hpp"
-#include "sync/semaphore.hpp"
+#include "Renderpass.hpp"
+#include "sync/Fence.hpp"
+#include "sync/Semaphore.hpp"
 
 namespace zoo::render {
 
-class swapchain {
+class Swapchain {
 public:
     using underlying_type = VkSwapchainKHR;
     using surface_type = VkSurfaceKHR;
@@ -22,9 +22,9 @@ public:
     using underlying_window_type = GLFWwindow*;
 
     // initialize with the device
-    swapchain(const render::engine& engine, underlying_window_type glfw_window,
+    Swapchain(const render::Engine& engine, underlying_window_type glfw_window,
         width_type x, width_type y) noexcept;
-    ~swapchain() noexcept;
+    ~Swapchain() noexcept;
 
     void resize(width_type x, width_type y) noexcept;
     void reset() noexcept;
@@ -38,20 +38,20 @@ public:
     }
 
     // renderpass& renderpass() noexcept { return renderpass_; }
-    [[nodiscard]] const renderpass& get_renderpass() const noexcept {
+    [[nodiscard]] const Renderpass& get_renderpass() const noexcept {
         return renderpass_;
     }
 
-    [[nodiscard]] viewport_info get_viewport_info() const noexcept;
+    [[nodiscard]] ViewportInfo get_viewport_info() const noexcept;
 
     void for_each(
-        std::function<void(render::scene::command_buffer& command_context,
+        std::function<void(render::scene::CommandBuffer& command_context,
             VkRenderPassBeginInfo renderpass_info)>
             exec) noexcept;
 
     void present() noexcept;
     void render(
-        std::function<void(render::scene::command_buffer& command_context,
+        std::function<void(render::scene::CommandBuffer& command_context,
             VkRenderPassBeginInfo renderpass_info)>
             exec) noexcept;
 
@@ -70,7 +70,7 @@ private:
     surface_type surface_ = nullptr;
     GLFWwindow* window_ = nullptr;
     underlying_type underlying_ = nullptr;
-    ref<device_context> context_ = nullptr;
+    ref<DeviceContext> context_ = nullptr;
 
     struct {
         width_type x;
@@ -83,21 +83,21 @@ private:
         VkSurfaceCapabilitiesKHR capabilities;
     } description_ = {};
 
-    struct sync_objects {
-        sync::semaphore image_avail;
-        sync::semaphore render_done;
-        sync::fence in_flight_fence;
+    struct SyncObjects {
+        sync::Semaphore image_avail;
+        sync::Semaphore render_done;
+        sync::Fence in_flight_fence;
     };
 
     // frame specific stuff
     zoo::dyn_array<VkImage> images_;
-    zoo::dyn_array<sync_objects> sync_objects_;
+    zoo::dyn_array<SyncObjects> sync_objects_;
     size_t current_sync_objects_index_ = {};
 
     zoo::dyn_array<VkImageView> views_;
     zoo::dyn_array<VkFramebuffer> framebuffers_;
-    zoo::dyn_array<render::scene::command_buffer> command_buffers_;
-    class renderpass renderpass_; // has a default renderpass in swapchain
+    zoo::dyn_array<render::scene::CommandBuffer> command_buffers_;
+    class Renderpass renderpass_; // has a default renderpass in swapchain
 
     uint32_t current_frame_ = 0; // TODO: change this
     bool should_resize_ = false;

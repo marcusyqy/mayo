@@ -1,7 +1,7 @@
 #pragma once
 
-#include "core/platform/input.hpp"
-#include "render/engine.hpp"
+#include "core/platform/Input.hpp"
+#include "render/Engine.hpp"
 
 #include <cstdint>
 #include <functional>
@@ -13,47 +13,47 @@
 
 namespace zoo {
 // fwd declaration
-class window;
-namespace detail {
+class Window;
+namespace window {
 
 using window_size_type = std::uint32_t;
 
-struct size {
+struct Size {
     window_size_type x;
     window_size_type y;
 };
 
-struct traits {
-    size size;
+struct Traits {
+    Size size;
     bool full_screen;
     std::string_view name;
 };
 
-struct context : std::enable_shared_from_this<context> {
+struct Context {
 public:
-    context() noexcept;
-    ~context() noexcept;
+    Context() noexcept;
+    ~Context() noexcept;
 
     void poll_events() noexcept;
     void wait_for_vsync() const noexcept;
 };
 
-using input_callback = std::function<void(window&, input::key_code)>;
+using InputCallback = std::function<void(Window&, input::KeyCode)>;
 
-class factory {
+class Factory {
 public:
     using error_callback = std::function<void(std::string_view description)>;
-    using input_callback = input_callback;
+    using input_callback = InputCallback;
 
-    factory(std::shared_ptr<context> context) noexcept;
-    ~factory() noexcept;
+    Factory(const Context& context) noexcept;
+    ~Factory() noexcept;
 
-    window* create_window(const render::engine& engine, const traits& traits,
+    Window* create_window(const render::Engine& engine, const Traits& traits,
         input_callback callback) noexcept;
 
 private:
-    std::shared_ptr<context> context_;
-    std::vector<std::unique_ptr<window>> windows_;
+    Context& context_;
+    std::vector<std::unique_ptr<Window>> windows_;
 };
-} // namespace detail
+} // namespace window
 } // namespace zoo

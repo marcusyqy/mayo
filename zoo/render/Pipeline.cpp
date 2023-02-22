@@ -1,63 +1,63 @@
 
-#include "pipeline.hpp"
+#include "Pipeline.hpp"
 namespace zoo::render {
 
 namespace {
 
-template<shader_type t>
+template<ShaderType t>
 struct converter;
 
 template<>
-struct converter<shader_type::f32> {
+struct converter<ShaderType::f32> {
     static constexpr VkFormat value = VK_FORMAT_R32_SFLOAT;
 };
 
 template<>
-struct converter<shader_type::vec2> {
+struct converter<ShaderType::vec2> {
     static constexpr VkFormat value = VK_FORMAT_R32G32_SFLOAT;
 };
 
 template<>
-struct converter<shader_type::vec3> {
+struct converter<ShaderType::vec3> {
     static constexpr VkFormat value = VK_FORMAT_R32G32B32_SFLOAT;
 };
 
 template<>
-struct converter<shader_type::vec4> {
+struct converter<ShaderType::vec4> {
     static constexpr VkFormat value = VK_FORMAT_R32G32B32A32_SFLOAT;
 };
 
 template<>
-struct converter<shader_type::ivec2> {
+struct converter<ShaderType::ivec2> {
     static constexpr VkFormat value = VK_FORMAT_R32G32_SINT;
 };
 
 template<>
-struct converter<shader_type::uvec4> {
+struct converter<ShaderType::uvec4> {
     static constexpr VkFormat value = VK_FORMAT_R32G32B32A32_UINT;
 };
 
 template<>
-struct converter<shader_type::f64> {
+struct converter<ShaderType::f64> {
     static constexpr VkFormat value = VK_FORMAT_R64_SFLOAT;
 };
 
-VkFormat convert_to_shader_stage(shader_type t) {
+VkFormat convert_to_shader_stage(ShaderType t) {
     switch (t) {
-    case shader_type::f32:
-        return converter<shader_type::f32>::value;
-    case shader_type::vec2:
-        return converter<shader_type::vec2>::value;
-    case shader_type::vec3:
-        return converter<shader_type::vec3>::value;
-    case shader_type::vec4:
-        return converter<shader_type::vec4>::value;
-    case shader_type::ivec2:
-        return converter<shader_type::ivec2>::value;
-    case shader_type::uvec4:
-        return converter<shader_type::uvec4>::value;
-    case shader_type::f64:
-        return converter<shader_type::f64>::value;
+    case ShaderType::f32:
+        return converter<ShaderType::f32>::value;
+    case ShaderType::vec2:
+        return converter<ShaderType::vec2>::value;
+    case ShaderType::vec3:
+        return converter<ShaderType::vec3>::value;
+    case ShaderType::vec4:
+        return converter<ShaderType::vec4>::value;
+    case ShaderType::ivec2:
+        return converter<ShaderType::ivec2>::value;
+    case ShaderType::uvec4:
+        return converter<ShaderType::uvec4>::value;
+    case ShaderType::f64:
+        return converter<ShaderType::f64>::value;
     }
 
     return VK_FORMAT_UNDEFINED;
@@ -65,15 +65,15 @@ VkFormat convert_to_shader_stage(shader_type t) {
 
 } // namespace
 
-void shader::reset() noexcept {
+void Shader::reset() noexcept {
     if (module_ != nullptr && context_)
         vkDestroyShaderModule(*context_, module_, nullptr);
 
     module_ = nullptr;
 }
 
-shader::shader(std::shared_ptr<device_context> context, stdx::span<uint32_t> code,
-    std::string_view entry_point) noexcept
+Shader::Shader(std::shared_ptr<DeviceContext> context,
+    stdx::span<uint32_t> code, std::string_view entry_point) noexcept
     : context_(context), module_(nullptr), entry_point_(entry_point) {
     VkShaderModuleCreateInfo create_info{};
     create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -84,10 +84,10 @@ shader::shader(std::shared_ptr<device_context> context, stdx::span<uint32_t> cod
         vkCreateShaderModule(*context_, &create_info, nullptr, &module_));
 }
 
-shader::shader() noexcept
+Shader::Shader() noexcept
     : context_(nullptr), module_(nullptr), entry_point_() {}
 
-shader::shader(shader&& other) noexcept
+Shader::Shader(Shader&& other) noexcept
     : context_(std::move(other.context_)), module_(std::move(other.module_)),
       entry_point_(std::move(other.entry_point_)) {
     other.context_ = nullptr;
@@ -95,7 +95,7 @@ shader::shader(shader&& other) noexcept
     other.entry_point_.clear();
 }
 
-shader& shader::operator=(shader&& other) noexcept {
+Shader& Shader::operator=(Shader&& other) noexcept {
     context_ = std::move(other.context_);
     module_ = std::move(other.module_);
     entry_point_ = std::move(other.entry_point_);
@@ -105,12 +105,12 @@ shader& shader::operator=(shader&& other) noexcept {
     return *this;
 }
 
-shader::~shader() noexcept { reset(); }
+Shader::~Shader() noexcept { reset(); }
 
 // TODO: do some cleanup in this area.
-pipeline::pipeline(std::shared_ptr<device_context> context,
-    const shader_stages_specifications& specifications,
-    const viewport_info& viewport_info, const renderpass& renderpass) noexcept
+Pipeline::Pipeline(std::shared_ptr<DeviceContext> context,
+    const ShaderStagesSpecification& specifications,
+    const ViewportInfo& viewport_info, const Renderpass& renderpass) noexcept
     : context_(context) {
 
     enum _shader_stages : uint32_t {
@@ -299,7 +299,7 @@ pipeline::pipeline(std::shared_ptr<device_context> context,
         &graphics_pipeline_create_info, nullptr, &underlying_));
 }
 
-pipeline::~pipeline() noexcept {
+Pipeline::~Pipeline() noexcept {
     if (context_) {
         vkDestroyPipelineLayout(*context_, layout_, nullptr);
         vkDestroyPipeline(*context_, underlying_, nullptr);

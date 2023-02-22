@@ -5,14 +5,14 @@
 
 namespace zoo::core {
 
-struct version {
+struct Version {
     uint16_t major;
     uint16_t minor;
     uint16_t patch;
 };
 
 namespace engine {
-constexpr core::version version = {0, 0, 0};
+constexpr core::Version version = {0, 0, 0};
 constexpr std::string_view name = "zoo_engine";
 } // namespace engine
 

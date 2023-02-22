@@ -1,5 +1,4 @@
-
-#include "semaphore.hpp"
+#include "Semaphore.hpp"
 
 namespace zoo::render::sync {
 
@@ -16,7 +15,7 @@ VkSemaphore create_semaphore(VkDevice device) noexcept {
 
 } // namespace
 
-semaphore::semaphore(std::shared_ptr<device_context> context) noexcept
+Semaphore::Semaphore(std::shared_ptr<DeviceContext> context) noexcept
     : underlying_type{context, create_semaphore(*context)} {}
 
 } // namespace zoo::render::sync

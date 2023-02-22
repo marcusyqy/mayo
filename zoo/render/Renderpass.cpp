@@ -1,9 +1,9 @@
-#include "renderpass.hpp"
+#include "Renderpass.hpp"
 
 namespace zoo::render {
 namespace {
 VkRenderPass create_vk_renderpass(
-    std::shared_ptr<device_context> context, VkFormat format) noexcept {
+    std::shared_ptr<DeviceContext> context, VkFormat format) noexcept {
     VkAttachmentDescription color_attachment{};
     color_attachment.format = format;
     color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -49,24 +49,22 @@ VkRenderPass create_vk_renderpass(
 
 } // namespace
 
-renderpass::renderpass() noexcept : underlying_type() {}
+Renderpass::Renderpass() noexcept : underlying_type() {}
 
-renderpass::renderpass(
-    std::shared_ptr<device_context> context, VkFormat format) noexcept
+Renderpass::Renderpass(
+    std::shared_ptr<DeviceContext> context, VkFormat format) noexcept
     : underlying_type(context, create_vk_renderpass(context, format)) {}
 
-renderpass& renderpass::operator=(renderpass&& renderpass) noexcept {
+Renderpass& Renderpass::operator=(Renderpass&& renderpass) noexcept {
     underlying_type::reset();
     underlying_type::operator=(std::move(renderpass));
     std::ignore = renderpass.release();
     return *this;
 }
 
-renderpass::renderpass(renderpass&& renderpass) noexcept
+Renderpass::Renderpass(Renderpass&& renderpass) noexcept
     : underlying_type(std::move(renderpass)) {
     std::ignore = renderpass.release();
 }
-
-renderpass ::~renderpass() = default;
 
 } // namespace zoo::render

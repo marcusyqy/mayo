@@ -1,5 +1,6 @@
-#include "swapchain.hpp"
 #include "render/fwd.hpp"
+
+#include "Swapchain.hpp"
 
 // #define VK_USE_PLATFORM_WIN32_KHR
 #define GLFW_INCLUDE_VULKAN
@@ -14,17 +15,17 @@ namespace zoo::render {
 
 namespace {
 
-struct swapchain_support_details {
+struct SwapchainSupportDetails {
     VkSurfaceCapabilitiesKHR capabilities;
     std::vector<VkSurfaceFormatKHR> formats;
     std::vector<VkPresentModeKHR> present_modes;
 
-    swapchain_support_details(const utils::physical_device& physical_device,
+    SwapchainSupportDetails(const utils::PhysicalDevice& physical_device,
         VkSurfaceKHR surface) noexcept;
 };
 
-swapchain_support_details::swapchain_support_details(
-    const utils::physical_device& physical_device,
+SwapchainSupportDetails::SwapchainSupportDetails(
+    const utils::PhysicalDevice& physical_device,
     VkSurfaceKHR surface) noexcept {
 
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
@@ -51,7 +52,7 @@ swapchain_support_details::swapchain_support_details(
     }
 }
 
-bool is_device_compatible(const swapchain_support_details& details) noexcept {
+bool is_device_compatible(const SwapchainSupportDetails& details) noexcept {
     return !details.formats.empty() && !details.present_modes.empty();
 }
 
@@ -95,14 +96,14 @@ VkExtent2D choose_extent(const VkSurfaceCapabilitiesKHR& capabilities,
 
 } // namespace
   //
-swapchain::~swapchain() noexcept {
+Swapchain::~Swapchain() noexcept {
     // we will not call resize here because swapchain will be gracefully removed
     // using the create_info struct.
     cleanup_swapchain_and_resources();
     reset();
 }
 //
-swapchain::swapchain(const render::engine& engine,
+Swapchain::Swapchain(const render::Engine& engine,
     underlying_window_type glfw_window, width_type x, width_type y) noexcept
     : instance_(engine.vk_instance()), window_(glfw_window),
       context_(engine.context()), sync_objects_{} {
@@ -131,12 +132,12 @@ swapchain::swapchain(const render::engine& engine,
     create_swapchain_and_resources();
 }
 
-bool swapchain::create_swapchain_and_resources() noexcept {
+bool Swapchain::create_swapchain_and_resources() noexcept {
 
     // wait for device to be idle
     context_->wait();
 
-    swapchain_support_details details{context_->physical(), surface_};
+    SwapchainSupportDetails details{context_->physical(), surface_};
     ZOO_ASSERT(is_device_compatible(details),
         "Device chosen must be compatible with the swapchain!");
 
@@ -253,7 +254,7 @@ bool swapchain::create_swapchain_and_resources() noexcept {
     sync_objects_.reserve(std::size(images_));
 
     stdx::irange(0, std::size(images_)).for_each([this](auto) {
-        sync_objects_.push_back(sync_objects{context_, context_, context_});
+        sync_objects_.push_back(SyncObjects{context_, context_, context_});
     });
 
     // reset sync object index so that we don't have to care about size of the
@@ -267,7 +268,7 @@ bool swapchain::create_swapchain_and_resources() noexcept {
     return !failed;
 }
 
-void swapchain::cleanup_resources() noexcept {
+void Swapchain::cleanup_resources() noexcept {
     // wait for resources to be done
     context_->wait();
     for (auto view : views_) {
@@ -284,19 +285,19 @@ void swapchain::cleanup_resources() noexcept {
     command_buffers_.clear();
 }
 
-void swapchain::cleanup_swapchain_and_resources() noexcept {
+void Swapchain::cleanup_swapchain_and_resources() noexcept {
     // not waiting here because cleanup waits
     cleanup_resources();
     vkDestroySwapchainKHR(*context_, underlying_, nullptr);
     underlying_ = nullptr;
 }
 
-void swapchain::resize(
+void Swapchain::resize(
     [[maybe_unused]] width_type x, [[maybe_unused]] width_type y) noexcept {
     should_resize_ = true;
 }
 
-void swapchain::force_resize() noexcept {
+void Swapchain::force_resize() noexcept {
     int width = 0, height = 0;
     while (width == 0 || height == 0) {
         glfwGetFramebufferSize(window_, &width, &height);
@@ -309,12 +310,12 @@ void swapchain::force_resize() noexcept {
     create_swapchain_and_resources();
 }
 
-void swapchain::reset() noexcept {
+void Swapchain::reset() noexcept {
     cleanup_swapchain_and_resources();
     vkDestroySurfaceKHR(instance_, surface_, nullptr);
 }
 
-viewport_info swapchain::get_viewport_info() const noexcept {
+ViewportInfo Swapchain::get_viewport_info() const noexcept {
     return {VkViewport{
                 0.0f,                        // x;
                 0.0f,                        // y;
@@ -326,8 +327,8 @@ viewport_info swapchain::get_viewport_info() const noexcept {
         VkRect2D{VkOffset2D{0, 0}, extent()}};
 }
 
-void swapchain::render(
-    std::function<void(render::scene::command_buffer& command_context,
+void Swapchain::render(
+    std::function<void(render::scene::CommandBuffer& command_context,
         VkRenderPassBeginInfo renderpass_info)>
         exec) noexcept {
     // wait for last frame to finish
@@ -355,13 +356,13 @@ void swapchain::render(
         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
     VkSemaphore signal_semaphores[] = {
         sync_objects_[current_sync_objects_index_].render_done};
-    command_buffers_[current_frame_].submit(operation::graphics,
+    command_buffers_[current_frame_].submit(Operation::graphics,
         wait_semaphores, wait_stages, signal_semaphores,
         sync_objects_[current_sync_objects_index_].in_flight_fence);
 }
 
-void swapchain::for_each(
-    std::function<void(render::scene::command_buffer& command_context,
+void Swapchain::for_each(
+    std::function<void(render::scene::CommandBuffer& command_context,
         VkRenderPassBeginInfo renderpass_info)>
         exec) noexcept {
 
@@ -385,7 +386,7 @@ void swapchain::for_each(
     }
 }
 
-void swapchain::present() noexcept {
+void Swapchain::present() noexcept {
     VkSwapchainKHR swapchains[] = {underlying_};
     VkSemaphore signal_semaphores[] = {
         sync_objects_[current_sync_objects_index_].render_done};
@@ -398,7 +399,7 @@ void swapchain::present() noexcept {
     present_info.pSwapchains = swapchains;
     present_info.pImageIndices = &current_frame_;
 
-    auto queue = context_->retrieve(operation::present);
+    auto queue = context_->retrieve(Operation::present);
     VkResult result = vkQueuePresentKHR(queue, &present_info);
 
     // increment to get next sync object
@@ -414,7 +415,7 @@ void swapchain::present() noexcept {
         force_resize();
 }
 
-void swapchain::assure(VkResult result) noexcept {
+void Swapchain::assure(VkResult result) noexcept {
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         ZOO_LOG_INFO("Should recreate");
         force_resize();

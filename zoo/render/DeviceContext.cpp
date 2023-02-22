@@ -1,7 +1,7 @@
-#include "device_context.hpp"
+#include "DeviceContext.hpp"
 #include "core/fwd.hpp"
 #include "render/fwd.hpp"
-#include "scene/command_buffer.hpp"
+#include "scene/CommandBuffer.hpp"
 
 namespace zoo::render {
 namespace {
@@ -11,10 +11,10 @@ const char* device_extension{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 // TODO: since we need to create the queues at the start should we also just
 // initialize the engine with settings that will determine the queues that
 // is important to us?
-device_context::device_context([[maybe_unused]] VkInstance instance,
-    utils::physical_device pdevice,
-    const utils::queue_family_properties& family_props,
-    const platform::render::query& query) noexcept
+DeviceContext::DeviceContext([[maybe_unused]] VkInstance instance,
+    utils::PhysicalDevice pdevice,
+    const utils::QueueFamilyProperties& family_props,
+    const platform::render::Query& query) noexcept
     : physical_(pdevice), queue_properties_{family_props} {
 
     // https://vulkan-tutorial.com/en/Drawing_a_triangle/Setup/Logical_device_and_queues
@@ -76,7 +76,7 @@ device_context::device_context([[maybe_unused]] VkInstance instance,
         logical_, &pool_create_info, nullptr, &command_pool_));
 }
 
-void device_context::reset() noexcept {
+void DeviceContext::reset() noexcept {
     if (logical_ != nullptr) {
         wait();
         if (command_pool_ != nullptr)
@@ -87,9 +87,9 @@ void device_context::reset() noexcept {
     }
 }
 
-device_context::~device_context() noexcept { reset(); }
+DeviceContext::~DeviceContext() noexcept { reset(); }
 
-VkCommandBuffer device_context::buffer_from_pool() const noexcept {
+VkCommandBuffer DeviceContext::buffer_from_pool() const noexcept {
     VkCommandBufferAllocateInfo alloc_info{};
     alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     alloc_info.commandPool = command_pool_;
@@ -106,33 +106,33 @@ VkCommandBuffer device_context::buffer_from_pool() const noexcept {
 /*
     release device resources for each vulkan resource
 */
-void device_context::release_device_resource(VkFence fence) noexcept {
+void DeviceContext::release_device_resource(VkFence fence) noexcept {
     if (fence != nullptr)
         vkDestroyFence(logical_, fence, nullptr);
 }
 
-void device_context::release_device_resource(VkRenderPass renderpass) noexcept {
+void DeviceContext::release_device_resource(VkRenderPass renderpass) noexcept {
     if (renderpass != nullptr)
         vkDestroyRenderPass(logical_, renderpass, nullptr);
 }
 
-void device_context::release_device_resource(VkSemaphore semaphore) noexcept {
+void DeviceContext::release_device_resource(VkSemaphore semaphore) noexcept {
     if (semaphore != nullptr)
         vkDestroySemaphore(logical_, semaphore, nullptr);
 }
 
-void device_context::release_device_resource(VkBuffer buffer) noexcept {
+void DeviceContext::release_device_resource(VkBuffer buffer) noexcept {
     if (buffer != nullptr)
         vkDestroyBuffer(logical_, buffer, nullptr);
 }
 
-void device_context::release_device_resource(
+void DeviceContext::release_device_resource(
     VkDeviceMemory device_memory) noexcept {
     if (device_memory != nullptr)
         vkFreeMemory(logical_, device_memory, nullptr);
 }
 
-VkQueue device_context::retrieve(operation op) const noexcept {
+VkQueue DeviceContext::retrieve(operation op) const noexcept {
 
     switch (op) {
     case operation::graphics:
@@ -146,7 +146,7 @@ VkQueue device_context::retrieve(operation op) const noexcept {
     return queue_;
 }
 
-void device_context::wait() noexcept {
+void DeviceContext::wait() noexcept {
     if (logical_ != nullptr)
         vkDeviceWaitIdle(logical_);
     else

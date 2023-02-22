@@ -3,19 +3,19 @@
 #include <cstdint>
 #include <string>
 
-namespace zoo::application_detail {
+namespace zoo::application {
 
-struct settings {
-    settings(int num_args, char** args) noexcept;
+struct Settings {
+    Settings(int num_args, char** args) noexcept;
 };
 
-using version = core::version;
+using Version = core::Version;
 
-struct info {
-    version version;
+struct Info {
+    Version version;
     std::string name;
 };
 
-enum exit_status { ok, err };
+enum ExitStatus { ok, err };
 
-} // namespace zoo::application_detail
+} // namespace zoo::application

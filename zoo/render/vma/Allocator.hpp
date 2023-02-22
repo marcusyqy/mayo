@@ -2,16 +2,16 @@
 
 namespace zoo::render::vma {
 
-class allocator {
+class Allocator {
 public:
-    allocator() noexcept;
-    ~allocator() noexcept;
+    Allocator() noexcept;
+    ~Allocator() noexcept;
 
-    allocator(const allocator& other) = delete;
-    allocator& operator=(const allocator& other) = delete;
+    Allocator(const Allocator& other) = delete;
+    Allocator& operator=(const Allocator& other) = delete;
 
-    allocator(allocator&& other) noexcept = delete;
-    allocator& operator=(allocator&& other) noexcept = delete;
+    Allocator(Allocator&& other) noexcept = delete;
+    Allocator& operator=(Allocator&& other) noexcept = delete;
 
     void emplace(
         VkInstance instance, VkDevice device, VkPhysicalDevice pd) noexcept;
@@ -23,4 +23,4 @@ private:
     VmaAllocator underlying_;
 };
 
-} // namespace zoo::render::resources
+} // namespace zoo::render::vma

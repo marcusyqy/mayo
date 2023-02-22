@@ -1,25 +1,25 @@
 #pragma once
 
-#include "device_context.hpp"
+#include "DeviceContext.hpp"
 #include "fwd.hpp"
 #include "utils/box.hpp"
 
 namespace zoo::render {
 
-class renderpass : public utils::box<VkRenderPass> {
+class Renderpass : public utils::Box<VkRenderPass> {
 public:
-    using underlying_type = utils::box<VkRenderPass>;
+    using underlying_type = utils::Box<VkRenderPass>;
 
-    renderpass() noexcept;
-    renderpass(
-        std::shared_ptr<device_context> context, VkFormat format) noexcept;
-    ~renderpass() noexcept;
+    Renderpass() noexcept;
+    Renderpass(
+        std::shared_ptr<DeviceContext> context, VkFormat format) noexcept;
+    ~Renderpass() noexcept = default;
 
-    renderpass& operator=(renderpass&& renderpass) noexcept;
-    renderpass(renderpass&& renderpass) noexcept;
+    Renderpass& operator=(Renderpass&& renderpass) noexcept;
+    Renderpass(Renderpass&& renderpass) noexcept;
 
-    renderpass& operator=(const renderpass&& renderpass) noexcept = delete;
-    renderpass(const renderpass&& renderpass) noexcept = delete;
+    Renderpass& operator=(const Renderpass&& renderpass) noexcept = delete;
+    Renderpass(const Renderpass&& renderpass) noexcept = delete;
 
     using underlying_type::get;
     using underlying_type::operator underlying_type::value_type;

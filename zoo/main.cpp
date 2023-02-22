@@ -1,5 +1,5 @@
 
-#include "main/entry_point.hpp"
+#include "main/EntryPoint.hpp"
 
 int main(int argc, char* argv[]) { // NOLINT
     // TODO: check if this is only for windows

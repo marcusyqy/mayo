@@ -1,16 +1,16 @@
-#include "allocator.hpp"
+#include "Allocator.hpp"
 
 namespace zoo::render::vma {
 
-allocator::allocator() noexcept : underlying_{nullptr} {}
+Allocator::Allocator() noexcept : underlying_{nullptr} {}
 
-allocator::~allocator() noexcept {
+Allocator::~Allocator() noexcept {
     if (underlying_ != nullptr) {
         reset();
     }
 }
 
-void allocator::emplace(
+void Allocator::emplace(
     VkInstance instance, VkDevice device, VkPhysicalDevice pd) noexcept {
     VmaAllocatorCreateInfo allocator_create_info = {};
     allocator_create_info.vulkanApiVersion = VK_API_VERSION_1_2;
@@ -21,8 +21,8 @@ void allocator::emplace(
     vmaCreateAllocator(&allocator_create_info, &underlying_);
 }
 
-void allocator::reset() noexcept {
+void Allocator::reset() noexcept {
     vmaDestroyAllocator(underlying_);
     underlying_ = nullptr;
 }
-} // namespace zoo::render::resources
+} // namespace zoo::render::vma

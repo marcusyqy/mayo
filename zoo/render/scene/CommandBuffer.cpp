@@ -1,40 +1,40 @@
-#include "command_buffer.hpp"
+#include "CommandBuffer.hpp"
 #include "core/fwd.hpp"
 
 namespace zoo::render::scene {
 
-command_buffer::command_buffer(ref<device_context> context) noexcept
+CommandBuffer::CommandBuffer(ref<DeviceContext> context) noexcept
     : context_{context}, underlying_{context_->buffer_from_pool()} {}
 
-command_buffer::command_buffer(command_buffer&& other) noexcept
+CommandBuffer::CommandBuffer(CommandBuffer&& other) noexcept
     : context_{std::move(other.context_)}, underlying_{
                                                std::move(other.underlying_)} {
     other.reset();
 }
 
-command_buffer& command_buffer::operator=(command_buffer&& other) noexcept {
+CommandBuffer& CommandBuffer::operator=(CommandBuffer&& other) noexcept {
     context_ = std::move(other.context_);
     underlying_ = std::move(other.underlying_);
     other.reset();
     return *this;
 }
 
-command_buffer::~command_buffer() noexcept { reset(); }
+CommandBuffer::~CommandBuffer() noexcept { reset(); }
 
-void command_buffer::reset() noexcept {
+void CommandBuffer::reset() noexcept {
     context_.reset();
     underlying_ = nullptr;
 }
 
-void command_buffer::clear() noexcept { vkResetCommandBuffer(underlying_, 0); }
+void CommandBuffer::clear() noexcept { vkResetCommandBuffer(underlying_, 0); }
 
-VkCommandBuffer command_buffer::release() noexcept {
+VkCommandBuffer CommandBuffer::release() noexcept {
     VkCommandBuffer ret = underlying_;
     reset();
     return ret;
 }
 
-void command_buffer::start_record() noexcept {
+void CommandBuffer::start_record() noexcept {
     VkCommandBufferBeginInfo begin_info{};
     begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     begin_info.flags = 0; // VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
@@ -45,52 +45,52 @@ void command_buffer::start_record() noexcept {
         [](VkResult /* result */) {})
 }
 
-void command_buffer::end_record() noexcept {
+void CommandBuffer::end_record() noexcept {
     VK_EXPECT_SUCCESS(
         vkEndCommandBuffer(underlying_), [](VkResult /* result */) {});
 }
 
-void command_buffer::draw(uint32_t vertex_count, uint32_t instance_count,
+void CommandBuffer::draw(uint32_t vertex_count, uint32_t instance_count,
     uint32_t first_vertex, uint32_t first_instance) noexcept {
     vkCmdDraw(underlying_, vertex_count, instance_count, first_vertex,
         first_instance);
 }
 
-void command_buffer::bind(const render::pipeline& pipeline) noexcept {
+void CommandBuffer::bind(const render::Pipeline& pipeline) noexcept {
     vkCmdBindPipeline(underlying_, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 }
 
-void command_buffer::begin_renderpass(
+void CommandBuffer::begin_renderpass(
     const VkRenderPassBeginInfo& begin_info) noexcept {
     vkCmdBeginRenderPass(underlying_, &begin_info, VK_SUBPASS_CONTENTS_INLINE);
 }
 
-void command_buffer::end_renderpass() noexcept {
+void CommandBuffer::end_renderpass() noexcept {
     vkCmdEndRenderPass(underlying_);
 }
 
-void command_buffer::set_viewport(const VkViewport& viewport) noexcept {
+void CommandBuffer::set_viewport(const VkViewport& viewport) noexcept {
     vkCmdSetViewport(underlying_, 0, 1, std::addressof(viewport));
 }
 
-void command_buffer::set_scissor(const VkRect2D& scissor) noexcept {
+void CommandBuffer::set_scissor(const VkRect2D& scissor) noexcept {
     vkCmdSetScissor(underlying_, 0, 1, std::addressof(scissor));
 }
 
-void command_buffer::record(stdx::function_ref<void()> c) noexcept {
+void CommandBuffer::record(stdx::function_ref<void()> c) noexcept {
     start_record();
     c();
     end_record();
 }
 
-void command_buffer::exec(const VkRenderPassBeginInfo& begin_info,
+void CommandBuffer::exec(const VkRenderPassBeginInfo& begin_info,
     stdx::function_ref<void()> c) noexcept {
     begin_renderpass(begin_info);
     c();
     end_renderpass();
 }
 
-void command_buffer::submit(operation op_type,
+void CommandBuffer::submit(Operation op_type,
     stdx::span<VkSemaphore> wait_semaphores,
     stdx::span<VkPipelineStageFlags> wait_for_pipeline_stages,
     stdx::span<VkSemaphore> signal_semaphores, VkFence fence) noexcept {

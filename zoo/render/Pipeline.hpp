@@ -6,7 +6,7 @@
 
 namespace zoo::render {
 
-class shader {
+class Shader {
 public:
     using underlying_type = VkShaderModule;
 
@@ -17,25 +17,25 @@ public:
 
     void reset() noexcept;
 
-    shader(ref<device_context> context, stdx::span<uint32_t> code,
+    Shader(ref<DeviceContext> context, stdx::span<uint32_t> code,
         std::string_view entry_point) noexcept;
 
-    shader() noexcept;
-    ~shader() noexcept;
+    Shader() noexcept;
+    ~Shader() noexcept;
 
-    shader(const shader& other) = delete;
-    shader& operator=(const shader& other) = delete;
+    Shader(const Shader& other) = delete;
+    Shader& operator=(const Shader& other) = delete;
 
-    shader(shader&& other) noexcept;
-    shader& operator=(shader&& other) noexcept;
+    Shader(Shader&& other) noexcept;
+    Shader& operator=(Shader&& other) noexcept;
 
 private:
-    std::shared_ptr<device_context> context_;
+    std::shared_ptr<DeviceContext> context_;
     underlying_type module_ = nullptr;
     std::string entry_point_;
 };
 
-enum class shader_type {
+enum class ShaderType {
     f32, // float
     vec2,
     vec3,
@@ -46,41 +46,41 @@ enum class shader_type {
 };
 
 // can these be automated?
-struct vertex_buffer_description {
-    shader_type type;
+struct VertexBufferDescription {
+    ShaderType type;
     uint32_t offset;
 };
 
-struct vertex_input_description {
+struct VertexInputDescription {
     uint32_t location;
     uint32_t stride;
-    stdx::span<vertex_buffer_description> buffer_description;
+    stdx::span<VertexBufferDescription> buffer_description;
     VkVertexInputRate input_rate = {VK_VERTEX_INPUT_RATE_VERTEX};
 };
 
-struct shader_stages_specifications {
-    const shader& vertex;
-    const shader& fragment;
+struct ShaderStagesSpecification {
+    const Shader& vertex;
+    const Shader& fragment;
     // needs to be in order of vertex buffer supplied
-    stdx::span<vertex_input_description> description = {};
+    stdx::span<VertexInputDescription> description = {};
 };
 
-class pipeline {
+class Pipeline {
 public:
     using underlying_type = VkPipeline;
 
-    pipeline(std::shared_ptr<device_context> context,
-        const shader_stages_specifications& specifications,
-        const viewport_info& viewport_info,
-        const renderpass& renderpass) noexcept;
+    Pipeline(std::shared_ptr<DeviceContext> context,
+        const ShaderStagesSpecification& specifications,
+        const ViewportInfo& viewport_info,
+        const Renderpass& renderpass) noexcept;
 
-    ~pipeline() noexcept;
+    ~Pipeline() noexcept;
 
     operator underlying_type() const { return get(); }
     underlying_type get() const { return underlying_; }
 
 private:
-    std::shared_ptr<device_context> context_;
+    std::shared_ptr<DeviceContext> context_;
     underlying_type underlying_ = nullptr;
 
     VkPipelineLayout layout_ = nullptr;

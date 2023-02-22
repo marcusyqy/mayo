@@ -2,43 +2,43 @@
 
 #include <optional>
 
-#include "device_context.hpp"
+#include "DeviceContext.hpp"
 #include "fwd.hpp"
-#include "main/application.hpp"
-#include "utils/physical_device.hpp"
+#include "main/Application.hpp"
+#include "utils/PhysicalDevice.hpp"
 
-#include "render/debug/messenger.hpp"
+#include "render/debug/Messenger.hpp"
 
 namespace zoo::render {
 
-namespace engine_detail {
+namespace engine {
 
-struct info {
-    application::info app_info;
+struct Info {
+    application::Info app_info;
     bool debug_layer;
 };
 
-} // namespace engine_detail
+} // namespace engine
 
 // this class should be just to query for properties that are related to
 // rendering
 //
 // all other rendering logic should be in `device_context`
-class engine {
+class Engine {
 public:
-    using info = engine_detail::info;
+    using Info = engine::Info;
     using physical_device_iterator =
-        typename std::vector<utils::physical_device>::const_iterator;
+        typename std::vector<utils::PhysicalDevice>::const_iterator;
 
-    engine(const info& info) noexcept;
-    ~engine() noexcept;
+    Engine(const Info& info) noexcept;
+    ~Engine() noexcept;
 
-    engine(const engine&) noexcept = delete;
-    engine& operator=(const engine&) noexcept = delete;
-    engine(engine&&) noexcept = delete;
-    engine& operator=(engine&&) noexcept = delete;
+    Engine(const Engine&) noexcept = delete;
+    Engine& operator=(const Engine&) noexcept = delete;
+    Engine(Engine&&) noexcept = delete;
+    Engine& operator=(Engine&&) noexcept = delete;
 
-    const std::vector<utils::physical_device>&
+    const std::vector<utils::PhysicalDevice>&
     physical_devices() const noexcept {
         return physical_devices_;
     }
@@ -50,29 +50,27 @@ public:
         return callbacks_ ? std::addressof(callbacks_.value()) : nullptr;
     }
 
-    device_context& context() noexcept { return context_; }
-    const device_context& context() const noexcept {
-        return context_;
-    }
+    DeviceContext& context() noexcept { return context_; }
+    const DeviceContext& context() const noexcept { return context_; }
 
 private:
     void initialize() noexcept;
     void cleanup() noexcept;
 
 private:
-    info info_;
+    Info info_;
 
     VkInstance instance_ = nullptr;
 
     // stores all the physical devices.
     // could be stored in another class that can show more intent
     // and possibly have a better syntax as compared to this.
-    std::vector<utils::physical_device> physical_devices_{};
-    device_context context_;
+    std::vector<utils::PhysicalDevice> physical_devices_{};
+    DeviceContext context_;
 
     // debugger may be named incorrectly
     // TODO: change this name to something that is more correct
-    std::optional<debug::messenger> debugger_ = std::nullopt;
+    std::optional<debug::Messenger> debugger_ = std::nullopt;
 
     std::optional<VkAllocationCallbacks> callbacks_ = std::nullopt;
 };

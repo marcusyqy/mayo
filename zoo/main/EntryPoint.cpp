@@ -1,24 +1,24 @@
-#include "entry_point.hpp"
-#include "core/log.hpp"
+#include "EntryPoint.hpp"
+#include "core/Log.hpp"
 
-#include "core/platform/window.hpp"
-#include "render/engine.hpp"
-#include "render/pipeline.hpp"
-#include "render/scene/command_buffer.hpp"
+#include "core/platform/Window.hpp"
+#include "render/Engine.hpp"
+#include "render/Pipeline.hpp"
+#include "render/scene/CommandBuffer.hpp"
 
 #include "stdx/expected.hpp"
 #include <array>
 #include <fstream>
 #include <string_view>
 
-#include "render/tools/shader_compiler.hpp"
+#include "render/tools/ShaderCompiler.hpp"
 #include <glm/glm.hpp>
 
 namespace zoo {
 
 namespace {
 
-struct vertex {
+struct Vertex {
     glm::vec2 pos;
     glm::vec3 color;
 };
@@ -38,45 +38,46 @@ stdx::expected<std::string, std::runtime_error> read_file(
     file.close();
     return buffer;
 }
+
 } // namespace
 
-application::exit_status main(application::settings args) noexcept {
+application::ExitStatus main(application::Settings args) noexcept {
     (void)args;
 
-    const application::info app_context{{0, 0, 0}, "Zoo Engine Application"};
-    const render::engine::info render_engine_info{app_context, true};
+    const application::Info app_context{{0, 0, 0}, "Zoo Engine Application"};
+    const render::engine::Info render_engine_info{app_context, true};
 
     ZOO_LOG_INFO("Starting application");
 
-    std::shared_ptr<window::context> win_context =
-        std::make_shared<window::context>();
+    std::shared_ptr<window::Context> win_context =
+        std::make_shared<window::Context>();
 
-    render::engine render_engine{render_engine_info};
+    render::Engine render_engine{render_engine_info};
 
     // TODO: I think we should just merge swapchain and window
-    window main_window{render_engine, win_context,
-        window::traits{window::size{1280, 960}, false, "zoo"},
-        [](window& win, input::key_code keycode) {
-            if (keycode.key_ == input::key::escape &&
-                keycode.action_ == input::action::pressed) {
+    Window main_window{render_engine,
+        window::Traits{window::Size{1280, 960}, false, "zoo"},
+        [](Window& win, input::KeyCode keycode) {
+            if (keycode.key_ == input::Key::escape &&
+                keycode.action_ == input::Action::pressed) {
                 win.close();
             }
         }};
 
-    const std::vector<vertex> vertices = {{{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
+    const std::vector<Vertex> vertices = {{{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
         {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
         {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}};
 
     auto [vertex_bytes, fragment_bytes] = []() {
-        zoo::render::tools::shader_compiler compiler;
+        zoo::render::tools::ShaderCompiler compiler;
         auto vertex_bytes = read_file("static/shaders/test.vert");
         ZOO_ASSERT(vertex_bytes, "vertex shader must have value!");
         auto fragment_bytes = read_file("static/shaders/test.frag");
         ZOO_ASSERT(fragment_bytes, "fragment shader must have value!");
 
-        render::tools::shader_work vertex_work{
+        render::tools::ShaderWork vertex_work{
             shaderc_vertex_shader, "test.vert", *vertex_bytes};
-        render::tools::shader_work fragment_work{
+        render::tools::ShaderWork fragment_work{
             shaderc_fragment_shader, "test.frag", *fragment_bytes};
 
         auto vertex_spirv = compiler.compile(vertex_work);
@@ -96,8 +97,8 @@ application::exit_status main(application::settings args) noexcept {
     auto context = render_engine.context();
 
     // these are here for now.
-    render::shader vertex_shader{context, vertex_bytes, "main"};
-    render::shader fragment_shader{context, fragment_bytes, "main"};
+    render::Shader vertex_shader{context, vertex_bytes, "main"};
+    render::Shader fragment_shader{context, fragment_bytes, "main"};
 
     auto& swapchain = main_window.swapchain();
 
@@ -111,14 +112,14 @@ application::exit_status main(application::settings args) noexcept {
     //     render::vertex_input_description{0, sizeof(vertex_shader),
     //         buffer_description, VK_VERTEX_INPUT_RATE_VERTEX}};
 
-    render::pipeline pipeline{context,
+    render::Pipeline pipeline{context,
         render::shader_stages_specifications{vertex_shader, fragment_shader},
         swapchain.get_viewport_info(), swapchain.get_renderpass()};
 
     const auto& viewport_info = swapchain.get_viewport_info();
 
     auto populate_command_ctx =
-        [&](render::scene::command_buffer& command_context,
+        [&](render::scene::CommandBuffer& command_context,
             VkRenderPassBeginInfo renderpass_info) {
             command_context.set_viewport(viewport_info.viewport);
             command_context.set_scissor(viewport_info.scissor);
@@ -141,7 +142,7 @@ application::exit_status main(application::settings args) noexcept {
     // to each frame.
     context->wait();
 
-    return application::exit_status::ok;
+    return application::ExitStatus::ok;
 }
 
 } // namespace zoo

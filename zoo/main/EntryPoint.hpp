@@ -1,8 +1,8 @@
 #pragma once
-#include "application.hpp"
+#include "Application.hpp"
 
 namespace zoo {
 
-application::exit_status main(application::settings args) noexcept;
+application::ExitStatus main(application::Settings args) noexcept;
 
 } // namespace zoo

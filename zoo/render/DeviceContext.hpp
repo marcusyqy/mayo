@@ -1,44 +1,42 @@
 #pragma once
 #include "zoo.hpp"
 
-#include "utils/physical_device.hpp"
+#include "utils/PhysicalDevice.hpp"
 
-#include "core/platform/query.hpp"
+#include "core/platform/Query.hpp"
 #include "fwd.hpp"
+#include "render/vma/Allocator.hpp"
 #include <memory>
-#include "render/vma/allocator.hpp"
 
 namespace zoo::render {
 
-class device_context {
+class DeviceContext {
 public:
-    device_context(VkInstance instance, utils::physical_device pdevice,
-        const utils::queue_family_properties& family_props,
-        const platform::render::query& query) noexcept;
+    DeviceContext(VkInstance instance, utils::PhysicalDevice pdevice,
+        const utils::QueueFamilyProperties& family_props,
+        const platform::render::Query& query) noexcept;
 
-    ~device_context() noexcept;
+    ~DeviceContext() noexcept;
 
-    device_context(const device_context& other) noexcept = delete;
-    device_context(device_context&& other) noexcept = delete;
+    DeviceContext(const DeviceContext& other) noexcept = delete;
+    DeviceContext(DeviceContext&& other) noexcept = delete;
 
-    device_context& operator=(const device_context& other) noexcept = delete;
-    device_context& operator=(device_context&& other) noexcept = delete;
+    DeviceContext& operator=(const DeviceContext& other) noexcept = delete;
+    DeviceContext& operator=(DeviceContext&& other) noexcept = delete;
 
     void reset() noexcept;
 
-    operator const utils::physical_device&() const noexcept {
+    operator const utils::PhysicalDevice&() const noexcept {
         return physical();
     }
-    const utils::physical_device& physical() const noexcept {
-        return physical_;
-    }
+    const utils::PhysicalDevice& physical() const noexcept { return physical_; }
 
     operator const VkDevice&() const noexcept { return logical(); }
     const VkDevice& logical() const noexcept { return logical_; }
 
     VkCommandBuffer buffer_from_pool() const noexcept;
 
-    VkQueue retrieve(operation op) const noexcept;
+    VkQueue retrieve(Operation op) const noexcept;
 
     // release resource
     void release_device_resource(VkFence fence) noexcept;
@@ -49,17 +47,17 @@ public:
 
     void wait() noexcept;
 
-    vma::allocator& allocator() noexcept {return allocator_; }
-    const vma::allocator& allocator() const noexcept { return allocator_; }
+    vma::Allocator& allocator() noexcept { return allocator_; }
+    const vma::Allocator& allocator() const noexcept { return allocator_; }
 
 private:
-    utils::physical_device physical_ = nullptr;
+    utils::PhysicalDevice physical_ = nullptr;
     VkDevice logical_ = nullptr;
     VkQueue queue_ = nullptr;
-    utils::queue_family_properties queue_properties_;
+    utils::QueueFamilyProperties queue_properties_;
     VkCommandPool command_pool_ = nullptr;
 
-    vma::allocator allocator_;
+    vma::Allocator allocator_;
 };
 
 } // namespace zoo::render

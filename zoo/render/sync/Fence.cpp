@@ -1,4 +1,4 @@
-#include "fence.hpp"
+#include "Fence.hpp"
 
 namespace zoo::render::sync {
 
@@ -13,12 +13,12 @@ VkFence create_fence(VkDevice device) noexcept {
     return fence_obj;
 }
 
-fence::fence(std::shared_ptr<device_context> context) noexcept
+Fence::Fence(std::shared_ptr<DeviceContext> context) noexcept
     : underlying_type(context, create_fence(*context)) {}
 
-void fence::reset() noexcept { vkResetFences(*context_, 1, &type_); }
+void Fence::reset() noexcept { vkResetFences(*context_, 1, &type_); }
 
-void fence::wait() noexcept {
+void Fence::wait() noexcept {
     vkWaitForFences(
         *context_, 1, &type_, VK_TRUE, std::numeric_limits<uint64_t>::max());
 }

@@ -2,41 +2,35 @@
 #include <functional>
 #include <string_view>
 
-#include "input.hpp"
-#include "main/application.hpp"
+#include "Input.hpp"
+#include "main/Application.hpp"
 
-#include "render/engine.hpp"
-#include "window/detail.hpp"
+#include "render/Engine.hpp"
+#include "window/Detail.hpp"
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
-#include "render/swapchain.hpp"
+#include "render/Swapchain.hpp"
 #include <memory>
 
 namespace zoo {
 
 // fwd declaration
-class window;
+class Window;
 
-class window {
+class Window {
 public:
-    using context = detail::context;
-    using traits = detail::traits;
-    using size = detail::size;
-    using input_callback = detail::input_callback;
-    using factory = detail::factory;
+    Window(const render::Engine& engine, const window::Traits& traits,
+        window::InputCallback callback) noexcept;
 
-    window(const render::engine& engine, std::shared_ptr<context> win_ctx,
-        const traits& traits, input_callback callback) noexcept;
+    ~Window() noexcept;
 
-    ~window() noexcept;
+    Window(Window&& other) noexcept = delete;
+    Window& operator=(Window&& other) noexcept = delete;
 
-    window(window&& other) noexcept = delete;
-    window& operator=(window&& other) noexcept = delete;
-
-    window(const window& other) noexcept = delete;
-    window& operator=(const window& other) noexcept = delete;
+    Window(const Window& other) noexcept = delete;
+    Window& operator=(const Window& other) noexcept = delete;
 
     [[nodiscard]] bool is_open() const noexcept;
 
@@ -46,17 +40,16 @@ public:
     bool valid() const noexcept { return impl_ != nullptr; }
     operator bool() const noexcept { return valid(); }
 
-    render::swapchain& swapchain() noexcept { return swapchain_; }
-    const render::swapchain& swapchain() const noexcept { return swapchain_; }
+    render::Swapchain& swapchain() noexcept { return swapchain_; }
+    const render::Swapchain& swapchain() const noexcept { return swapchain_; }
 
 private:
-    std::shared_ptr<context> context_;
-    traits traits_;
-    input_callback callback_;
+    window::Traits traits_;
+    window::InputCallback callback_;
     GLFWwindow* impl_;
     bool context_set_;
 
-    render::swapchain swapchain_;
+    render::Swapchain swapchain_;
 };
 
 } // namespace zoo

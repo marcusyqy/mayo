@@ -1,34 +1,33 @@
 #pragma once
 
-#include "render/device_context.hpp"
+#include "render/DeviceContext.hpp"
 #include "render/fwd.hpp"
-#include "render/utils/box.hpp"
+#include "render/utils/Box.hpp"
 #include "vma/vk_mem_alloc.h"
-
 
 namespace zoo::render::resources {
 
-struct memory_region {
+struct MemoryRegion {
     size_t start_offset{};
     size_t end_offset{};
 };
 
-class memory_view;
+class MemoryView;
 
-class memory : utils::box<VkDeviceMemory> {
+class Memory : utils::Box<VkDeviceMemory> {
 public:
-    using underlying_type = utils::box<VkDeviceMemory>;
+    using underlying_type = utils::Box<VkDeviceMemory>;
 
     using value_type = underlying_type::value_type;
     using underlying_type::operator value_type;
     using underlying_type::operator bool;
 
-    memory(std::shared_ptr<device_context> context, size_t size) noexcept;
+    Memory(std::shared_ptr<DeviceContext> context, size_t size) noexcept;
 
-    [[nodiscard]] memory_region region() const noexcept;
-    [[nodiscard]] memory_view view(const memory_region& rg) const noexcept;
-    [[nodiscard]] memory_view view() const noexcept;
-    [[nodiscard]] operator memory_view() const noexcept;
+    [[nodiscard]] MemoryRegion region() const noexcept;
+    [[nodiscard]] MemoryView view(const MemoryRegion& rg) const noexcept;
+    [[nodiscard]] MemoryView view() const noexcept;
+    [[nodiscard]] operator MemoryView() const noexcept;
 
     void reset() noexcept;
 
@@ -36,11 +35,11 @@ private:
     size_t size_;
 };
 
-class memory_view {
+class MemoryView {
 public:
     using view_type = VkDeviceMemory;
 
-    memory_view(const memory& memory, const memory_region& region);
+    MemoryView(const Memory& memory, const MemoryRegion& region);
 
 private:
     view_type mem_;

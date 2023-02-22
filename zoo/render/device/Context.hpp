@@ -1,11 +1,10 @@
 #pragma once
 
-
 namespace zoo::render::device {
 
-    class Context {
-    public:
-    private:
-    };
+class Context {
+public:
+private:
+};
 
-}
+} // namespace zoo::render::device

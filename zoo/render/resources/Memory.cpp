@@ -1,4 +1,4 @@
-#include "memory.hpp"
+#include "Memory.hpp"
 
 namespace zoo::render::resources {
 
@@ -38,24 +38,24 @@ VkDeviceMemory allocate_memory(
 } // namespace
   //
 
-memory::memory(std::shared_ptr<device_context> context, size_t size) noexcept
+Memory::Memory(std::shared_ptr<DeviceContext> context, size_t size) noexcept
     : underlying_type(
           context, allocate_memory(context->physical(), *context, size)),
       size_(size) {}
 
-memory_region memory::region() const noexcept { return {0, size_}; }
-memory_view memory::view() const noexcept { return {*this, region()}; }
-memory_view memory::view(const memory_region& rg) const noexcept {
+MemoryRegion Memory::region() const noexcept { return {0, size_}; }
+MemoryView Memory::view() const noexcept { return {*this, region()}; }
+MemoryView Memory::view(const MemoryRegion& rg) const noexcept {
     return {*this, rg};
 }
-memory::operator memory_view() const noexcept { return view(); }
+Memory::operator MemoryView() const noexcept { return view(); }
 
-void memory::reset() noexcept {
+void Memory::reset() noexcept {
     underlying_type::reset();
     size_ = 0;
 }
 
-memory_view::memory_view(const memory& memory, const memory_region& region) {
+MemoryView::MemoryView(const Memory& memory, const MemoryRegion& region) {
     std::ignore = memory;
     std::ignore = region;
 }

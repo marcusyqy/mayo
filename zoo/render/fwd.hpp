@@ -1,5 +1,5 @@
 #pragma once
-#include "core/log.hpp"
+#include "core/Log.hpp"
 #include <vulkan/vk_enum_string_helper.h>
 #include <vulkan/vulkan.h>
 
@@ -27,7 +27,7 @@ void maybe_invoke(VkResult result, Call then, Args&&... args) noexcept {
 
 namespace zoo::render {
 
-struct viewport_info {
+struct ViewportInfo {
     VkViewport viewport;
     VkRect2D scissor;
 };
@@ -35,5 +35,5 @@ struct viewport_info {
 /*
  * Dictates the type of queue being used
  * */
-enum class operation : uint32_t { graphics, compute, transfer, present };
+enum class Operation : uint32_t { graphics, compute, transfer, present };
 } // namespace zoo::render

@@ -1,4 +1,4 @@
-#include "buffer.hpp"
+#include "Buffer.hpp"
 
 namespace zoo::render::resources {
 namespace {
@@ -18,7 +18,7 @@ VkBuffer create_buffer(VkDevice device, size_t size, VkBufferUsageFlags usage,
 
 } // namespace
 
-buffer::buffer(std::shared_ptr<device_context> context, size_t size,
+Buffer::Buffer(std::shared_ptr<DeviceContext> context, size_t size,
     VkBufferUsageFlags usage, VkSharingMode sharing_mode) noexcept
     : underlying_type(
           context, create_buffer(*context, size, usage, sharing_mode)) {}

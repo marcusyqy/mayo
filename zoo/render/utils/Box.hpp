@@ -1,6 +1,6 @@
 #pragma once
 
-#include "render/device_context.hpp"
+#include "render/DeviceContext.hpp"
 #include "render/fwd.hpp"
 #include "stdx/type_traits.hpp"
 #include <memory>
@@ -8,46 +8,46 @@
 namespace zoo::render::utils {
 
 template<typename T>
-struct device_context_release_resource_exist {
+struct DeviceContextReleaseResourceExists {
     using type =
-        std::void_t<decltype(std::declval<device_context>()
+        std::void_t<decltype(std::declval<DeviceContext>()
                                  .release_device_resource(std::declval<T>()))>;
 };
 
 template<typename T>
-using device_context_release_resource_exist_t =
-    typename device_context_release_resource_exist<T>::type;
+using DeviceContextReleaseResourceExists_t =
+    typename DeviceContextReleaseResourceExists<T>::type;
 
 template<typename T>
-using is_valid_device_obj_t = device_context_release_resource_exist_t<T>;
+using IsValidVulkanObj_t = DeviceContextReleaseResourceExists_t<T>;
 
-template<typename T, typename = is_valid_device_obj_t<T>>
-class box {
+template<typename T, typename = IsValidVulkanObj_t<T>>
+class Box {
 public:
     using value_type = T;
 
-    box() noexcept : context_(nullptr), type_(nullptr) {}
-    box(std::shared_ptr<device_context> device, T type)
+    Box() noexcept : context_(nullptr), type_(nullptr) {}
+    Box(std::shared_ptr<DeviceContext> device, T type)
         : context_(std::move(device)), type_(type) {}
 
-    box(const box& other) noexcept = delete;
-    box& operator=(const box& other) noexcept = delete;
+    Box(const Box& other) noexcept = delete;
+    Box& operator=(const Box& other) noexcept = delete;
 
-    box(box&& other) noexcept : box() { *this = std::move(other); }
+    Box(Box&& other) noexcept : Box() { *this = std::move(other); }
 
-    box& operator=(box&& other) noexcept {
+    Box& operator=(Box&& other) noexcept {
         std::swap(context_, other.context_);
         std::swap(type_, other.type_);
         other.reset();
         return *this;
     }
 
-    void emplace(std::shared_ptr<device_context> device, T type) {
+    void emplace(std::shared_ptr<DeviceContext> device, T type) {
         context_ = std::move(device);
         type_ = type;
     }
 
-    ~box() noexcept { reset(); }
+    ~Box() noexcept { reset(); }
 
     value_type release() noexcept {
         value_type ret = type_;
@@ -67,7 +67,7 @@ public:
     [[nodiscard]] value_type get() const noexcept { return type_; }
 
 protected:
-    std::shared_ptr<device_context> context_;
+    std::shared_ptr<DeviceContext> context_;
     T type_;
 };
 
