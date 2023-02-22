@@ -1,11 +1,12 @@
-#include "shader_compiler.hpp"
+#include "ShaderCompiler.hpp"
 #include "spdlog/spdlog.h"
 
 namespace sut {
 namespace {} // namespace
 
-stdx::expected<std::vector<uint32_t>, std::runtime_error> shader_compiler::compile(
-    const shader_work& work) noexcept {
+stdx::expected<std::vector<uint32_t>, std::runtime_error>
+ShaderCompiler::compile(
+    const ShaderWork& work) noexcept {
     shaderc::CompileOptions options;
     for (const auto& defines : work.defines) {
         options.AddMacroDefinition(defines.name, defines.value);

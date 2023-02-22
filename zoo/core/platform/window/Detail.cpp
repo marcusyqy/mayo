@@ -40,15 +40,4 @@ void Context::wait_for_vsync() const noexcept { glfwSwapInterval(1); }
 
 Context::~Context() noexcept { glfwTerminate(); }
 
-// factory
-Factory::Factory(Context& context) noexcept : context_(context), windows_() {}
-
-Factory::~Factory() noexcept = default;
-
-Window* Factory::create_window(const render::Engine& engine,
-    const Traits& traits, input_callback callback) noexcept {
-    windows_.emplace_back(std::make_unique<Window>(
-        engine, context_, traits, std::move(callback)));
-    return windows_.back().get();
-}
 } // namespace zoo::window

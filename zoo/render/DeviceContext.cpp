@@ -132,12 +132,12 @@ void DeviceContext::release_device_resource(
         vkFreeMemory(logical_, device_memory, nullptr);
 }
 
-VkQueue DeviceContext::retrieve(operation op) const noexcept {
+VkQueue DeviceContext::retrieve(Operation op) const noexcept {
 
     switch (op) {
-    case operation::graphics:
+    case Operation::graphics:
         [[fallthrough]];
-    case operation::present:
+    case Operation::present:
         return queue_;
     default:
         ZOO_ASSERT(false, "not supporting other queue types yet.");

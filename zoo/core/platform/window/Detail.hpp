@@ -16,11 +16,11 @@ namespace zoo {
 class Window;
 namespace window {
 
-using window_size_type = std::uint32_t;
+using size_type = std::uint32_t;
 
 struct Size {
-    window_size_type x;
-    window_size_type y;
+    size_type x;
+    size_type y;
 };
 
 struct Traits {
@@ -40,20 +40,5 @@ public:
 
 using InputCallback = std::function<void(Window&, input::KeyCode)>;
 
-class Factory {
-public:
-    using error_callback = std::function<void(std::string_view description)>;
-    using input_callback = InputCallback;
-
-    Factory(const Context& context) noexcept;
-    ~Factory() noexcept;
-
-    Window* create_window(const render::Engine& engine, const Traits& traits,
-        input_callback callback) noexcept;
-
-private:
-    Context& context_;
-    std::vector<std::unique_ptr<Window>> windows_;
-};
 } // namespace window
 } // namespace zoo

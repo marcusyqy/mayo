@@ -7,7 +7,7 @@ int main(int argc, char* argv[]) { // NOLINT
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
 
-    zoo::application::exit_status status =
-        zoo::main(zoo::application::settings{argc, argv});
-    return status == zoo::application::exit_status::ok ? 0 : -1;
+    zoo::application::ExitStatus status =
+        zoo::main(zoo::application::Settings{argc, argv});
+    return status == zoo::application::ExitStatus::ok ? 0 : -1;
 }

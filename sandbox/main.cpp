@@ -3,7 +3,7 @@
 #include <fstream>
 #include <optional>
 
-#include "sut/shader_compiler.hpp"
+#include "sut/ShaderCompiler.hpp"
 #include "spdlog/spdlog.h"
 
 stdx::expected<std::string, std::runtime_error> read_file(
@@ -29,11 +29,11 @@ int main() {
     auto fragment_bytes = read_file("static/shaders/test.frag");
     assert(fragment_bytes && "fragment shader must have value!");
 
-    sut::shader_compiler compiler{};
+    sut::ShaderCompiler compiler{};
 
-    sut::shader_work vert_shader{
+    sut::ShaderWork vert_shader{
         shaderc_glsl_vertex_shader, "vertex shader", *vertex_bytes};
-    sut::shader_work frag_shader{
+    sut::ShaderWork frag_shader{
         shaderc_glsl_fragment_shader, "fragment shader", *fragment_bytes};
 
     auto vertex_spirv = compiler.compile(vert_shader);

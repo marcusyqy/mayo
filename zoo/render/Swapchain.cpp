@@ -78,7 +78,7 @@ VkPresentModeKHR choose_present_mode(const std::vector<VkPresentModeKHR>&
 }
 
 VkExtent2D choose_extent(const VkSurfaceCapabilitiesKHR& capabilities,
-    detail::window_size_type width, detail::window_size_type height) {
+    window::size_type width, window::size_type height) {
     if (capabilities.currentExtent.width !=
         std::numeric_limits<uint32_t>::max()) {
         return capabilities.currentExtent;
@@ -144,7 +144,7 @@ bool Swapchain::create_swapchain_and_resources() noexcept {
     description_.surface_format = choose_surface_format(details.formats);
     description_.present_mode = choose_present_mode(details.present_modes);
     description_.capabilities = std::move(details.capabilities);
-    renderpass_ = renderpass{context_, description_.surface_format.format};
+    renderpass_ = Renderpass{context_, description_.surface_format.format};
 
     VkExtent2D extent =
         choose_extent(description_.capabilities, size_.x, size_.y);

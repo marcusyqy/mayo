@@ -7,23 +7,23 @@
 
 namespace sut {
 
-struct shader_define_type {
+struct ShaderDefType {
     std::string name;
     std::string value;
 };
 
-struct shader_work {
+struct ShaderWork {
     shaderc_shader_kind kind;
     std::string name;
     std::string bytes;
-    stdx::span<shader_define_type> defines = {}
+    stdx::span<ShaderDefType> defines = {};
 };
 
-class shader_compiler {
+class ShaderCompiler {
 public:
-    using define_type = shader_define_type;
+    using define_type = ShaderDefType;
     stdx::expected<std::vector<uint32_t>, std::runtime_error> compile(
-        const shader_work& work) noexcept;
+        const ShaderWork& work) noexcept;
 
 private:
     shaderc::Compiler compiler_;

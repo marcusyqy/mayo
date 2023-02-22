@@ -18,7 +18,7 @@ class Swapchain {
 public:
     using underlying_type = VkSwapchainKHR;
     using surface_type = VkSurfaceKHR;
-    using width_type = detail::window_size_type;
+    using width_type = window::size_type;
     using underlying_window_type = GLFWwindow*;
 
     // initialize with the device

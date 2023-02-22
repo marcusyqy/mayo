@@ -94,7 +94,7 @@ application::ExitStatus main(application::Settings args) noexcept {
             std::move(*vertex_spirv), std::move(*fragment_spirv));
     }();
 
-    auto context = render_engine.context();
+    auto& context = render_engine.context();
 
     // these are here for now.
     render::Shader vertex_shader{context, vertex_bytes, "main"};
@@ -113,7 +113,7 @@ application::ExitStatus main(application::Settings args) noexcept {
     //         buffer_description, VK_VERTEX_INPUT_RATE_VERTEX}};
 
     render::Pipeline pipeline{context,
-        render::shader_stages_specifications{vertex_shader, fragment_shader},
+        render::ShaderStagesSpecification{vertex_shader, fragment_shader},
         swapchain.get_viewport_info(), swapchain.get_renderpass()};
 
     const auto& viewport_info = swapchain.get_viewport_info();
@@ -140,7 +140,7 @@ application::ExitStatus main(application::Settings args) noexcept {
 
     // TODO: we can remove this after we find out how to properly tie resources
     // to each frame.
-    context->wait();
+    context.wait();
 
     return application::ExitStatus::ok;
 }
