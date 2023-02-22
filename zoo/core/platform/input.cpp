@@ -1,4 +1,3 @@
-#pragma once
 
 #include "input.hpp"
 #include "core/log.hpp"

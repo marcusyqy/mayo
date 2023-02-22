@@ -36,6 +36,11 @@ project "zoo"
     systemversion "latest"
     defines { "WIN32", "_CRT_SECURE_NO_WARNINGS" }
 
+    filter "system:linux"
+    kind "ConsoleApp"
+    systemversion "latest"
+    defines {}
+
     filter "configurations:Debug"
         defines { "ZOO_ENABLE_LOGS" }
         runtime "Debug"
