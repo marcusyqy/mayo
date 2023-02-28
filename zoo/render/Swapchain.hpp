@@ -22,7 +22,7 @@ public:
     using underlying_window_type = GLFWwindow*;
 
     // initialize with the device
-    Swapchain(const render::Engine& engine, underlying_window_type glfw_window,
+    Swapchain(render::Engine& engine, underlying_window_type glfw_window,
         width_type x, width_type y) noexcept;
     ~Swapchain() noexcept;
 
@@ -70,7 +70,7 @@ private:
     surface_type surface_ = nullptr;
     GLFWwindow* window_ = nullptr;
     underlying_type underlying_ = nullptr;
-    ref<DeviceContext> context_ = nullptr;
+    DeviceContext& context_;
 
     struct {
         width_type x;

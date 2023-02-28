@@ -16,7 +16,7 @@ public:
     void reset() noexcept;
     void clear() noexcept;
 
-    CommandBuffer(std::shared_ptr<DeviceContext> context) noexcept;
+    CommandBuffer(DeviceContext& context) noexcept;
     CommandBuffer(CommandBuffer&& other) noexcept;
     CommandBuffer& operator=(CommandBuffer&& other) noexcept;
     ~CommandBuffer() noexcept;
@@ -48,7 +48,7 @@ private:
     void end_renderpass() noexcept;
 
 private:
-    ref<DeviceContext> context_;
+    DeviceContext* context_;
     underlying_type underlying_;
 };
 } // namespace zoo::render::scene

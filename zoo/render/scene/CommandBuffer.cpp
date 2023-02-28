@@ -3,8 +3,9 @@
 
 namespace zoo::render::scene {
 
-CommandBuffer::CommandBuffer(ref<DeviceContext> context) noexcept
-    : context_{context}, underlying_{context_->buffer_from_pool()} {}
+CommandBuffer::CommandBuffer(DeviceContext& context) noexcept
+    : context_{std::addressof(context)}, underlying_{
+                                             context_->buffer_from_pool()} {}
 
 CommandBuffer::CommandBuffer(CommandBuffer&& other) noexcept
     : context_{std::move(other.context_)}, underlying_{
@@ -22,7 +23,7 @@ CommandBuffer& CommandBuffer::operator=(CommandBuffer&& other) noexcept {
 CommandBuffer::~CommandBuffer() noexcept { reset(); }
 
 void CommandBuffer::reset() noexcept {
-    context_.reset();
+    context_ = nullptr;
     underlying_ = nullptr;
 }
 

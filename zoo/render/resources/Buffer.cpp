@@ -18,9 +18,9 @@ VkBuffer create_buffer(VkDevice device, size_t size, VkBufferUsageFlags usage,
 
 } // namespace
 
-Buffer::Buffer(std::shared_ptr<DeviceContext> context, size_t size,
+Buffer::Buffer(DeviceContext& context, size_t size,
     VkBufferUsageFlags usage, VkSharingMode sharing_mode) noexcept
     : underlying_type(
-          context, create_buffer(*context, size, usage, sharing_mode)) {}
+          context, create_buffer(context, size, usage, sharing_mode)) {}
 
 } // namespace zoo::render::resources

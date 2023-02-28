@@ -5,59 +5,59 @@ namespace zoo::render {
 namespace {
 
 template<ShaderType t>
-struct converter;
+struct Converter;
 
 template<>
-struct converter<ShaderType::f32> {
+struct Converter<ShaderType::f32> {
     static constexpr VkFormat value = VK_FORMAT_R32_SFLOAT;
 };
 
 template<>
-struct converter<ShaderType::vec2> {
+struct Converter<ShaderType::vec2> {
     static constexpr VkFormat value = VK_FORMAT_R32G32_SFLOAT;
 };
 
 template<>
-struct converter<ShaderType::vec3> {
+struct Converter<ShaderType::vec3> {
     static constexpr VkFormat value = VK_FORMAT_R32G32B32_SFLOAT;
 };
 
 template<>
-struct converter<ShaderType::vec4> {
+struct Converter<ShaderType::vec4> {
     static constexpr VkFormat value = VK_FORMAT_R32G32B32A32_SFLOAT;
 };
 
 template<>
-struct converter<ShaderType::ivec2> {
+struct Converter<ShaderType::ivec2> {
     static constexpr VkFormat value = VK_FORMAT_R32G32_SINT;
 };
 
 template<>
-struct converter<ShaderType::uvec4> {
+struct Converter<ShaderType::uvec4> {
     static constexpr VkFormat value = VK_FORMAT_R32G32B32A32_UINT;
 };
 
 template<>
-struct converter<ShaderType::f64> {
+struct Converter<ShaderType::f64> {
     static constexpr VkFormat value = VK_FORMAT_R64_SFLOAT;
 };
 
 VkFormat convert_to_shader_stage(ShaderType t) {
     switch (t) {
     case ShaderType::f32:
-        return converter<ShaderType::f32>::value;
+        return Converter<ShaderType::f32>::value;
     case ShaderType::vec2:
-        return converter<ShaderType::vec2>::value;
+        return Converter<ShaderType::vec2>::value;
     case ShaderType::vec3:
-        return converter<ShaderType::vec3>::value;
+        return Converter<ShaderType::vec3>::value;
     case ShaderType::vec4:
-        return converter<ShaderType::vec4>::value;
+        return Converter<ShaderType::vec4>::value;
     case ShaderType::ivec2:
-        return converter<ShaderType::ivec2>::value;
+        return Converter<ShaderType::ivec2>::value;
     case ShaderType::uvec4:
-        return converter<ShaderType::uvec4>::value;
+        return Converter<ShaderType::uvec4>::value;
     case ShaderType::f64:
-        return converter<ShaderType::f64>::value;
+        return Converter<ShaderType::f64>::value;
     }
 
     return VK_FORMAT_UNDEFINED;
@@ -72,9 +72,9 @@ void Shader::reset() noexcept {
     module_ = nullptr;
 }
 
-Shader::Shader(std::shared_ptr<DeviceContext> context,
-    stdx::span<uint32_t> code, std::string_view entry_point) noexcept
-    : context_(context), module_(nullptr), entry_point_(entry_point) {
+Shader::Shader(DeviceContext& context, stdx::span<uint32_t> code,
+    std::string_view entry_point) noexcept
+    : context_(&context), module_(nullptr), entry_point_(entry_point) {
     VkShaderModuleCreateInfo create_info{};
     create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     create_info.codeSize = sizeof(uint32_t) * code.size();
@@ -108,7 +108,7 @@ Shader& Shader::operator=(Shader&& other) noexcept {
 Shader::~Shader() noexcept { reset(); }
 
 // TODO: do some cleanup in this area.
-Pipeline::Pipeline(std::shared_ptr<DeviceContext> context,
+Pipeline::Pipeline(DeviceContext& context,
     const ShaderStagesSpecification& specifications,
     const ViewportInfo& viewport_info, const Renderpass& renderpass) noexcept
     : context_(context) {
@@ -264,7 +264,7 @@ Pipeline::Pipeline(std::shared_ptr<DeviceContext> context,
     pipeline_layout_create_info.pushConstantRangeCount = 0;    // Optional
     pipeline_layout_create_info.pPushConstantRanges = nullptr; // Optional
 
-    VK_EXPECT_SUCCESS(vkCreatePipelineLayout(*context_,
+    VK_EXPECT_SUCCESS(vkCreatePipelineLayout(context_,
                           &pipeline_layout_create_info, nullptr, &layout_),
         [](VkResult /* result */) {
             ZOO_LOG_ERROR("Pipeline layout creation failed, maybe we should "
@@ -295,14 +295,14 @@ Pipeline::Pipeline(std::shared_ptr<DeviceContext> context,
         VK_NULL_HANDLE;                                   // Optional
     graphics_pipeline_create_info.basePipelineIndex = -1; // Optional
 
-    VK_EXPECT_SUCCESS(vkCreateGraphicsPipelines(*context_, nullptr, 1,
+    VK_EXPECT_SUCCESS(vkCreateGraphicsPipelines(context_, nullptr, 1,
         &graphics_pipeline_create_info, nullptr, &underlying_));
 }
 
 Pipeline::~Pipeline() noexcept {
     if (context_) {
-        vkDestroyPipelineLayout(*context_, layout_, nullptr);
-        vkDestroyPipeline(*context_, underlying_, nullptr);
+        vkDestroyPipelineLayout(context_, layout_, nullptr);
+        vkDestroyPipeline(context_, underlying_, nullptr);
     }
 }
 

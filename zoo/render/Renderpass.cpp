@@ -3,7 +3,7 @@
 namespace zoo::render {
 namespace {
 VkRenderPass create_vk_renderpass(
-    std::shared_ptr<DeviceContext> context, VkFormat format) noexcept {
+    DeviceContext& context, VkFormat format) noexcept {
     VkAttachmentDescription color_attachment{};
     color_attachment.format = format;
     color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -42,7 +42,7 @@ VkRenderPass create_vk_renderpass(
 
     VkRenderPass renderpass{};
     VK_EXPECT_SUCCESS(
-        vkCreateRenderPass(*context, &renderpass_info, nullptr, &renderpass));
+        vkCreateRenderPass(context, &renderpass_info, nullptr, &renderpass));
 
     return renderpass;
 }
@@ -52,7 +52,7 @@ VkRenderPass create_vk_renderpass(
 Renderpass::Renderpass() noexcept : underlying_type() {}
 
 Renderpass::Renderpass(
-    std::shared_ptr<DeviceContext> context, VkFormat format) noexcept
+    DeviceContext& context, VkFormat format) noexcept
     : underlying_type(context, create_vk_renderpass(context, format)) {}
 
 Renderpass& Renderpass::operator=(Renderpass&& renderpass) noexcept {

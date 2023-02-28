@@ -13,8 +13,8 @@ VkFence create_fence(VkDevice device) noexcept {
     return fence_obj;
 }
 
-Fence::Fence(std::shared_ptr<DeviceContext> context) noexcept
-    : underlying_type(context, create_fence(*context)) {}
+Fence::Fence(DeviceContext& context) noexcept
+    : underlying_type(context, create_fence(context)) {}
 
 void Fence::reset() noexcept { vkResetFences(*context_, 1, &type_); }
 

@@ -3,7 +3,7 @@
 #include <string_view>
 
 #include "Input.hpp"
-#include "main/Application.hpp"
+#include "main/Info.hpp"
 
 #include "render/Engine.hpp"
 #include "window/Detail.hpp"
@@ -21,7 +21,7 @@ class Window;
 
 class Window {
 public:
-    Window(const render::Engine& engine, const window::Traits& traits,
+    Window(render::Engine& engine, const window::Traits& traits,
         window::InputCallback callback) noexcept;
 
     ~Window() noexcept;

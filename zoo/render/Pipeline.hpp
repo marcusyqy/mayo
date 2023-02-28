@@ -17,7 +17,7 @@ public:
 
     void reset() noexcept;
 
-    Shader(ref<DeviceContext> context, stdx::span<uint32_t> code,
+    Shader(DeviceContext& context, stdx::span<uint32_t> code,
         std::string_view entry_point) noexcept;
 
     Shader() noexcept;
@@ -30,7 +30,7 @@ public:
     Shader& operator=(Shader&& other) noexcept;
 
 private:
-    std::shared_ptr<DeviceContext> context_;
+    DeviceContext* context_;
     underlying_type module_ = nullptr;
     std::string entry_point_;
 };
@@ -69,7 +69,7 @@ class Pipeline {
 public:
     using underlying_type = VkPipeline;
 
-    Pipeline(std::shared_ptr<DeviceContext> context,
+    Pipeline(DeviceContext& context,
         const ShaderStagesSpecification& specifications,
         const ViewportInfo& viewport_info,
         const Renderpass& renderpass) noexcept;
@@ -80,7 +80,7 @@ public:
     underlying_type get() const { return underlying_; }
 
 private:
-    std::shared_ptr<DeviceContext> context_;
+    DeviceContext& context_;
     underlying_type underlying_ = nullptr;
 
     VkPipelineLayout layout_ = nullptr;

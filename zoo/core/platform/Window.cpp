@@ -6,7 +6,7 @@
 
 namespace zoo {
 
-Window::Window(const render::Engine& engine, const window::Traits& traits,
+Window::Window(render::Engine& engine, const window::Traits& traits,
     window::InputCallback callback) noexcept
     : traits_{traits}, callback_{std::move(callback)},
       impl_{glfwCreateWindow(

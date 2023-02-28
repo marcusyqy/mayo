@@ -9,7 +9,7 @@ namespace zoo::render::resources {
 class Buffer : utils::Box<VkBuffer> {
 public:
     using underlying_type = utils::Box<VkBuffer>;
-    Buffer(std::shared_ptr<DeviceContext> context, size_t size,
+    Buffer(DeviceContext& context, size_t size,
         VkBufferUsageFlags usage, VkSharingMode sharing_mode) noexcept;
 };
 

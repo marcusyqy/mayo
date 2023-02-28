@@ -100,33 +100,43 @@ std::vector<utils::PhysicalDevice> populate_physical_devices(
 //    return std::make_shared<device>(instance, devices[index]);
 //}
 
-} // namespace
-
-Engine::Engine(const Info& info) noexcept : info_(info) { initialize(); }
-
-Engine::~Engine() noexcept { cleanup(); }
-
-void Engine::initialize() noexcept {
-    instance_ = create_instance(info_);
-    if (instance_ != nullptr && info_.debug_layer)
-        debugger_ = std::make_optional<debug::Messenger>(instance_);
-    physical_devices_ = populate_physical_devices(instance_);
-
-    for (const auto& pd : physical_devices_) {
-        auto optional_index =
-            get_queue_index_if_physical_device_is_chosen(pd, instance_);
-        if (optional_index) {
-            context_ = std::make_shared<DeviceContext>(
-                instance_, pd, pd.queue_properties()[*optional_index], query);
-            break;
-        }
-    }
+std::optional<debug::Messenger> create_debugger(
+    VkInstance instance, const engine::Info& info) noexcept {
+    return instance != nullptr && info.debug_layer
+               ? std::make_optional<debug::Messenger>(instance)
+               : std::nullopt;
 }
 
-void Engine::cleanup() noexcept {
+DeviceContext create_context(VkInstance instance,
+    const std::vector<utils::PhysicalDevice>& physical_devices) {
+
+    for (const auto& pd : physical_devices) {
+        auto optional_index =
+            get_queue_index_if_physical_device_is_chosen(pd, instance);
+
+        if (optional_index) {
+            return {
+                instance, pd, pd.queue_properties()[*optional_index], query};
+        }
+    }
+
+    ZOO_ASSERT(false, "Something went wrong when choosing physical devices");
+    // default to this.
+    return {instance, physical_devices.front(),
+        physical_devices.front().queue_properties()[0], query};
+}
+
+} // namespace
+
+Engine::Engine(const Info& info) noexcept
+    : info_(info), instance_(create_instance(info_)),
+      debugger_(create_debugger(instance_, info)),
+      physical_devices_(populate_physical_devices(instance_)),
+      context_(create_context(instance_, physical_devices_)) {}
+
+Engine::~Engine() noexcept {
     debugger_.reset();
     context_.reset();
-
     if (instance_ != nullptr) {
         instance_ = nullptr;
         vkDestroyInstance(instance_, nullptr);

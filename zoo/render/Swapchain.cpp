@@ -103,7 +103,7 @@ Swapchain::~Swapchain() noexcept {
     reset();
 }
 //
-Swapchain::Swapchain(const render::Engine& engine,
+Swapchain::Swapchain(render::Engine& engine,
     underlying_window_type glfw_window, width_type x, width_type y) noexcept
     : instance_(engine.vk_instance()), window_(glfw_window),
       context_(engine.context()), sync_objects_{} {
@@ -115,9 +115,9 @@ Swapchain::Swapchain(const render::Engine& engine,
     ZOO_ASSERT(
         [this]() {
             for (const auto& queue_properties :
-                context_->physical().queue_properties()) {
+                context_.physical().queue_properties()) {
                 VkBool32 is_present_supported{VK_FALSE};
-                vkGetPhysicalDeviceSurfaceSupportKHR(context_->physical(),
+                vkGetPhysicalDeviceSurfaceSupportKHR(context_.physical(),
                     queue_properties.index(), surface_, &is_present_supported);
 
                 if (VK_TRUE == is_present_supported)
@@ -135,9 +135,9 @@ Swapchain::Swapchain(const render::Engine& engine,
 bool Swapchain::create_swapchain_and_resources() noexcept {
 
     // wait for device to be idle
-    context_->wait();
+    context_.wait();
 
-    SwapchainSupportDetails details{context_->physical(), surface_};
+    SwapchainSupportDetails details{context_.physical(), surface_};
     ZOO_ASSERT(is_device_compatible(details),
         "Device chosen must be compatible with the swapchain!");
 
@@ -180,17 +180,17 @@ bool Swapchain::create_swapchain_and_resources() noexcept {
 
     bool failed = false;
     VK_EXPECT_SUCCESS(
-        vkCreateSwapchainKHR(*context_, &create_info, nullptr, &underlying_),
+        vkCreateSwapchainKHR(context_, &create_info, nullptr, &underlying_),
         [&failed](VkResult /* result */) { failed = true; });
 
     // retrieve images
-    vkGetSwapchainImagesKHR(*context_, underlying_, &image_count, nullptr);
+    vkGetSwapchainImagesKHR(context_, underlying_, &image_count, nullptr);
     images_.resize(image_count);
     vkGetSwapchainImagesKHR(
-        *context_, underlying_, &image_count, images_.data());
+        context_, underlying_, &image_count, images_.data());
 
     for (auto view : views_) {
-        vkDestroyImageView(*context_, view, nullptr);
+        vkDestroyImageView(context_, view, nullptr);
     }
     views_.resize(image_count);
 
@@ -215,7 +215,7 @@ bool Swapchain::create_swapchain_and_resources() noexcept {
         view_create_info.subresourceRange.layerCount = 1;
 
         VK_EXPECT_SUCCESS(
-            vkCreateImageView(*context_, &view_create_info, nullptr, view++),
+            vkCreateImageView(context_, &view_create_info, nullptr, view++),
             [&view, this, &failed](VkResult /* result */) {
                 ZOO_LOG_ERROR("Failed to create image views! For index",
                     std::distance(views_.data(), view - 1));
@@ -224,7 +224,7 @@ bool Swapchain::create_swapchain_and_resources() noexcept {
     }
 
     for (auto fb : framebuffers_) {
-        vkDestroyFramebuffer(*context_, fb, nullptr);
+        vkDestroyFramebuffer(context_, fb, nullptr);
     }
 
     framebuffers_.resize(image_count);
@@ -241,7 +241,7 @@ bool Swapchain::create_swapchain_and_resources() noexcept {
         framebuffer_create_info.layers = 1;
 
         VK_EXPECT_SUCCESS(
-            vkCreateFramebuffer(*context_, &framebuffer_create_info, nullptr,
+            vkCreateFramebuffer(context_, &framebuffer_create_info, nullptr,
                 std::addressof(framebuffers_[i])));
     }
 
@@ -260,7 +260,7 @@ bool Swapchain::create_swapchain_and_resources() noexcept {
     // reset sync object index so that we don't have to care about size of the
     // vector
     current_sync_objects_index_ = 0;
-    assure(vkAcquireNextImageKHR(*context_, underlying_,
+    assure(vkAcquireNextImageKHR(context_, underlying_,
         std::numeric_limits<std::uint64_t>::max(),
         sync_objects_[current_sync_objects_index_].image_avail, nullptr,
         &current_frame_));
@@ -270,14 +270,14 @@ bool Swapchain::create_swapchain_and_resources() noexcept {
 
 void Swapchain::cleanup_resources() noexcept {
     // wait for resources to be done
-    context_->wait();
+    context_.wait();
     for (auto view : views_) {
-        vkDestroyImageView(*context_, view, nullptr);
+        vkDestroyImageView(context_, view, nullptr);
     }
     views_.clear();
 
     for (auto fb : framebuffers_) {
-        vkDestroyFramebuffer(*context_, fb, nullptr);
+        vkDestroyFramebuffer(context_, fb, nullptr);
     }
     framebuffers_.clear();
     sync_objects_.clear();
@@ -288,7 +288,7 @@ void Swapchain::cleanup_resources() noexcept {
 void Swapchain::cleanup_swapchain_and_resources() noexcept {
     // not waiting here because cleanup waits
     cleanup_resources();
-    vkDestroySwapchainKHR(*context_, underlying_, nullptr);
+    vkDestroySwapchainKHR(context_, underlying_, nullptr);
     underlying_ = nullptr;
 }
 
@@ -399,7 +399,7 @@ void Swapchain::present() noexcept {
     present_info.pSwapchains = swapchains;
     present_info.pImageIndices = &current_frame_;
 
-    auto queue = context_->retrieve(Operation::present);
+    auto queue = context_.retrieve(Operation::present);
     VkResult result = vkQueuePresentKHR(queue, &present_info);
 
     // increment to get next sync object
@@ -407,7 +407,7 @@ void Swapchain::present() noexcept {
         (current_sync_objects_index_ + 1) % std::size(sync_objects_);
 
     if (!should_resize_ || result == VK_SUCCESS)
-        assure(vkAcquireNextImageKHR(*context_, underlying_,
+        assure(vkAcquireNextImageKHR(context_, underlying_,
             std::numeric_limits<std::uint64_t>::max(),
             sync_objects_[current_sync_objects_index_].image_avail, nullptr,
             &current_frame_));

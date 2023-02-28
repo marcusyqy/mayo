@@ -8,7 +8,7 @@ namespace zoo::render::sync {
 class Fence : public utils::Box<VkFence> {
 public:
     using underlying_type = utils::Box<VkFence>;
-    Fence(std::shared_ptr<DeviceContext> context) noexcept;
+    Fence(DeviceContext& context) noexcept;
 
     void reset() noexcept;
     void wait() noexcept;

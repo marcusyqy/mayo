@@ -29,6 +29,7 @@ public:
     operator const utils::PhysicalDevice&() const noexcept {
         return physical();
     }
+
     const utils::PhysicalDevice& physical() const noexcept { return physical_; }
 
     operator const VkDevice&() const noexcept { return logical(); }

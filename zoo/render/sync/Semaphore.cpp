@@ -15,7 +15,7 @@ VkSemaphore create_semaphore(VkDevice device) noexcept {
 
 } // namespace
 
-Semaphore::Semaphore(std::shared_ptr<DeviceContext> context) noexcept
-    : underlying_type{context, create_semaphore(*context)} {}
+Semaphore::Semaphore(DeviceContext& context) noexcept
+    : underlying_type{context, create_semaphore(context)} {}
 
 } // namespace zoo::render::sync

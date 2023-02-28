@@ -4,7 +4,7 @@
 
 #include "DeviceContext.hpp"
 #include "fwd.hpp"
-#include "main/Application.hpp"
+#include "main/Info.hpp"
 #include "utils/PhysicalDevice.hpp"
 
 #include "render/debug/Messenger.hpp"

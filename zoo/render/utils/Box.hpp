@@ -27,8 +27,8 @@ public:
     using value_type = T;
 
     Box() noexcept : context_(nullptr), type_(nullptr) {}
-    Box(std::shared_ptr<DeviceContext> device, T type)
-        : context_(std::move(device)), type_(type) {}
+    Box(DeviceContext& device, T type)
+        : context_(std::addressof(device)), type_(type) {}
 
     Box(const Box& other) noexcept = delete;
     Box& operator=(const Box& other) noexcept = delete;
@@ -42,8 +42,8 @@ public:
         return *this;
     }
 
-    void emplace(std::shared_ptr<DeviceContext> device, T type) {
-        context_ = std::move(device);
+    void emplace(DeviceContext& device, T type) {
+        context_ = std::addressof(device);
         type_ = type;
     }
 
@@ -56,8 +56,9 @@ public:
     }
 
     void reset() noexcept {
-        if (context_) {
+        if (context_ != nullptr) {
             context_->release_device_resource(release());
+            context_ = nullptr;
         }
     }
 
@@ -67,7 +68,7 @@ public:
     [[nodiscard]] value_type get() const noexcept { return type_; }
 
 protected:
-    std::shared_ptr<DeviceContext> context_;
+    DeviceContext* context_;
     T type_;
 };
 

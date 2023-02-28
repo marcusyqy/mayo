@@ -12,7 +12,7 @@ public:
 
     Renderpass() noexcept;
     Renderpass(
-        std::shared_ptr<DeviceContext> context, VkFormat format) noexcept;
+        DeviceContext& context, VkFormat format) noexcept;
     ~Renderpass() noexcept = default;
 
     Renderpass& operator=(Renderpass&& renderpass) noexcept;
