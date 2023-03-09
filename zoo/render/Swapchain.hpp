@@ -8,7 +8,7 @@
 #include "render/scene/CommandBuffer.hpp"
 #include <cstdint>
 
-#include "Renderpass.hpp"
+#include "RenderPass.hpp"
 #include "sync/Fence.hpp"
 #include "sync/Semaphore.hpp"
 
@@ -38,7 +38,7 @@ public:
     }
 
     // renderpass& renderpass() noexcept { return renderpass_; }
-    [[nodiscard]] const Renderpass& get_renderpass() const noexcept {
+    [[nodiscard]] const RenderPass& get_renderpass() const noexcept {
         return renderpass_;
     }
 
@@ -90,14 +90,14 @@ private:
     };
 
     // frame specific stuff
-    zoo::dyn_array<VkImage> images_;
-    zoo::dyn_array<SyncObjects> sync_objects_;
+    dyn_array<VkImage> images_;
+    dyn_array<SyncObjects> sync_objects_;
     size_t current_sync_objects_index_ = {};
 
-    zoo::dyn_array<VkImageView> views_;
-    zoo::dyn_array<VkFramebuffer> framebuffers_;
-    zoo::dyn_array<render::scene::CommandBuffer> command_buffers_;
-    class Renderpass renderpass_; // has a default renderpass in swapchain
+    dyn_array<VkImageView> views_;
+    dyn_array<VkFramebuffer> framebuffers_;
+    dyn_array<render::scene::CommandBuffer> command_buffers_;
+    RenderPass renderpass_; // has a default renderpass in swapchain
 
     uint32_t current_frame_ = 0; // TODO: change this
     bool should_resize_ = false;

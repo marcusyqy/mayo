@@ -44,3 +44,15 @@ project "vma"
         "%{prj.name}/**.cpp",
         "%{prj.name}/**.h"
     }
+
+    filter "configurations:Debug"
+        runtime "Debug"
+        symbols "on"
+
+    filter "configurations:Release"
+        runtime "Release"
+        optimize "on"
+
+    filter "configurations:Dist"
+        runtime "Release"
+        optimize "on"

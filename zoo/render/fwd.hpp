@@ -36,4 +36,6 @@ struct ViewportInfo {
  * Dictates the type of queue being used
  * */
 enum class Operation : uint32_t { graphics, compute, transfer, present };
+
+class DeviceContext;
 } // namespace zoo::render

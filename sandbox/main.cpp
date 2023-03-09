@@ -3,8 +3,8 @@
 #include <fstream>
 #include <optional>
 
-#include "sut/ShaderCompiler.hpp"
 #include "spdlog/spdlog.h"
+#include "sut/ShaderCompiler.hpp"
 
 stdx::expected<std::string, std::runtime_error> read_file(
     std::string_view filename) noexcept {
@@ -44,9 +44,11 @@ int main() {
             "error from vertex spirv : {}", vertex_spirv.error().what());
     } else {
         std::fstream fs;
-        fs.open("static/shaders/vert.spv", std::fstream::trunc | std::fstream::out);
+        fs.open(
+            "static/shaders/vert.spv", std::fstream::trunc | std::fstream::out);
         auto& spirv = vertex_spirv.value();
-        fs.write(reinterpret_cast<const char*>(spirv.data()), sizeof(uint32_t) * spirv.size());
+        fs.write(reinterpret_cast<const char*>(spirv.data()),
+            sizeof(uint32_t) * spirv.size());
     }
 
     if (!fragment_spirv) {
@@ -55,8 +57,10 @@ int main() {
     } else {
 
         std::fstream fs;
-        fs.open("static/shaders/frag.spv", std::fstream::trunc | std::fstream::out);
+        fs.open(
+            "static/shaders/frag.spv", std::fstream::trunc | std::fstream::out);
         auto& spirv = fragment_spirv.value();
-        fs.write(reinterpret_cast<const char*>(spirv.data()), sizeof(uint32_t) * spirv.size());
+        fs.write(reinterpret_cast<const char*>(spirv.data()),
+            sizeof(uint32_t) * spirv.size());
     }
 }

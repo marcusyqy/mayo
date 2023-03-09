@@ -103,8 +103,8 @@ Swapchain::~Swapchain() noexcept {
     reset();
 }
 //
-Swapchain::Swapchain(render::Engine& engine,
-    underlying_window_type glfw_window, width_type x, width_type y) noexcept
+Swapchain::Swapchain(render::Engine& engine, underlying_window_type glfw_window,
+    width_type x, width_type y) noexcept
     : instance_(engine.vk_instance()), window_(glfw_window),
       context_(engine.context()), sync_objects_{} {
 
@@ -144,7 +144,7 @@ bool Swapchain::create_swapchain_and_resources() noexcept {
     description_.surface_format = choose_surface_format(details.formats);
     description_.present_mode = choose_present_mode(details.present_modes);
     description_.capabilities = std::move(details.capabilities);
-    renderpass_ = Renderpass{context_, description_.surface_format.format};
+    renderpass_ = RenderPass{context_, description_.surface_format.format};
 
     VkExtent2D extent =
         choose_extent(description_.capabilities, size_.x, size_.y);

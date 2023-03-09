@@ -2,7 +2,6 @@
 
 #include "render/DeviceContext.hpp"
 #include "render/fwd.hpp"
-#include "render/utils/Box.hpp"
 #include "vma/vk_mem_alloc.h"
 
 namespace zoo::render::resources {
@@ -14,15 +13,11 @@ struct MemoryRegion {
 
 class MemoryView;
 
-class Memory : utils::Box<VkDeviceMemory> {
+class Memory {
 public:
-    using underlying_type = utils::Box<VkDeviceMemory>;
+    using underlying_type = VkDeviceMemory;
 
-    using value_type = underlying_type::value_type;
-    using underlying_type::operator value_type;
-    using underlying_type::operator bool;
-
-    Memory(std::shared_ptr<DeviceContext> context, size_t size) noexcept;
+    Memory(DeviceContext& context, size_t size) noexcept;
 
     [[nodiscard]] MemoryRegion region() const noexcept;
     [[nodiscard]] MemoryView view(const MemoryRegion& rg) const noexcept;
@@ -32,6 +27,8 @@ public:
     void reset() noexcept;
 
 private:
+    DeviceContext* context_;
+    VkDeviceMemory memory_;
     size_t size_;
 };
 

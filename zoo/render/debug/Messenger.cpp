@@ -55,6 +55,7 @@ void destroy_debug_utils_messenger_ext(VkInstance instance,
         func(instance, debug_messenger, allocator);
     }
 }
+
 } // namespace
 
 Messenger::Messenger(VkInstance instance) noexcept

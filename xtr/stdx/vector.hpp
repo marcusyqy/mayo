@@ -1,11 +1,10 @@
 #pragma once
-#include <memory>
+#include "contiguous_iterator.hpp"
 #include "fwd.hpp"
 #include "type_traits.hpp"
-#include "contiguous_iterator.hpp"
+#include <memory>
 
 namespace stdx {
-
 
 namespace detail {
 template<typename T>
@@ -22,8 +21,8 @@ struct vector_traits {
     using difference_type = std::ptrdiff_t;
     using iterator_category = std::random_access_iterator_tag;
     using index_type = size_type;
-
-};}
+};
+} // namespace detail
 
 template<typename T, typename Allocator = std::allocator<T>>
 class vector {
@@ -36,7 +35,8 @@ public:
     using pointer = typename detail::vector_traits<T>::pointer;
     using reference = typename detail::vector_traits<T>::reference;
     using difference_type = typename detail::vector_traits<T>::difference_type;
-    using iterator_category = typename detail::vector_traits<T>::iterator_category;
+    using iterator_category =
+        typename detail::vector_traits<T>::iterator_category;
     using index_type = typename detail::vector_traits<T>::index_type;
 
     using const_iterator = contiguous_iterator<true, detail::vector_traits<T>>;

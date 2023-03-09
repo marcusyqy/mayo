@@ -5,8 +5,7 @@ namespace sut {
 namespace {} // namespace
 
 stdx::expected<std::vector<uint32_t>, std::runtime_error>
-ShaderCompiler::compile(
-    const ShaderWork& work) noexcept {
+ShaderCompiler::compile(const ShaderWork& work) noexcept {
     shaderc::CompileOptions options;
     for (const auto& defines : work.defines) {
         options.AddMacroDefinition(defines.name, defines.value);

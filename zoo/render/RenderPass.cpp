@@ -1,6 +1,7 @@
 #include "RenderPass.hpp"
 
 namespace zoo::render {
+
 namespace {
 VkRenderPass create_vk_renderpass(
     DeviceContext& context, VkFormat format) noexcept {
@@ -49,28 +50,45 @@ VkRenderPass create_vk_renderpass(
 
 } // namespace
 
-RenderPass::RenderPass() noexcept : underlying_type() {}
+RenderPass::RenderPass() noexcept : context_(nullptr), underlying_(nullptr) {}
 
-RenderPass::RenderPass(
-    DeviceContext& context, VkFormat format) noexcept
-    : underlying_type(context, create_vk_renderpass(context, format)) {}
+RenderPass::RenderPass(DeviceContext& context, VkFormat format) noexcept
+    : context_(std::addressof(context)),
+      underlying_(create_vk_renderpass(context, format)) {}
+
+void RenderPass::reset() noexcept {
+    if (context_ != nullptr) {
+        context_->release_device_resource(release());
+        context_ = nullptr;
+    }
+}
 
 RenderPass& RenderPass::operator=(RenderPass&& renderpass) noexcept {
-    underlying_type::reset();
-    underlying_type::operator=(std::move(renderpass));
-    std::ignore = renderpass.release();
+    reset();
+    context_ = std::move(renderpass.context_);
+    underlying_ = std::move(renderpass.underlying_);
+    renderpass.release();
     return *this;
 }
 
+RenderPass::underlying_type RenderPass::release() noexcept {
+    underlying_type ret = underlying_;
+    underlying_ = nullptr;
+    context_ = nullptr;
+    return ret;
+}
+
 RenderPass::RenderPass(RenderPass&& renderpass) noexcept
-    : underlying_type(std::move(renderpass)) {
-    std::ignore = renderpass.release();
+    : context_(std::move(renderpass.context_)),
+      underlying_(std::move(renderpass.underlying_)) {
+    renderpass.release();
 }
 
-void RenderPass::emplace(DeviceContext& device, underlying_type type); {
+void RenderPass::emplace(DeviceContext& device, underlying_type type) noexcept {
     context_ = std::addressof(device);
-    type_ = type;
+    underlying_ = type;
 }
 
+RenderPass::~RenderPass() noexcept { reset(); }
 
 } // namespace zoo::render

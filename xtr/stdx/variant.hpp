@@ -12,8 +12,7 @@ struct variant_leaf {};
 template<typename First, typename... Others>
 struct variant_leaf<First, Others...> {
 
-    variant_leaf() : value_{} {
-    }
+    variant_leaf() : value_{} {}
 
     template<size_t Size, typename T, typename... Args>
     constexpr size_t emplace(Args&&... args) noexcept {
@@ -90,8 +89,7 @@ public:
         emplace<std::decay_t<T>>(std::forward<T&&>(arg));
     }
 
-    variant() noexcept : idx_(0), args_{0} {
-    }
+    variant() noexcept : idx_(0), args_{0} {}
 
 private:
     size_t idx_ = 0;

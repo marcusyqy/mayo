@@ -17,6 +17,7 @@ public:
         VkInstance instance, VkDevice device, VkPhysicalDevice pd) noexcept;
 
     void reset() noexcept;
+
     operator bool() noexcept { return underlying_ != nullptr; }
 
 private:

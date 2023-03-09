@@ -49,8 +49,7 @@ application::ExitStatus main(application::Settings args) noexcept {
 
     ZOO_LOG_INFO("Starting application");
 
-    std::shared_ptr<window::Context> win_context =
-        std::make_shared<window::Context>();
+    window::Context win_context{};
 
     render::Engine render_engine{render_engine_info};
 
@@ -69,7 +68,7 @@ application::ExitStatus main(application::Settings args) noexcept {
         {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}};
 
     auto [vertex_bytes, fragment_bytes] = []() {
-        zoo::render::tools::ShaderCompiler compiler;
+        render::tools::ShaderCompiler compiler;
         auto vertex_bytes = read_file("static/shaders/test.vert");
         ZOO_ASSERT(vertex_bytes, "vertex shader must have value!");
         auto fragment_bytes = read_file("static/shaders/test.frag");
@@ -135,7 +134,7 @@ application::ExitStatus main(application::Settings args) noexcept {
     while (main_window.is_open()) {
         swapchain.render(populate_command_ctx);
         swapchain.present();
-        win_context->poll_events();
+        win_context.poll_events();
     }
 
     // TODO: we can remove this after we find out how to properly tie resources

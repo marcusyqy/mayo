@@ -70,4 +70,4 @@ private:
     pointer data_;
     index_type curr_;
 };
-}
+} // namespace stdx

@@ -1,7 +1,7 @@
 #pragma once
 #include "render/DeviceContext.hpp"
 #include "render/Pipeline.hpp"
-#include "render/Renderpass.hpp"
+#include "render/RenderPass.hpp"
 #include "render/fwd.hpp"
 #include "stdx/function_ref.hpp"
 #include "zoo.hpp"
@@ -33,6 +33,7 @@ public:
 
     void exec(const VkRenderPassBeginInfo& begin_info,
         stdx::function_ref<void()> c) noexcept;
+
     void record(stdx::function_ref<void()> c) noexcept;
 
     // TODO: find a better way to do this.

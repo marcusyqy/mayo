@@ -110,7 +110,7 @@ Shader::~Shader() noexcept { reset(); }
 // TODO: do some cleanup in this area.
 Pipeline::Pipeline(DeviceContext& context,
     const ShaderStagesSpecification& specifications,
-    const ViewportInfo& viewport_info, const Renderpass& renderpass) noexcept
+    const ViewportInfo& viewport_info, const RenderPass& renderpass) noexcept
     : context_(context) {
 
     enum _shader_stages : uint32_t {

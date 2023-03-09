@@ -1,17 +1,27 @@
 #pragma once
 
 #include "render/fwd.hpp"
-#include "render/utils/Box.hpp"
 
 namespace zoo::render::sync {
-class Semaphore : public utils::Box<VkSemaphore> {
-public:
-    using underlying_type = utils::Box<VkSemaphore>;
-    Semaphore(DeviceContext& context) noexcept;
 
-    using underlying_type::get;
-    using underlying_type::operator underlying_type::value_type;
+class Semaphore {
+public:
+    using underlying_type = VkSemaphore;
+
+    underlying_type get() const noexcept { return underlying_; }
+    operator underlying_type() const noexcept { return get(); }
+
+    Semaphore(DeviceContext& context) noexcept;
+    ~Semaphore() noexcept;
+
+    Semaphore(const Semaphore& other) = delete;
+    Semaphore& operator=(const Semaphore& other) = delete;
+
+    Semaphore(Semaphore&& other) noexcept;
+    Semaphore& operator=(Semaphore&& other) noexcept;
 
 private:
+    DeviceContext* context_;
+    VkSemaphore underlying_;
 };
 } // namespace zoo::render::sync

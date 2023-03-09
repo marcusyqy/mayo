@@ -1,6 +1,6 @@
 #pragma once
 #include "DeviceContext.hpp"
-#include "Renderpass.hpp"
+#include "RenderPass.hpp"
 #include "fwd.hpp"
 #include "stdx/span.hpp"
 
@@ -72,7 +72,7 @@ public:
     Pipeline(DeviceContext& context,
         const ShaderStagesSpecification& specifications,
         const ViewportInfo& viewport_info,
-        const Renderpass& renderpass) noexcept;
+        const RenderPass& renderpass) noexcept;
 
     ~Pipeline() noexcept;
 
