@@ -1,4 +1,4 @@
-#include "Renderpass.hpp"
+#include "RenderPass.hpp"
 
 namespace zoo::render {
 namespace {
@@ -49,22 +49,28 @@ VkRenderPass create_vk_renderpass(
 
 } // namespace
 
-Renderpass::Renderpass() noexcept : underlying_type() {}
+RenderPass::RenderPass() noexcept : underlying_type() {}
 
-Renderpass::Renderpass(
+RenderPass::RenderPass(
     DeviceContext& context, VkFormat format) noexcept
     : underlying_type(context, create_vk_renderpass(context, format)) {}
 
-Renderpass& Renderpass::operator=(Renderpass&& renderpass) noexcept {
+RenderPass& RenderPass::operator=(RenderPass&& renderpass) noexcept {
     underlying_type::reset();
     underlying_type::operator=(std::move(renderpass));
     std::ignore = renderpass.release();
     return *this;
 }
 
-Renderpass::Renderpass(Renderpass&& renderpass) noexcept
+RenderPass::RenderPass(RenderPass&& renderpass) noexcept
     : underlying_type(std::move(renderpass)) {
     std::ignore = renderpass.release();
 }
+
+void RenderPass::emplace(DeviceContext& device, underlying_type type); {
+    context_ = std::addressof(device);
+    type_ = type;
+}
+
 
 } // namespace zoo::render
