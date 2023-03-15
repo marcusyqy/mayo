@@ -1,5 +1,6 @@
 #pragma once
 #include "core/Log.hpp"
+#include "vma/vk_mem_alloc.h"
 #include <vulkan/vk_enum_string_helper.h>
 #include <vulkan/vulkan.h>
 

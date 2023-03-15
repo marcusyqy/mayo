@@ -5,7 +5,7 @@
 
 #include "core/platform/Query.hpp"
 #include "fwd.hpp"
-#include "render/vma/Allocator.hpp"
+#include "render/resources/Allocator.hpp"
 #include <memory>
 
 namespace zoo::render {
@@ -48,8 +48,10 @@ public:
 
     void wait() noexcept;
 
-    vma::Allocator& allocator() noexcept { return allocator_; }
-    const vma::Allocator& allocator() const noexcept { return allocator_; }
+    resources::Allocator& allocator() noexcept { return allocator_; }
+    const resources::Allocator& allocator() const noexcept {
+        return allocator_;
+    }
 
 private:
     utils::PhysicalDevice physical_ = nullptr;
@@ -58,7 +60,7 @@ private:
     utils::QueueFamilyProperties queue_properties_;
     VkCommandPool command_pool_ = nullptr;
 
-    vma::Allocator allocator_;
+    resources::Allocator allocator_;
 };
 
 } // namespace zoo::render

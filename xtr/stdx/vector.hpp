@@ -42,7 +42,12 @@ public:
     using const_iterator = contiguous_iterator<true, detail::vector_traits<T>>;
     using iterator = contiguous_iterator<false, detail::vector_traits<T>>;
 
+    [[nodiscard]] bool empty() const noexcept { return size_ == 0; }
+    [[nodiscard]] size_t size() const noexcept { return size_; }
+
 private:
+    T* data_;
+    size_t size_;
 };
 
 } // namespace stdx

@@ -6,7 +6,22 @@
 namespace zoo::render {
 namespace {
 const char* device_extension{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+const auto VK_VERSION = VK_API_VERSION_1_3;
+
+VmaAllocator create_allocator(
+    VkInstance instance, VkPhysicalDevice pd, VkDevice device) {
+    VmaAllocatorCreateInfo allocator_create_info{};
+    allocator_create_info.device = device;
+    allocator_create_info.physicalDevice = pd;
+    allocator_create_info.instance = instance;
+    allocator_create_info.vulkanApiVersion = VK_VERSION;
+
+    VmaAllocator allocator;
+    VK_EXPECT_SUCCESS(vmaCreateAllocator(&allocator_create_info, &allocator));
+    return allocator;
 }
+
+} // namespace
 
 // TODO: since we need to create the queues at the start should we also just
 // initialize the engine with settings that will determine the queues that
@@ -74,6 +89,8 @@ DeviceContext::DeviceContext([[maybe_unused]] VkInstance instance,
     pool_create_info.queueFamilyIndex = queue_properties_.index();
     VK_EXPECT_SUCCESS(vkCreateCommandPool(
         logical_, &pool_create_info, nullptr, &command_pool_));
+
+    allocator_.emplace(instance, logical_, physical_);
 }
 
 void DeviceContext::reset() noexcept {

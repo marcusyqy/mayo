@@ -1,6 +1,7 @@
 #include "vma/vk_mem_alloc.h"
+#include "Buffer.hpp"
 
-namespace zoo::render::vma {
+namespace zoo::render::resources {
 
 class Allocator {
 public:
@@ -20,8 +21,10 @@ public:
 
     operator bool() noexcept { return underlying_ != nullptr; }
 
+    Buffer allocate_buffer(size_t size, VkBufferUsageFlags usage) noexcept;
+
 private:
     VmaAllocator underlying_;
 };
 
-} // namespace zoo::render::vma
+} // namespace zoo::render::resources
