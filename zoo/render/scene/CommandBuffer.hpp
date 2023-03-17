@@ -3,6 +3,7 @@
 #include "render/Pipeline.hpp"
 #include "render/RenderPass.hpp"
 #include "render/fwd.hpp"
+#include "render/resources/Buffer.hpp"
 #include "stdx/function_ref.hpp"
 #include "zoo.hpp"
 
@@ -26,6 +27,7 @@ public:
 
     // bindings
     void bind(const render::Pipeline& pipeline) noexcept;
+    void bind_vertex_buffer(stdx::span<render::resources::Buffer> buffers) noexcept;
 
     // maybe struct?
     void draw(uint32_t vertex_count, uint32_t instance_count,
@@ -51,5 +53,10 @@ private:
 private:
     DeviceContext* context_;
     underlying_type underlying_;
+
+    struct VertexBufferBindContext {
+        std::vector<VkBuffer> buffers_;
+        std::vector<VkDeviceSize> offsets_;
+    } vertex_buffer_bind_context_;
 };
 } // namespace zoo::render::scene

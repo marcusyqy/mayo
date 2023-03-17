@@ -169,6 +169,8 @@ public:
     template<typename TT, size_t N>
     span(TT (&arr)[N]) noexcept : span(arr, N) {}
 
+    span(pointer data) noexcept : span(data, 1) {}
+
 private:
     pointer start_;
     size_type size_;
@@ -182,5 +184,11 @@ span(V&) -> span<typename V::value_type>;
 
 template<typename V, typename = stdx::is_contiguous_container<V>>
 span(const V&) -> span<const typename V::value_type>;
+
+template<typename V>
+span(V*) -> span<V>;
+
+template<typename V>
+span(const V*) -> span<const V>;
 
 } // namespace stdx

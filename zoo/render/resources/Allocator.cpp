@@ -22,32 +22,14 @@ void Allocator::emplace(
     allocator_create_info.physicalDevice = pd;
     allocator_create_info.device = device;
     allocator_create_info.instance = instance;
-    allocator_create_info.pVulkanFunctions = nullptr;
     VK_EXPECT_SUCCESS(vmaCreateAllocator(&allocator_create_info, &underlying_));
 }
 
 void Allocator::reset() noexcept {
-    vmaDestroyAllocator(underlying_);
-    underlying_ = nullptr;
-}
-
-Buffer Allocator::allocate_buffer(
-    size_t size, VkBufferCreateFlags usage) noexcept {
-    VkBuffer buffer{};
-
-    VkBufferCreateInfo buffer_info;
-    buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    buffer_info.size = size;
-    buffer_info.usage = usage;
-
-    VmaAllocationCreateInfo alloc_info{};
-    alloc_info.usage = VMA_MEMORY_USAGE_AUTO;
-    VmaAllocation allocation;
-    VmaAllocationInfo info;
-    VK_EXPECT_SUCCESS(vmaCreateBuffer(
-        underlying_, &buffer_info, &alloc_info, &buffer, &allocation, &info));
-
-    return Buffer{buffer, usage, size, allocation, info};
+    if (underlying_ != nullptr) {
+        vmaDestroyAllocator(underlying_);
+        underlying_ = nullptr;
+    }
 }
 
 } // namespace zoo::render::resources

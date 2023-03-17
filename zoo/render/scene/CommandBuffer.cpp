@@ -61,6 +61,26 @@ void CommandBuffer::bind(const render::Pipeline& pipeline) noexcept {
     vkCmdBindPipeline(underlying_, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 }
 
+void CommandBuffer::bind_vertex_buffer(
+    stdx::span<render::resources::Buffer> buffers) noexcept {
+    const auto size = buffers.size();
+    auto& vbbuffers = vertex_buffer_bind_context_.buffers_;
+    vbbuffers.clear();
+    vbbuffers.reserve(size);
+
+    auto& vboffsets = vertex_buffer_bind_context_.offsets_;
+    vboffsets.clear();
+    vboffsets.reserve(size);
+
+    for (const auto& x : buffers) {
+        vbbuffers.emplace_back(x.handle());
+        vboffsets.emplace_back(x.offset());
+    }
+
+    vkCmdBindVertexBuffers(
+        underlying_, 0, size, vbbuffers.data(), vboffsets.data());
+}
+
 void CommandBuffer::begin_renderpass(
     const VkRenderPassBeginInfo& begin_info) noexcept {
     vkCmdBeginRenderPass(underlying_, &begin_info, VK_SUBPASS_CONTENTS_INLINE);

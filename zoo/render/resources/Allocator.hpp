@@ -1,5 +1,5 @@
+#pragma once
 #include "vma/vk_mem_alloc.h"
-#include "Buffer.hpp"
 
 namespace zoo::render::resources {
 
@@ -21,7 +21,8 @@ public:
 
     operator bool() noexcept { return underlying_ != nullptr; }
 
-    Buffer allocate_buffer(size_t size, VkBufferUsageFlags usage) noexcept;
+    VmaAllocator get() const noexcept { return underlying_; }
+    operator VmaAllocator() const noexcept { return get(); };
 
 private:
     VmaAllocator underlying_;

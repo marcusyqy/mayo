@@ -6,20 +6,6 @@
 namespace zoo::render {
 namespace {
 const char* device_extension{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
-const auto VK_VERSION = VK_API_VERSION_1_3;
-
-VmaAllocator create_allocator(
-    VkInstance instance, VkPhysicalDevice pd, VkDevice device) {
-    VmaAllocatorCreateInfo allocator_create_info{};
-    allocator_create_info.device = device;
-    allocator_create_info.physicalDevice = pd;
-    allocator_create_info.instance = instance;
-    allocator_create_info.vulkanApiVersion = VK_VERSION;
-
-    VmaAllocator allocator;
-    VK_EXPECT_SUCCESS(vmaCreateAllocator(&allocator_create_info, &allocator));
-    return allocator;
-}
 
 } // namespace
 
@@ -96,6 +82,7 @@ DeviceContext::DeviceContext([[maybe_unused]] VkInstance instance,
 void DeviceContext::reset() noexcept {
     if (logical_ != nullptr) {
         wait();
+        allocator_.reset();
         if (command_pool_ != nullptr)
             vkDestroyCommandPool(logical_, command_pool_, nullptr);
 
