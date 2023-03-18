@@ -77,8 +77,8 @@ void CommandBuffer::bind_vertex_buffer(
         vboffsets.emplace_back(x.offset());
     }
 
-    vkCmdBindVertexBuffers(
-        underlying_, 0, static_cast<uint32_t>(size), vbbuffers.data(), vboffsets.data());
+    vkCmdBindVertexBuffers(underlying_, 0, static_cast<uint32_t>(size),
+        vbbuffers.data(), vboffsets.data());
 }
 
 void CommandBuffer::begin_renderpass(

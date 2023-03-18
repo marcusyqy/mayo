@@ -27,7 +27,8 @@ public:
 
     // bindings
     void bind(const render::Pipeline& pipeline) noexcept;
-    void bind_vertex_buffer(stdx::span<render::resources::Buffer> buffers) noexcept;
+    void bind_vertex_buffer(
+        stdx::span<render::resources::Buffer> buffers) noexcept;
 
     // maybe struct?
     void draw(uint32_t vertex_count, uint32_t instance_count,
