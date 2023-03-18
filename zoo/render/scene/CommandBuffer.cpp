@@ -61,7 +61,7 @@ void CommandBuffer::bind(const render::Pipeline& pipeline) noexcept {
     vkCmdBindPipeline(underlying_, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 }
 
-void CommandBuffer::bind_vertex_buffer(
+void CommandBuffer::bind_vertex_buffers(
     stdx::span<render::resources::Buffer> buffers) noexcept {
     const auto size = buffers.size();
     auto& vbbuffers = vertex_buffer_bind_context_.buffers_;

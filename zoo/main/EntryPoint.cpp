@@ -135,9 +135,8 @@ application::ExitStatus main(application::Settings args) noexcept {
             command_context.set_scissor(viewport_info.scissor);
             command_context.exec(renderpass_info, [&]() {
                 command_context.bind(pipeline);
-                command_context.bind_vertex_buffer(&buffer);
-                command_context.draw(
-                    static_cast<uint32_t>(vertices.size()), 1, 0, 0);
+                command_context.bind_vertex_buffers(&buffer);
+                command_context.draw((uint32_t)vertices.size(), 1, 0, 0);
             });
         };
 
