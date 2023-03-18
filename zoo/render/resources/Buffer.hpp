@@ -18,6 +18,7 @@ public:
     Builder& size(size_t size) noexcept;
     Builder& usage(VkBufferUsageFlags usage) noexcept;
     Builder& allocation_type(VmaMemoryUsage usage) noexcept;
+    Builder& allocation_flag(VmaAllocationCreateFlags flags) noexcept;
 
 private:
     VkBuffer buffer_ = {};
@@ -27,6 +28,7 @@ private:
     VmaAllocation allocation_ = {};
     VmaAllocationInfo allocation_info_ = {};
     VmaMemoryUsage memory_usage_ = VMA_MEMORY_USAGE_AUTO;
+    VmaAllocationCreateFlags memory_flags_ = {};
 };
 
 } // namespace buffer
@@ -49,6 +51,17 @@ public:
     void unmap() noexcept;
 
     void map(stdx::function_ref<void(void*)> fn) noexcept;
+
+    template<typename Type>
+    void map(stdx::function_ref<void(Type*)> fn) noexcept {
+        fn(map<Type>());
+        unmap();
+    }
+
+    template<typename Type>
+    Type* map() noexcept {
+        return std::launder(reinterpret_cast<Type*>(map()));
+    }
 
     VkBuffer handle() const noexcept;
     VkDeviceSize offset() const noexcept;

@@ -47,12 +47,12 @@ enum class ShaderType {
 
 // can these be automated?
 struct VertexBufferDescription {
+    uint32_t location;
     ShaderType type;
     uint32_t offset;
 };
 
 struct VertexInputDescription {
-    uint32_t location;
     uint32_t stride;
     stdx::span<VertexBufferDescription> buffer_description;
     VkVertexInputRate input_rate = {VK_VERTEX_INPUT_RATE_VERTEX};

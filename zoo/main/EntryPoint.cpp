@@ -64,7 +64,7 @@ application::ExitStatus main(application::Settings args) noexcept {
             }
         }};
 
-    const std::vector<Vertex> vertices = {{{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
+    const std::vector<Vertex> vertices = {{{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
         {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
         {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}};
 
@@ -76,9 +76,9 @@ application::ExitStatus main(application::Settings args) noexcept {
         ZOO_ASSERT(fragment_bytes, "fragment shader must have value!");
 
         render::tools::ShaderWork vertex_work{
-            shaderc_vertex_shader, "test.vert", *vertex_bytes};
+            shaderc_vertex_shader, "Test.vert", *vertex_bytes};
         render::tools::ShaderWork fragment_work{
-            shaderc_fragment_shader, "test.frag", *fragment_bytes};
+            shaderc_fragment_shader, "Test.frag", *fragment_bytes};
 
         auto vertex_spirv = compiler.compile(vertex_work);
         auto fragment_spirv = compiler.compile(fragment_work);
@@ -90,25 +90,23 @@ application::ExitStatus main(application::Settings args) noexcept {
             spdlog::error(
                 "Fragment has error : {}", fragment_spirv.error().what());
         }
+
         return std::make_pair(
             std::move(*vertex_spirv), std::move(*fragment_spirv));
     }();
 
     auto& context = render_engine.context();
 
-    // allocate device local buffer
     auto buffer = render::resources::Buffer::start_build(context.allocator())
-                      .usage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
-                             VK_BUFFER_USAGE_TRANSFER_DST_BIT)
+                      .usage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
                       .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
                       .size(sizeof(Vertex) * vertices.size())
                       .build();
 
-    buffer.map([&vertices](void* data) {
-        memcpy(data, vertices.data(), vertices.size() * sizeof(Vertex));
+    buffer.map<Vertex>([&vertices](Vertex* data) {
+        std::copy(std::begin(vertices), std::end(vertices), data);
     });
 
-    // these are here for now.
     render::Shader vertex_shader{context, vertex_bytes, "main"};
     render::Shader fragment_shader{context, fragment_bytes, "main"};
 
@@ -116,15 +114,12 @@ application::ExitStatus main(application::Settings args) noexcept {
 
     std::array buffer_description = {
         render::VertexBufferDescription{
-            render::ShaderType::vec2, offsetof(Vertex, pos)},
+            0, render::ShaderType::vec2, offsetof(Vertex, pos)},
         render::VertexBufferDescription{
-            render::ShaderType::vec3, offsetof(Vertex, color)}};
+            1, render::ShaderType::vec3, offsetof(Vertex, color)}};
 
-    std::array vertex_description = {
-        render::VertexInputDescription{0, sizeof(vertex_shader),
-            buffer_description, VK_VERTEX_INPUT_RATE_VERTEX},
-        render::VertexInputDescription{1, sizeof(vertex_shader),
-            buffer_description, VK_VERTEX_INPUT_RATE_VERTEX}};
+    std::array vertex_description = {render::VertexInputDescription{
+        sizeof(Vertex), buffer_description, VK_VERTEX_INPUT_RATE_VERTEX}};
 
     render::Pipeline pipeline{context,
         render::ShaderStagesSpecification{
@@ -141,13 +136,10 @@ application::ExitStatus main(application::Settings args) noexcept {
             command_context.exec(renderpass_info, [&]() {
                 command_context.bind(pipeline);
                 command_context.bind_vertex_buffer(&buffer);
-
-                // RENDERING TRIANGLE
-                command_context.draw(3, 1, 0, 0);
+                command_context.draw(
+                    static_cast<uint32_t>(vertices.size()), 1, 0, 0);
             });
         };
-
-    // swapchain.for_each(populate_command_ctx);
 
     while (main_window.is_open()) {
         swapchain.render(populate_command_ctx);
@@ -155,8 +147,8 @@ application::ExitStatus main(application::Settings args) noexcept {
         win_context.poll_events();
     }
 
-    // TODO: we can remove this after we find out how to properly tie resources
-    // to each frame.
+    // TODO: we can remove this after we find out how to properly tie
+    // resources to each frame.
     context.wait();
 
     return application::ExitStatus::ok;

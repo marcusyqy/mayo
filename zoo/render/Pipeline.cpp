@@ -113,11 +113,7 @@ Pipeline::Pipeline(DeviceContext& context,
     const ViewportInfo& viewport_info, const RenderPass& renderpass) noexcept
     : context_(context) {
 
-    enum _shader_stages : uint32_t {
-        vertex_stage = 0,
-        fragment_stage = 1,
-        shader_stages = 2
-    };
+    enum : uint32_t { vertex_stage = 0, fragment_stage = 1, shader_stages = 2 };
 
     VkPipelineShaderStageCreateInfo shaders_create_info[shader_stages]{};
     {
@@ -172,7 +168,7 @@ Pipeline::Pipeline(DeviceContext& context,
         for (const auto& buf_desc : desc.buffer_description) {
             VkVertexInputAttributeDescription vk_vertex_input_attr;
             vk_vertex_input_attr.binding = binding;
-            vk_vertex_input_attr.location = desc.location;
+            vk_vertex_input_attr.location = buf_desc.location;
             vk_vertex_input_attr.format =
                 convert_to_shader_stage(buf_desc.type);
             vk_vertex_input_attr.offset = buf_desc.offset;

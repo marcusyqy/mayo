@@ -12,6 +12,7 @@ Buffer Builder::build() noexcept {
 
     VmaAllocationCreateInfo alloc_info{};
     alloc_info.usage = memory_usage_;
+
     VK_EXPECT_SUCCESS(vmaCreateBuffer(allocator_, &buffer_info, &alloc_info,
         &buffer_, &allocation_, &allocation_info_));
 
@@ -30,6 +31,11 @@ Builder& Builder::usage(VkBufferUsageFlags usage) noexcept {
 
 Builder& Builder::allocation_type(VmaMemoryUsage usage) noexcept {
     memory_usage_ = usage;
+    return *this;
+}
+
+Builder& Builder::allocation_flag(VmaAllocationCreateFlags flags) noexcept {
+    memory_flags_ = flags;
     return *this;
 }
 
@@ -68,7 +74,7 @@ void Buffer::map(stdx::function_ref<void(void*)> fn) noexcept {
 
 VkBuffer Buffer::handle() const noexcept { return buffer_; }
 
-        // TODO: find out if there is anything to do for buffer;
+// TODO: find out if there is anything to do for buffer;
 VkDeviceSize Buffer::offset() const noexcept { return 0; }
 
 } // namespace zoo::render::resources
