@@ -16,6 +16,7 @@ project "zoo"
     includedirs {
         "%{include_dir.GLFW}",
         "%{include_dir.spdlog}",
+        "%{include_dir.vma}",
         "%{include_dir.xtr}",
         "%{include_dir.vulkan}",
         "%{include_dir.glm}",

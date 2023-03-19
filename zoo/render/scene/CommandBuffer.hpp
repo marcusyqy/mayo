@@ -9,6 +9,20 @@
 
 namespace zoo::render::scene {
 
+struct PipelineBindContext {
+public:
+    PipelineBindContext& push_constants(
+        const PushConstant& constant, void* data) noexcept;
+
+    PipelineBindContext(VkCommandBuffer cmd_buffer, VkPipeline pipeline,
+        VkPipelineLayout pipeline_layout) noexcept;
+
+private:
+    VkCommandBuffer cmd_buffer_;
+    VkPipeline pipeline_;
+    VkPipelineLayout pipeline_layout_;
+};
+
 class CommandBuffer {
 public:
     using underlying_type = VkCommandBuffer;
@@ -26,7 +40,9 @@ public:
     void set_scissor(const VkRect2D& scissor) noexcept;
 
     // bindings
-    void bind(const render::Pipeline& pipeline) noexcept;
+    PipelineBindContext bind_pipeline(
+        const render::Pipeline& pipeline) noexcept;
+
     void bind_vertex_buffers(
         stdx::span<render::resources::Buffer> buffers) noexcept;
 

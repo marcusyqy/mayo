@@ -3,6 +3,18 @@
 
 namespace zoo::render::scene {
 
+PipelineBindContext& PipelineBindContext::push_constants(
+    const PushConstant& constant, void* data) noexcept {
+    vkCmdPushConstants(cmd_buffer_, pipeline_layout_, constant.stageFlags,
+        constant.offset, constant.size, data);
+    return *this;
+}
+
+PipelineBindContext::PipelineBindContext(VkCommandBuffer cmd_buffer,
+    VkPipeline pipeline, VkPipelineLayout pipeline_layout) noexcept
+    : cmd_buffer_(cmd_buffer), pipeline_(pipeline),
+      pipeline_layout_(pipeline_layout) {}
+
 CommandBuffer::CommandBuffer(DeviceContext& context) noexcept
     : context_{std::addressof(context)}, underlying_{
                                              context_->buffer_from_pool()} {}
@@ -57,8 +69,10 @@ void CommandBuffer::draw(uint32_t vertex_count, uint32_t instance_count,
         first_instance);
 }
 
-void CommandBuffer::bind(const render::Pipeline& pipeline) noexcept {
+PipelineBindContext CommandBuffer::bind_pipeline(
+    const render::Pipeline& pipeline) noexcept {
     vkCmdBindPipeline(underlying_, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+    return {underlying_, pipeline.get(), pipeline.layout()};
 }
 
 void CommandBuffer::bind_vertex_buffers(

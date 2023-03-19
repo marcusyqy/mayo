@@ -4,6 +4,7 @@ VULKAN_SDK = os.getenv("VULKAN_SDK")
 -- Include directories relative to root folder (solution directory)
 include_dir = {}
 include_dir["GLFW"] = "%{wks.location}/deps/glfw/include"
+include_dir["vma"] = "%{wks.location}/deps/vma"
 include_dir["spdlog"] = "%{wks.location}/deps/spdlog/include"
 include_dir["xtr"] = "%{wks.location}/xtr"
 include_dir["glm"] = "%{wks.location}/deps/glm"

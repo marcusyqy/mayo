@@ -102,6 +102,7 @@ Shader& Shader::operator=(Shader&& other) noexcept {
     other.context_ = nullptr;
     other.module_ = nullptr;
     other.entry_point_.clear();
+
     return *this;
 }
 
@@ -110,7 +111,8 @@ Shader::~Shader() noexcept { reset(); }
 // TODO: do some cleanup in this area.
 Pipeline::Pipeline(DeviceContext& context,
     const ShaderStagesSpecification& specifications,
-    const ViewportInfo& viewport_info, const RenderPass& renderpass) noexcept
+    const ViewportInfo& viewport_info, const RenderPass& renderpass,
+    stdx::span<PushConstant> push_constants) noexcept
     : context_(context) {
 
     enum : uint32_t { vertex_stage = 0, fragment_stage = 1, shader_stages = 2 };
@@ -188,11 +190,11 @@ Pipeline::Pipeline(DeviceContext& context,
     vertex_input_state_create_info.vertexBindingDescriptionCount =
         static_cast<uint32_t>(std::size(vk_vertex_input_bind_desc));
     vertex_input_state_create_info.pVertexBindingDescriptions =
-        vk_vertex_input_bind_desc.data(); // Optional
+        vk_vertex_input_bind_desc.data();
     vertex_input_state_create_info.vertexAttributeDescriptionCount =
         static_cast<uint32_t>(std::size(vk_vertex_input_attr_desc));
     vertex_input_state_create_info.pVertexAttributeDescriptions =
-        vk_vertex_input_attr_desc.data(); // Optional
+        vk_vertex_input_attr_desc.data();
 
     VkPipelineInputAssemblyStateCreateInfo input_assembly_create_info{};
     input_assembly_create_info.sType =
@@ -255,10 +257,12 @@ Pipeline::Pipeline(DeviceContext& context,
     VkPipelineLayoutCreateInfo pipeline_layout_create_info{};
     pipeline_layout_create_info.sType =
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipeline_layout_create_info.setLayoutCount = 0;            // Optional
-    pipeline_layout_create_info.pSetLayouts = nullptr;         // Optional
-    pipeline_layout_create_info.pushConstantRangeCount = 0;    // Optional
-    pipeline_layout_create_info.pPushConstantRanges = nullptr; // Optional
+    pipeline_layout_create_info.setLayoutCount = 0;    // Optional
+    pipeline_layout_create_info.pSetLayouts = nullptr; // Optional
+    pipeline_layout_create_info.pushConstantRangeCount =
+        static_cast<uint32_t>(push_constants.size()); // Optional
+    pipeline_layout_create_info.pPushConstantRanges =
+        push_constants.data(); // Optional
 
     VK_EXPECT_SUCCESS(vkCreatePipelineLayout(context_,
                           &pipeline_layout_create_info, nullptr, &layout_),

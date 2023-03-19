@@ -14,6 +14,7 @@
 
 #include "render/tools/ShaderCompiler.hpp"
 #include <glm/glm.hpp>
+#include <glm/gtx/transform.hpp>
 
 namespace zoo {
 
@@ -22,6 +23,11 @@ namespace {
 struct Vertex {
     glm::vec2 pos;
     glm::vec3 color;
+};
+
+struct PushConstantData {
+    glm::vec4 data;
+    glm::mat4 render_matrix;
 };
 
 stdx::expected<std::string, std::runtime_error> read_file(
@@ -121,20 +127,44 @@ application::ExitStatus main(application::Settings args) noexcept {
     std::array vertex_description = {render::VertexInputDescription{
         sizeof(Vertex), buffer_description, VK_VERTEX_INPUT_RATE_VERTEX}};
 
+    render::PushConstant push_constant{};
+    push_constant.size = sizeof(PushConstantData);
+    push_constant.offset = 0;
+    push_constant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
     render::Pipeline pipeline{context,
         render::ShaderStagesSpecification{
             vertex_shader, fragment_shader, vertex_description},
-        swapchain.get_viewport_info(), swapchain.get_renderpass()};
+        swapchain.get_viewport_info(), swapchain.get_renderpass(),
+        &push_constant};
 
     const auto& viewport_info = swapchain.get_viewport_info();
 
+    PushConstantData push_constant_data{};
+
+    size_t frame_counter{};
     auto populate_command_ctx =
         [&](render::scene::CommandBuffer& command_context,
             VkRenderPassBeginInfo renderpass_info) {
             command_context.set_viewport(viewport_info.viewport);
             command_context.set_scissor(viewport_info.scissor);
             command_context.exec(renderpass_info, [&]() {
-                command_context.bind(pipeline);
+                glm::vec3 cam_pos = {0.f, 0.f, -2.f};
+                glm::mat4 view = glm::translate(glm::mat4(1.f), cam_pos);
+                // camera projection
+                glm::mat4 projection = glm::perspective(
+                    glm::radians(70.f), 1700.f / 900.f, 0.1f, 200.0f);
+                projection[1][1] *= -1;
+                // model rotation
+                glm::mat4 model = glm::rotate(glm::mat4{1.0f},
+                    glm::radians(frame_counter++ * 0.1f), glm::vec3(0, 1, 0));
+
+                // calculate final mesh matrix
+                glm::mat4 mesh_matrix = projection * view * model;
+                push_constant_data.render_matrix = mesh_matrix;
+
+                command_context.bind_pipeline(pipeline).push_constants(
+                    push_constant, &push_constant_data);
                 command_context.bind_vertex_buffers(&buffer);
                 command_context.draw((uint32_t)vertices.size(), 1, 0, 0);
             });

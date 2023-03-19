@@ -45,6 +45,8 @@ enum class ShaderType {
     f64 // double
 };
 
+enum class ShaderStage { vertex, fragment, geometry };
+
 // can these be automated?
 struct VertexBufferDescription {
     uint32_t location;
@@ -65,19 +67,23 @@ struct ShaderStagesSpecification {
     stdx::span<VertexInputDescription> description = {};
 };
 
+using PushConstant = VkPushConstantRange;
+
 class Pipeline {
 public:
     using underlying_type = VkPipeline;
 
     Pipeline(DeviceContext& context,
         const ShaderStagesSpecification& specifications,
-        const ViewportInfo& viewport_info,
-        const RenderPass& renderpass) noexcept;
+        const ViewportInfo& viewport_info, const RenderPass& renderpass,
+        stdx::span<PushConstant> push_constants) noexcept;
 
     ~Pipeline() noexcept;
 
     operator underlying_type() const { return get(); }
     underlying_type get() const { return underlying_; }
+
+    VkPipelineLayout layout() const { return layout_; }
 
 private:
     DeviceContext& context_;
@@ -85,4 +91,5 @@ private:
 
     VkPipelineLayout layout_ = nullptr;
 };
+
 } // namespace zoo::render

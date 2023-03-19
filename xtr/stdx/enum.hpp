@@ -14,6 +14,17 @@ template<typename Type>
 constexpr auto enum_as_bitmask_v = enum_as_bitmask<Type>::value;
 } // namespace stdx::detail
 
+namespace stdx {
+
+template<auto v>
+struct enum_as_size {
+    static constexpr size_t value = static_cast<size_t>(v);
+};
+
+template<auto v>
+constexpr auto enum_as_size_v = enum_as_size<v>::value;
+} // namespace stdx
+
 template<typename Type>
 [[nodiscard]] constexpr std::enable_if_t<stdx::detail::enum_as_bitmask_v<Type>,
     Type>

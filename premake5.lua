@@ -21,6 +21,7 @@ outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 group "Dependencies"
 warnings "Off"
     include "deps/glfw"
+    include "deps/vma"
     include "xtr"
 
 
