@@ -17,7 +17,7 @@ PipelineBindContext::PipelineBindContext(VkCommandBuffer cmd_buffer,
 
 CommandBuffer::CommandBuffer(DeviceContext& context) noexcept
     : context_{std::addressof(context)}, underlying_{
-                                             context_->buffer_from_pool()} {}
+                                             context_->vk_command_buffer_from_pool()} {}
 
 CommandBuffer::CommandBuffer(CommandBuffer&& other) noexcept
     : context_{std::move(other.context_)}, underlying_{

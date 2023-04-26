@@ -35,7 +35,7 @@ public:
     operator const VkDevice&() const noexcept { return logical(); }
     const VkDevice& logical() const noexcept { return logical_; }
 
-    VkCommandBuffer buffer_from_pool() const noexcept;
+    VkCommandBuffer vk_command_buffer_from_pool() const noexcept;
 
     VkQueue retrieve(Operation op) const noexcept;
 
