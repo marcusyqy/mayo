@@ -196,12 +196,14 @@ Pipeline::Pipeline(DeviceContext& context,
     vertex_input_state_create_info.pVertexAttributeDescriptions =
         vk_vertex_input_attr_desc.data();
 
+    // INPUT ASSEMBLY
     VkPipelineInputAssemblyStateCreateInfo input_assembly_create_info{};
     input_assembly_create_info.sType =
         VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
     input_assembly_create_info.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     input_assembly_create_info.primitiveRestartEnable = VK_FALSE;
 
+    // RASTERIZATION
     VkPipelineRasterizationStateCreateInfo rasterizer_create_info{};
     rasterizer_create_info.sType =
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
@@ -210,7 +212,7 @@ Pipeline::Pipeline(DeviceContext& context,
     rasterizer_create_info.depthBiasConstantFactor = 0.0f; // Optional
     rasterizer_create_info.depthBiasClamp = 0.0f;          // Optional
     rasterizer_create_info.depthBiasSlopeFactor = 0.0f;    // Optional
-    rasterizer_create_info.cullMode = VK_CULL_MODE_BACK_BIT;
+    rasterizer_create_info.cullMode = VK_CULL_MODE_NONE; // VK_CULL_MODE_BACK_BIT;
     rasterizer_create_info.frontFace = VK_FRONT_FACE_CLOCKWISE;
     rasterizer_create_info.lineWidth = 1.0f;
     rasterizer_create_info.polygonMode = VK_POLYGON_MODE_FILL;

@@ -49,6 +49,7 @@ public:
     void wait() noexcept;
 
     resources::Allocator& allocator() noexcept { return allocator_; }
+
     const resources::Allocator& allocator() const noexcept {
         return allocator_;
     }

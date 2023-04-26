@@ -41,7 +41,7 @@ public:
 
     static builder_type start_build(const Allocator& allocator) noexcept;
 
-    Buffer(VkBuffer buffer, VkBufferUsageFlags usage, size_t size,
+    explicit Buffer(VkBuffer buffer, VkBufferUsageFlags usage, size_t size,
         VmaAllocator allocator, VmaAllocation allocation,
         VmaAllocationInfo allocation_info) noexcept;
 
@@ -60,7 +60,7 @@ public:
 
     template<typename Type>
     Type* map() noexcept {
-        return std::launder(reinterpret_cast<Type*>(map()));
+        return reinterpret_cast<Type*>(map());
     }
 
     VkBuffer handle() const noexcept;

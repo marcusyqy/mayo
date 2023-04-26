@@ -2,6 +2,8 @@
 #include "core/Log.hpp"
 #include "core/fwd.hpp"
 
+#include "Defines.hpp"
+
 #include "core/platform/Query.hpp"
 #include "render/fwd.hpp"
 
@@ -44,7 +46,7 @@ VkInstance create_instance(const engine::Info& info) noexcept {
         app_info.applicationVersion = make_version(info.app_info.version);
         app_info.pEngineName = core::engine::name.data();
         app_info.engineVersion = make_version(core::engine::version);
-        app_info.apiVersion = VK_API_VERSION_1_3;
+        app_info.apiVersion = Defines::vk_version;
     }
 
     VkInstanceCreateInfo create_info{};
@@ -93,12 +95,6 @@ std::vector<utils::PhysicalDevice> populate_physical_devices(
 
     return {std::begin(devices), std::end(devices)};
 }
-//    std::vector<physical_device_scorer> scorers{
-//        std::begin(devices), std::end(devices)};
-//    auto chosen = std::max_element(std::begin(scorers), std::end(scorers));
-//    const auto index = std::distance(scorers.begin(), chosen);
-//    return std::make_shared<device>(instance, devices[index]);
-//}
 
 std::optional<debug::Messenger> create_debugger(
     VkInstance instance, const engine::Info& info) noexcept {
@@ -130,9 +126,9 @@ DeviceContext create_context(VkInstance instance,
 
 Engine::Engine(const Info& info) noexcept
     : info_(info), instance_(create_instance(info_)),
-      debugger_(create_debugger(instance_, info)),
       physical_devices_(populate_physical_devices(instance_)),
-      context_(create_context(instance_, physical_devices_)) {}
+      context_(create_context(instance_, physical_devices_)),
+      debugger_(create_debugger(instance_, info)) {}
 
 Engine::~Engine() noexcept {
     debugger_.reset();

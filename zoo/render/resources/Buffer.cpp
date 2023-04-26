@@ -60,7 +60,7 @@ buffer::Builder Buffer::start_build(const Allocator& allocator) noexcept {
 }
 
 void* Buffer::map() noexcept {
-    void* data;
+    void* data = nullptr;
     VK_EXPECT_SUCCESS(vmaMapMemory(allocator_, allocation_, &data));
     return data;
 }

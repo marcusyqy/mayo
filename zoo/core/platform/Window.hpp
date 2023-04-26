@@ -21,7 +21,7 @@ class Window;
 
 class Window {
 public:
-    Window(render::Engine& engine, const window::Traits& traits,
+    explicit Window(render::Engine& engine, const window::Traits& traits,
         window::InputCallback callback) noexcept;
 
     ~Window() noexcept;

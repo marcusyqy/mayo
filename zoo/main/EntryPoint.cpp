@@ -157,7 +157,7 @@ application::ExitStatus main(application::Settings args) noexcept {
                 projection[1][1] *= -1;
                 // model rotation
                 glm::mat4 model = glm::rotate(glm::mat4{1.0f},
-                    glm::radians(frame_counter++ * 0.1f), glm::vec3(0, 1, 0));
+                    glm::radians(frame_counter++ * 0.5f), glm::vec3(0, 1, 0));
 
                 // calculate final mesh matrix
                 glm::mat4 mesh_matrix = projection * view * model;

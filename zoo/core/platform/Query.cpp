@@ -32,6 +32,7 @@ std::vector<const char*> Query::get_extensions() const noexcept {
 
     return extensions;
 }
+
 std::vector<const char*> Query::get_layers() const noexcept {
     if (parameters_.validation_) {
         const char* validation_layer{"VK_LAYER_KHRONOS_validation"};
