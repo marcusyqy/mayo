@@ -16,6 +16,8 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
 
+#include <tiny_obj_loader.h>
+
 namespace zoo {
 
 namespace {

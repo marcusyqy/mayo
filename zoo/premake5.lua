@@ -17,6 +17,7 @@ project "zoo"
         "%{include_dir.GLFW}",
         "%{include_dir.spdlog}",
         "%{include_dir.vma}",
+        "%{include_dir.tinyobj}",
         "%{include_dir.xtr}",
         "%{include_dir.vulkan}",
         "%{include_dir.glm}",
@@ -26,6 +27,7 @@ project "zoo"
     links {
         "GLFW",
         "vma",
+        "tinyobj",
         "%{library_dir.vulkan}"
     }
 

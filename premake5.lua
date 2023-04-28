@@ -22,6 +22,7 @@ group "Dependencies"
 warnings "Off"
     include "deps/glfw"
     include "deps/vma"
+    include "deps/tinyobj"
     include "xtr"
 
 
