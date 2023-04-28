@@ -16,7 +16,7 @@ Buffer Builder::build() noexcept {
     VK_EXPECT_SUCCESS(vmaCreateBuffer(allocator_, &buffer_info, &alloc_info,
         &buffer_, &allocation_, &allocation_info_));
 
-    return {buffer_, usage_, size_, allocator_, allocation_, allocation_info_};
+    return Buffer(buffer_, usage_, size_, allocator_, allocation_, allocation_info_);
 }
 
 Builder& Builder::size(size_t size) noexcept {
