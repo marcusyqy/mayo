@@ -2,6 +2,7 @@
 #pragma once
 #include "fwd.hpp"
 #include "type_traits.hpp"
+#include <limits>
 
 namespace stdx {
 
@@ -66,8 +67,18 @@ public:
         return !(*this < other);
     }
 
+    template<bool LConst, typename LOwner>
+    difference_type operator-(
+        const contiguous_iterator<LConst, LOwner>& other) const noexcept {
+        STDX_ASSERT(data_ == other.data_, "Must be comparing the same data!");
+        return data_ == other.data_
+                   ? difference_type(curr_) - difference_type(other.curr_)
+                   : std::numeric_limits<difference_type>::max();
+    }
+
 private:
     pointer data_;
     index_type curr_;
 };
+
 } // namespace stdx

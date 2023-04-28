@@ -16,7 +16,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
 
-#include <tiny_obj_loader.h>
+#include "render/resources/Mesh.hpp"
 
 namespace zoo {
 
@@ -105,27 +105,31 @@ application::ExitStatus main(application::Settings args) noexcept {
 
     auto& context = render_engine.context();
 
-    auto buffer = render::resources::Buffer::start_build(context.allocator())
-                      .usage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
-                      .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
-                      .size(sizeof(Vertex) * vertices.size())
-                      .build();
-
-    buffer.map<Vertex>([&vertices](Vertex* data) {
-        std::copy(std::begin(vertices), std::end(vertices), data);
-    });
+    // auto buffer = render::resources::Buffer::start_build(context.allocator())
+    //                   .usage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
+    //                   .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
+    //                   .size(sizeof(Vertex) * vertices.size())
+    //                   .build();
+    //
+    // buffer.map<Vertex>([&vertices](Vertex* data) {
+    //     std::copy(std::begin(vertices), std::end(vertices), data);
+    // });
+    //
+    render::resources::Mesh monkey_mesh{
+        context.allocator(), "static/models/monkey_flat.obj"};
 
     render::Shader vertex_shader{context, vertex_bytes, "main"};
     render::Shader fragment_shader{context, fragment_bytes, "main"};
 
     auto& swapchain = main_window.swapchain();
 
-    std::array buffer_description = {
-        render::VertexBufferDescription{
-            0, render::ShaderType::vec2, offsetof(Vertex, pos)},
-        render::VertexBufferDescription{
-            1, render::ShaderType::vec3, offsetof(Vertex, color)}};
+    // std::array buffer_description = {
+    //     render::VertexBufferDescription{
+    //         0, render::ShaderType::vec2, offsetof(Vertex, pos)},
+    //     render::VertexBufferDescription{
+    //         1, render::ShaderType::vec3, offsetof(Vertex, color)}};
 
+    auto buffer_description = render::resources::Vertex::describe();
     std::array vertex_description = {render::VertexInputDescription{
         sizeof(Vertex), buffer_description, VK_VERTEX_INPUT_RATE_VERTEX}};
 
@@ -159,7 +163,7 @@ application::ExitStatus main(application::Settings args) noexcept {
                 projection[1][1] *= -1;
                 // model rotation
                 glm::mat4 model = glm::rotate(glm::mat4{1.0f},
-                    glm::radians(frame_counter++ * 0.5f), glm::vec3(0, 1, 0));
+                    glm::radians(frame_counter++ * 0.1f), glm::vec3(0, 1, 0));
 
                 // calculate final mesh matrix
                 glm::mat4 mesh_matrix = projection * view * model;
@@ -167,8 +171,8 @@ application::ExitStatus main(application::Settings args) noexcept {
 
                 command_context.bind_pipeline(pipeline).push_constants(
                     push_constant, &push_constant_data);
-                command_context.bind_vertex_buffers(&buffer);
-                command_context.draw((uint32_t)vertices.size(), 1, 0, 0);
+                command_context.bind_vertex_buffers(&monkey_mesh.get());
+                command_context.draw((uint32_t)monkey_mesh.count(), 1, 0, 0);
             });
         };
 

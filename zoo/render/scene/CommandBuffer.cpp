@@ -76,7 +76,7 @@ PipelineBindContext CommandBuffer::bind_pipeline(
 }
 
 void CommandBuffer::bind_vertex_buffers(
-    stdx::span<render::resources::Buffer> buffers) noexcept {
+    stdx::span<const render::resources::Buffer> buffers) noexcept {
     const auto size = buffers.size();
     auto& vbbuffers = vertex_buffer_bind_context_.buffers_;
     vbbuffers.clear();
