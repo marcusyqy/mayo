@@ -4,6 +4,7 @@
 #include "render/RenderPass.hpp"
 #include "render/fwd.hpp"
 #include "render/resources/Buffer.hpp"
+#include "render/resources/Mesh.hpp"
 #include "stdx/function_ref.hpp"
 #include "zoo.hpp"
 
@@ -46,6 +47,7 @@ public:
     void bind_vertex_buffers(
         stdx::span<const render::resources::Buffer> buffers) noexcept;
     void bind_index_buffer(const render::resources::Buffer& ib) noexcept;
+    void bind_mesh(const render::resources::Mesh& mesh) noexcept;
 
     // maybe struct?
     void draw(uint32_t vertex_count, uint32_t instance_count,

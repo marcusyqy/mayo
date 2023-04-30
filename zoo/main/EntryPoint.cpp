@@ -117,9 +117,10 @@ application::ExitStatus main(application::Settings args) noexcept {
             .size(sizeof(render::resources::Vertex) * vertices.size())
             .build();
 
-    vertex_buffer.map<render::resources::Vertex>([&vertices](render::resources::Vertex* data) {
-        std::copy(std::begin(vertices), std::end(vertices), data);
-    });
+    vertex_buffer.map<render::resources::Vertex>(
+        [&vertices](render::resources::Vertex* data) {
+            std::copy(std::begin(vertices), std::end(vertices), data);
+        });
 
     auto index_buffer =
         render::resources::Buffer::start_build(context.allocator())
@@ -132,8 +133,8 @@ application::ExitStatus main(application::Settings args) noexcept {
         std::copy(std::begin(indices), std::end(indices), data);
     });
 
-    // render::resources::Mesh monkey_mesh{
-    //     context.allocator(), "static/models/monkey_flat.obj"};
+    render::resources::Mesh monkey_mesh{
+        context.allocator(), "static/assets/monkey_flat.obj"};
 
     render::Shader vertex_shader{context, vertex_bytes, "main"};
     render::Shader fragment_shader{context, fragment_bytes, "main"};
@@ -147,8 +148,9 @@ application::ExitStatus main(application::Settings args) noexcept {
     //         1, render::ShaderType::vec3, offsetof(Vertex, color)}};
 
     auto buffer_description = render::resources::Vertex::describe();
-    std::array vertex_description = {render::VertexInputDescription{
-        sizeof(render::resources::Vertex), buffer_description, VK_VERTEX_INPUT_RATE_VERTEX}};
+    std::array vertex_description = {
+        render::VertexInputDescription{sizeof(render::resources::Vertex),
+            buffer_description, VK_VERTEX_INPUT_RATE_VERTEX}};
 
     render::PushConstant push_constant{};
     push_constant.size = sizeof(PushConstantData);
@@ -188,10 +190,12 @@ application::ExitStatus main(application::Settings args) noexcept {
 
                 command_context.bind_pipeline(pipeline).push_constants(
                     push_constant, &push_constant_data);
-                command_context.bind_vertex_buffers(&vertex_buffer);
-                command_context.bind_index_buffer(index_buffer);
-                command_context.draw_indexed(
-                    (uint32_t)indices.size(), 1, 0, 0, 0);
+                command_context.bind_mesh(monkey_mesh);
+                // command_context.bind_vertex_buffers(&vertex_buffer);
+                // command_context.bind_index_buffer(index_buffer);
+                command_context.draw((uint32_t)monkey_mesh.count(), 1, 0, 0);
+                // command_context.draw_indexed(
+                //     (uint32_t)indices.size(), 1, 0, 0, 0);
             });
         };
 

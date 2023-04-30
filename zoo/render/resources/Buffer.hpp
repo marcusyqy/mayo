@@ -45,6 +45,9 @@ public:
         VmaAllocator allocator, VmaAllocation allocation,
         VmaAllocationInfo allocation_info) noexcept;
 
+    Buffer(const Buffer&) = delete;
+    Buffer& operator=(const Buffer&) = delete;
+
     ~Buffer() noexcept;
 
     void* map() noexcept;

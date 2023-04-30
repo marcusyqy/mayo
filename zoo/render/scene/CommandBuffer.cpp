@@ -114,6 +114,10 @@ void CommandBuffer::bind_index_buffer(
         index_buffer_bind_context_.index_type_);
 }
 
+void CommandBuffer::bind_mesh(const render::resources::Mesh& mesh) noexcept {
+    bind_vertex_buffers(&mesh.get());
+}
+
 void CommandBuffer::begin_renderpass(
     const VkRenderPassBeginInfo& begin_info) noexcept {
     vkCmdBeginRenderPass(underlying_, &begin_info, VK_SUBPASS_CONTENTS_INLINE);

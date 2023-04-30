@@ -25,6 +25,9 @@ public:
     Mesh(Allocator& allocator, std::string_view file_name) noexcept;
     Mesh(Allocator& allocator, const char* file_name) noexcept : Mesh(allocator, std::string_view(file_name)){};
 
+    Mesh(const Mesh& other) = delete;
+    Mesh& operator=(const Mesh& other) = delete;
+
     operator const Buffer&() const noexcept { return buffer_; }
     const Buffer& get() const noexcept { return buffer_; }
 
