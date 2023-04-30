@@ -53,7 +53,8 @@ Buffer::~Buffer() noexcept {
     vmaDestroyBuffer(allocator_, buffer_, allocation_);
 }
 
-buffer::Builder Buffer::start_build(const Allocator& allocator, std::string_view name) noexcept {
+buffer::Builder Buffer::start_build(
+    const Allocator& allocator, std::string_view name) noexcept {
     return {allocator, name};
 }
 

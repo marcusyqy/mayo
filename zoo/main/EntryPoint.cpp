@@ -58,156 +58,153 @@ application::ExitStatus main(application::Settings args) noexcept {
     render::Engine render_engine{render_engine_info};
     auto& context = render_engine.context();
     // TODO: I think we should just merge swapchain and window
-        Window main_window{render_engine,
-            window::Traits{window::Size{1280, 960}, false, "zoo"},
-            [](Window& win, input::KeyCode keycode) {
-                if (keycode.key_ == input::Key::escape &&
-                    keycode.action_ == input::Action::pressed) {
-                    win.close();
-                }
-            }};
-        // const std::vector<render::resources::Vertex> vertices = {
-        //     {{0.0f, -0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-        //     {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-        //     {{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}}};
-
-        const std::vector<render::resources::Vertex> vertices = {
-            {{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-            {{0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-            {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-            {{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}}};
-
-        // we try to use uint32_t for indices
-        const std::vector<uint32_t> indices = {0, 1, 2, 2, 3, 0};
-
-        auto [vertex_bytes, fragment_bytes] = []() {
-            render::tools::ShaderCompiler compiler;
-            auto vertex_bytes = read_file("static/shaders/test.vert");
-            ZOO_ASSERT(vertex_bytes, "vertex shader must have value!");
-            auto fragment_bytes = read_file("static/shaders/test.frag");
-            ZOO_ASSERT(fragment_bytes, "fragment shader must have value!");
-
-            render::tools::ShaderWork vertex_work{
-                shaderc_vertex_shader, "Test.vert", *vertex_bytes};
-            render::tools::ShaderWork fragment_work{
-                shaderc_fragment_shader, "Test.frag", *fragment_bytes};
-
-            auto vertex_spirv = compiler.compile(vertex_work);
-            auto fragment_spirv = compiler.compile(fragment_work);
-            if (!vertex_spirv) {
-                spdlog::error(
-                    "Vertex has error : {}", vertex_spirv.error().what());
+    Window main_window{render_engine,
+        window::Traits{window::Size{1280, 960}, false, "zoo"},
+        [](Window& win, input::KeyCode keycode) {
+            if (keycode.key_ == input::Key::escape &&
+                keycode.action_ == input::Action::pressed) {
+                win.close();
             }
+        }};
+    // const std::vector<render::resources::Vertex> vertices = {
+    //     {{0.0f, -0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+    //     {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+    //     {{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}}};
 
-            if (!fragment_spirv) {
-                spdlog::error(
-                    "Fragment has error : {}", fragment_spirv.error().what());
-            }
+    const std::vector<render::resources::Vertex> vertices = {
+        {{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+        {{0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+        {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+        {{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}}};
 
-            return std::make_pair(
-                std::move(*vertex_spirv), std::move(*fragment_spirv));
-        }();
+    // we try to use uint32_t for indices
+    const std::vector<uint32_t> indices = {0, 1, 2, 2, 3, 0};
 
-        auto vertex_buffer =
-            render::resources::Buffer::start_build(
-                context.allocator(), "entry point vertex buffer")
-                .usage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
-                .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
-                .size(sizeof(render::resources::Vertex) * vertices.size())
-                .build();
+    auto [vertex_bytes, fragment_bytes] = []() {
+        render::tools::ShaderCompiler compiler;
+        auto vertex_bytes = read_file("static/shaders/test.vert");
+        ZOO_ASSERT(vertex_bytes, "vertex shader must have value!");
+        auto fragment_bytes = read_file("static/shaders/test.frag");
+        ZOO_ASSERT(fragment_bytes, "fragment shader must have value!");
 
-        vertex_buffer.map<render::resources::Vertex>(
-            [&vertices](render::resources::Vertex* data) {
-                std::copy(std::begin(vertices), std::end(vertices), data);
-            });
+        render::tools::ShaderWork vertex_work{
+            shaderc_vertex_shader, "Test.vert", *vertex_bytes};
+        render::tools::ShaderWork fragment_work{
+            shaderc_fragment_shader, "Test.frag", *fragment_bytes};
 
-        auto index_buffer = render::resources::Buffer::start_build(
-            context.allocator(), "entry point index buffer")
-                                .usage(VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
-                                .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
-                                .size(sizeof(uint32_t) * indices.size())
-                                .build();
+        auto vertex_spirv = compiler.compile(vertex_work);
+        auto fragment_spirv = compiler.compile(fragment_work);
+        if (!vertex_spirv) {
+            spdlog::error("Vertex has error : {}", vertex_spirv.error().what());
+        }
 
-        index_buffer.map<uint32_t>([&indices](uint32_t* data) {
-            std::copy(std::begin(indices), std::end(indices), data);
+        if (!fragment_spirv) {
+            spdlog::error(
+                "Fragment has error : {}", fragment_spirv.error().what());
+        }
+
+        return std::make_pair(
+            std::move(*vertex_spirv), std::move(*fragment_spirv));
+    }();
+
+    auto vertex_buffer =
+        render::resources::Buffer::start_build(
+            context.allocator(), "entry point vertex buffer")
+            .usage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
+            .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
+            .size(sizeof(render::resources::Vertex) * vertices.size())
+            .build();
+
+    vertex_buffer.map<render::resources::Vertex>(
+        [&vertices](render::resources::Vertex* data) {
+            std::copy(std::begin(vertices), std::end(vertices), data);
         });
 
-        render::resources::Mesh monkey_mesh{
-            context.allocator(), "static/assets/monkey_flat.obj"};
+    auto index_buffer = render::resources::Buffer::start_build(
+        context.allocator(), "entry point index buffer")
+                            .usage(VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
+                            .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
+                            .size(sizeof(uint32_t) * indices.size())
+                            .build();
 
-        render::Shader vertex_shader{context, vertex_bytes, "main"};
-        render::Shader fragment_shader{context, fragment_bytes, "main"};
+    index_buffer.map<uint32_t>([&indices](uint32_t* data) {
+        std::copy(std::begin(indices), std::end(indices), data);
+    });
 
-        auto& swapchain = main_window.swapchain();
+    render::resources::Mesh monkey_mesh{
+        context.allocator(), "static/assets/monkey_flat.obj"};
 
-        // std::array buffer_description = {
-        //     render::VertexBufferDescription{
-        //         0, render::ShaderType::vec2, offsetof(Vertex, pos)},
-        //     render::VertexBufferDescription{
-        //         1, render::ShaderType::vec3, offsetof(Vertex, color)}};
+    render::Shader vertex_shader{context, vertex_bytes, "main"};
+    render::Shader fragment_shader{context, fragment_bytes, "main"};
 
-        auto buffer_description = render::resources::Vertex::describe();
-        std::array vertex_description = {
-            render::VertexInputDescription{sizeof(render::resources::Vertex),
-                buffer_description, VK_VERTEX_INPUT_RATE_VERTEX}};
+    auto& swapchain = main_window.swapchain();
 
-        render::PushConstant push_constant{};
-        push_constant.size = sizeof(PushConstantData);
-        push_constant.offset = 0;
-        push_constant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    // std::array buffer_description = {
+    //     render::VertexBufferDescription{
+    //         0, render::ShaderType::vec2, offsetof(Vertex, pos)},
+    //     render::VertexBufferDescription{
+    //         1, render::ShaderType::vec3, offsetof(Vertex, color)}};
 
-        render::Pipeline pipeline{context,
-            render::ShaderStagesSpecification{
-                vertex_shader, fragment_shader, vertex_description},
-            swapchain.get_viewport_info(), swapchain.get_renderpass(),
-            &push_constant};
+    auto buffer_description = render::resources::Vertex::describe();
+    std::array vertex_description = {
+        render::VertexInputDescription{sizeof(render::resources::Vertex),
+            buffer_description, VK_VERTEX_INPUT_RATE_VERTEX}};
 
-        const auto& viewport_info = swapchain.get_viewport_info();
+    render::PushConstant push_constant{};
+    push_constant.size = sizeof(PushConstantData);
+    push_constant.offset = 0;
+    push_constant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-        PushConstantData push_constant_data{};
+    render::Pipeline pipeline{context,
+        render::ShaderStagesSpecification{
+            vertex_shader, fragment_shader, vertex_description},
+        swapchain.get_viewport_info(), swapchain.get_renderpass(),
+        &push_constant};
 
-        size_t frame_counter{};
-        auto populate_command_ctx =
-            [&](render::scene::CommandBuffer& command_context,
-                VkRenderPassBeginInfo renderpass_info) {
-                command_context.set_viewport(viewport_info.viewport);
-                command_context.set_scissor(viewport_info.scissor);
-                command_context.exec(renderpass_info, [&]() {
-                    glm::vec3 cam_pos = {0.f, 0.f, -2.f};
-                    glm::mat4 view = glm::translate(glm::mat4(1.f), cam_pos);
-                    // camera projection
-                    glm::mat4 projection = glm::perspective(
-                        glm::radians(70.f), 1700.f / 900.f, 0.1f, 200.0f);
-                    projection[1][1] *= -1;
-                    // model rotation
-                    glm::mat4 model = glm::rotate(glm::mat4{1.0f},
-                        glm::radians(frame_counter++ * 0.05f),
-                        glm::vec3(0, 1, 0));
+    const auto& viewport_info = swapchain.get_viewport_info();
 
-                    // calculate final mesh matrix
-                    glm::mat4 mesh_matrix = projection * view * model;
-                    push_constant_data.render_matrix = mesh_matrix;
+    PushConstantData push_constant_data{};
 
-                    command_context.bind_pipeline(pipeline).push_constants(
-                        push_constant, &push_constant_data);
-                    command_context.bind_mesh(monkey_mesh);
-                    // command_context.bind_vertex_buffers(&vertex_buffer);
-                    // command_context.bind_index_buffer(index_buffer);
-                    command_context.draw(
-                        (uint32_t)monkey_mesh.count(), 1, 0, 0);
-                    // command_context.draw_indexed(
-                    //     (uint32_t)indices.size(), 1, 0, 0, 0);
-                });
-            };
+    size_t frame_counter{};
+    auto populate_command_ctx =
+        [&](render::scene::CommandBuffer& command_context,
+            VkRenderPassBeginInfo renderpass_info) {
+            command_context.set_viewport(viewport_info.viewport);
+            command_context.set_scissor(viewport_info.scissor);
+            command_context.exec(renderpass_info, [&]() {
+                glm::vec3 cam_pos = {0.f, 0.f, -2.f};
+                glm::mat4 view = glm::translate(glm::mat4(1.f), cam_pos);
+                // camera projection
+                glm::mat4 projection = glm::perspective(
+                    glm::radians(70.f), 1700.f / 900.f, 0.1f, 200.0f);
+                projection[1][1] *= -1;
+                // model rotation
+                glm::mat4 model = glm::rotate(glm::mat4{1.0f},
+                    glm::radians(frame_counter++ * 0.05f), glm::vec3(0, 1, 0));
 
-        while (main_window.is_open()) {
-            swapchain.render(populate_command_ctx);
-            swapchain.present();
-            win_context.poll_events();
-        }
-        // TODO: we can remove this after we find out how to properly tie
-        // resources to each frame.
-        context.wait();
+                // calculate final mesh matrix
+                glm::mat4 mesh_matrix = projection * view * model;
+                push_constant_data.render_matrix = mesh_matrix;
+
+                command_context.bind_pipeline(pipeline).push_constants(
+                    push_constant, &push_constant_data);
+                command_context.bind_mesh(monkey_mesh);
+                // command_context.bind_vertex_buffers(&vertex_buffer);
+                // command_context.bind_index_buffer(index_buffer);
+                command_context.draw((uint32_t)monkey_mesh.count(), 1, 0, 0);
+                // command_context.draw_indexed(
+                //     (uint32_t)indices.size(), 1, 0, 0, 0);
+            });
+        };
+
+    while (main_window.is_open()) {
+        swapchain.render(populate_command_ctx);
+        swapchain.present();
+        win_context.poll_events();
+    }
+    // TODO: we can remove this after we find out how to properly tie
+    // resources to each frame.
+    context.wait();
 
     return application::ExitStatus::ok;
 }

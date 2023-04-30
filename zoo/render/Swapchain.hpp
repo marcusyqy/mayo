@@ -9,9 +9,9 @@
 #include <cstdint>
 
 #include "RenderPass.hpp"
+#include "resources/Texture.hpp"
 #include "sync/Fence.hpp"
 #include "sync/Semaphore.hpp"
-#include "resources/Texture.hpp"
 
 namespace zoo::render {
 

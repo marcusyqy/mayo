@@ -39,10 +39,11 @@ class Buffer {
 public:
     using builder_type = buffer::Builder;
 
-    static builder_type start_build(const Allocator& allocator, std::string_view name) noexcept;
+    static builder_type start_build(
+        const Allocator& allocator, std::string_view name) noexcept;
 
-    explicit Buffer(std::string name, VkBuffer buffer, VkBufferUsageFlags usage, size_t size,
-        VmaAllocator allocator, VmaAllocation allocation,
+    explicit Buffer(std::string name, VkBuffer buffer, VkBufferUsageFlags usage,
+        size_t size, VmaAllocator allocator, VmaAllocation allocation,
         VmaAllocationInfo allocation_info) noexcept;
 
     Buffer(const Buffer&) = delete;

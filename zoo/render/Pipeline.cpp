@@ -272,8 +272,9 @@ Pipeline::Pipeline(DeviceContext& context,
             ZOO_LOG_ERROR("Pipeline layout creation failed, maybe we should "
                           "assert here?");
         });
-   VkPipelineDepthStencilStateCreateInfo depth_stencil_state_info = {};
-    depth_stencil_state_info.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    VkPipelineDepthStencilStateCreateInfo depth_stencil_state_info = {};
+    depth_stencil_state_info.sType =
+        VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
     depth_stencil_state_info.pNext = nullptr;
     depth_stencil_state_info.depthTestEnable = VK_TRUE;
     depth_stencil_state_info.depthWriteEnable = VK_TRUE;
@@ -296,7 +297,8 @@ Pipeline::Pipeline(DeviceContext& context,
     graphics_pipeline_create_info.pRasterizationState = &rasterizer_create_info;
     graphics_pipeline_create_info.pMultisampleState =
         &multisampling_create_info;
-    graphics_pipeline_create_info.pDepthStencilState = &depth_stencil_state_info; // Optional
+    graphics_pipeline_create_info.pDepthStencilState =
+        &depth_stencil_state_info; // Optional
     graphics_pipeline_create_info.pColorBlendState =
         &color_blend_state_create_info;
     graphics_pipeline_create_info.pDynamicState = &dynamic_state;

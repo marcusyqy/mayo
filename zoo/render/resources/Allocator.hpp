@@ -27,7 +27,7 @@ public:
     VkDevice device() const noexcept { return create_info_.device; }
 
 private:
-    VmaAllocatorCreateInfo create_info_ ;
+    VmaAllocatorCreateInfo create_info_;
     VmaAllocator underlying_;
 };
 

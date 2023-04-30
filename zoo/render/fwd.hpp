@@ -31,7 +31,6 @@ struct ViewportInfo {
     VkRect2D scissor;
 };
 
-
 /*
  * Dictates the type of queue being used
  * */

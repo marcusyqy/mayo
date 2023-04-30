@@ -17,7 +17,8 @@ public:
     operator underlying_type() const noexcept { return get(); }
 
     RenderPass() noexcept;
-    RenderPass(DeviceContext& context, VkFormat format, VkFormat depth) noexcept;
+    RenderPass(
+        DeviceContext& context, VkFormat format, VkFormat depth) noexcept;
 
     ~RenderPass() noexcept;
 
