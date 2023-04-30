@@ -30,7 +30,6 @@ public:
 
     size_t count() const noexcept { return vertices_.size(); }
 
-
 private:
     Buffer buffer_;
     std::vector<Vertex> vertices_;

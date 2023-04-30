@@ -22,11 +22,6 @@ namespace zoo {
 
 namespace {
 
-struct Vertex {
-    glm::vec2 pos;
-    glm::vec3 color;
-};
-
 struct PushConstantData {
     glm::vec4 data;
     glm::mat4 render_matrix;
@@ -72,9 +67,19 @@ application::ExitStatus main(application::Settings args) noexcept {
             }
         }};
 
-    const std::vector<Vertex> vertices = {{{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-        {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-        {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}};
+    // const std::vector<render::resources::Vertex> vertices = {
+    //     {{0.0f, -0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+    //     {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+    //     {{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}}};
+
+    const std::vector<render::resources::Vertex> vertices = {
+        {{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+        {{0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
+        {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+        {{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}}};
+
+    // we try to use uint32_t for indices
+    const std::vector<uint32_t> indices = {0, 1, 2, 2, 3, 0};
 
     auto [vertex_bytes, fragment_bytes] = []() {
         render::tools::ShaderCompiler compiler;
@@ -105,18 +110,30 @@ application::ExitStatus main(application::Settings args) noexcept {
 
     auto& context = render_engine.context();
 
-    // auto buffer = render::resources::Buffer::start_build(context.allocator())
-    //                   .usage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
-    //                   .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
-    //                   .size(sizeof(Vertex) * vertices.size())
-    //                   .build();
-    //
-    // buffer.map<Vertex>([&vertices](Vertex* data) {
-    //     std::copy(std::begin(vertices), std::end(vertices), data);
-    // });
-    //
-    render::resources::Mesh monkey_mesh{
-        context.allocator(), "static/models/monkey_flat.obj"};
+    auto vertex_buffer =
+        render::resources::Buffer::start_build(context.allocator())
+            .usage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
+            .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
+            .size(sizeof(render::resources::Vertex) * vertices.size())
+            .build();
+
+    vertex_buffer.map<render::resources::Vertex>([&vertices](render::resources::Vertex* data) {
+        std::copy(std::begin(vertices), std::end(vertices), data);
+    });
+
+    auto index_buffer =
+        render::resources::Buffer::start_build(context.allocator())
+            .usage(VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
+            .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
+            .size(sizeof(uint32_t) * indices.size())
+            .build();
+
+    index_buffer.map<uint32_t>([&indices](uint32_t* data) {
+        std::copy(std::begin(indices), std::end(indices), data);
+    });
+
+    // render::resources::Mesh monkey_mesh{
+    //     context.allocator(), "static/models/monkey_flat.obj"};
 
     render::Shader vertex_shader{context, vertex_bytes, "main"};
     render::Shader fragment_shader{context, fragment_bytes, "main"};
@@ -131,7 +148,7 @@ application::ExitStatus main(application::Settings args) noexcept {
 
     auto buffer_description = render::resources::Vertex::describe();
     std::array vertex_description = {render::VertexInputDescription{
-        sizeof(Vertex), buffer_description, VK_VERTEX_INPUT_RATE_VERTEX}};
+        sizeof(render::resources::Vertex), buffer_description, VK_VERTEX_INPUT_RATE_VERTEX}};
 
     render::PushConstant push_constant{};
     push_constant.size = sizeof(PushConstantData);
@@ -171,8 +188,10 @@ application::ExitStatus main(application::Settings args) noexcept {
 
                 command_context.bind_pipeline(pipeline).push_constants(
                     push_constant, &push_constant_data);
-                command_context.bind_vertex_buffers(&monkey_mesh.get());
-                command_context.draw((uint32_t)monkey_mesh.count(), 1, 0, 0);
+                command_context.bind_vertex_buffers(&vertex_buffer);
+                command_context.bind_index_buffer(index_buffer);
+                command_context.draw_indexed(
+                    (uint32_t)indices.size(), 1, 0, 0, 0);
             });
         };
 

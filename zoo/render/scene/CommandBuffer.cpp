@@ -16,8 +16,8 @@ PipelineBindContext::PipelineBindContext(VkCommandBuffer cmd_buffer,
       pipeline_layout_(pipeline_layout) {}
 
 CommandBuffer::CommandBuffer(DeviceContext& context) noexcept
-    : context_{std::addressof(context)}, underlying_{
-                                             context_->vk_command_buffer_from_pool()} {}
+    : context_{std::addressof(context)},
+      underlying_{context_->vk_command_buffer_from_pool()} {}
 
 CommandBuffer::CommandBuffer(CommandBuffer&& other) noexcept
     : context_{std::move(other.context_)}, underlying_{
@@ -69,6 +69,13 @@ void CommandBuffer::draw(uint32_t vertex_count, uint32_t instance_count,
         first_instance);
 }
 
+void CommandBuffer::draw_indexed(uint32_t index_count, uint32_t instance_count,
+    uint32_t first_index, uint32_t first_vertex,
+    uint32_t first_instance) noexcept {
+    vkCmdDrawIndexed(underlying_, index_count, instance_count, first_index,
+        first_vertex, first_instance);
+}
+
 PipelineBindContext CommandBuffer::bind_pipeline(
     const render::Pipeline& pipeline) noexcept {
     vkCmdBindPipeline(underlying_, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
@@ -93,6 +100,18 @@ void CommandBuffer::bind_vertex_buffers(
 
     vkCmdBindVertexBuffers(underlying_, 0, static_cast<uint32_t>(size),
         vbbuffers.data(), vboffsets.data());
+}
+
+void CommandBuffer::bind_index_buffer(
+    const render::resources::Buffer& ib) noexcept {
+
+    index_buffer_bind_context_.buffer_ = ib.handle();
+    index_buffer_bind_context_.offset_ = 0;
+    index_buffer_bind_context_.index_type_ = VK_INDEX_TYPE_UINT32; // for now.
+
+    vkCmdBindIndexBuffer(underlying_, index_buffer_bind_context_.buffer_,
+        index_buffer_bind_context_.offset_,
+        index_buffer_bind_context_.index_type_);
 }
 
 void CommandBuffer::begin_renderpass(
