@@ -11,6 +11,7 @@
 #include "RenderPass.hpp"
 #include "sync/Fence.hpp"
 #include "sync/Semaphore.hpp"
+#include "resources/Texture.hpp"
 
 namespace zoo::render {
 
@@ -65,6 +66,8 @@ private:
     void force_resize() noexcept;
     void assure(VkResult result) noexcept;
 
+    resources::Texture create_depth_buffer();
+
 private:
     VkInstance instance_ = nullptr;
     surface_type surface_ = nullptr;
@@ -91,6 +94,7 @@ private:
 
     // frame specific stuff
     dyn_array<VkImage> images_;
+    dyn_array<resources::Texture> depth_buffers_;
     dyn_array<SyncObjects> sync_objects_;
     size_t current_sync_objects_index_ = {};
 
@@ -101,5 +105,6 @@ private:
 
     uint32_t current_frame_ = 0; // TODO: change this
     bool should_resize_ = false;
+    static constexpr VkFormat DEPTH_FORMAT_ = VK_FORMAT_D32_SFLOAT;
 };
 } // namespace zoo::render

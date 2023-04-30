@@ -144,7 +144,8 @@ bool Swapchain::create_swapchain_and_resources() noexcept {
     description_.surface_format = choose_surface_format(details.formats);
     description_.present_mode = choose_present_mode(details.present_modes);
     description_.capabilities = std::move(details.capabilities);
-    renderpass_ = RenderPass{context_, description_.surface_format.format};
+    renderpass_ =
+        RenderPass{context_, description_.surface_format.format, DEPTH_FORMAT_};
 
     VkExtent2D extent =
         choose_extent(description_.capabilities, size_.x, size_.y);
@@ -223,6 +224,12 @@ bool Swapchain::create_swapchain_and_resources() noexcept {
             });
     }
 
+    depth_buffers_.clear();
+    depth_buffers_.reserve(std::size(views_));
+    for (size_t i = 0; i < std::size(views_); i++) {
+        depth_buffers_.emplace_back(create_depth_buffer());
+    }
+
     for (auto fb : framebuffers_) {
         vkDestroyFramebuffer(context_, fb, nullptr);
     }
@@ -230,12 +237,15 @@ bool Swapchain::create_swapchain_and_resources() noexcept {
     framebuffers_.resize(image_count);
 
     for (size_t i = 0; i < std::size(views_); i++) {
+        std::array<VkImageView, 2> attachments = {
+            views_[i], depth_buffers_[i].view()};
+
         VkFramebufferCreateInfo framebuffer_create_info{};
         framebuffer_create_info.sType =
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         framebuffer_create_info.renderPass = renderpass_;
-        framebuffer_create_info.attachmentCount = 1;
-        framebuffer_create_info.pAttachments = std::addressof(views_[i]);
+        framebuffer_create_info.attachmentCount = uint32_t(attachments.size());
+        framebuffer_create_info.pAttachments = attachments.data();
         framebuffer_create_info.width = size_.x;
         framebuffer_create_info.height = size_.y;
         framebuffer_create_info.layers = 1;
@@ -343,9 +353,13 @@ void Swapchain::render(
     renderpass_info.renderArea.extent = {size_.x, size_.y};
     renderpass_info.pNext = nullptr;
 
-    static const VkClearValue clear_color = {{{0.1f, 0.1f, 0.1f, 1.0f}}};
-    renderpass_info.clearValueCount = 1;
-    renderpass_info.pClearValues = &clear_color;
+    const static VkClearValue clear_color = {{{0.1f, 0.1f, 0.1f, 1.0f}}};
+    VkClearValue clear_depth = {};
+    clear_depth.depthStencil.depth = 1.0f;
+
+    VkClearValue clear_values[] = {clear_color, clear_depth};
+    renderpass_info.clearValueCount = 2;
+    renderpass_info.pClearValues = +clear_values;
 
     command_buffers_[current_frame_].record(
         [&] { exec(command_buffers_[current_frame_], renderpass_info); });
@@ -421,6 +435,18 @@ void Swapchain::assure(VkResult result) noexcept {
         force_resize();
     } else if (result != VK_SUBOPTIMAL_KHR && result != VK_SUCCESS)
         ZOO_LOG_ERROR("FAILED with {}", string_VkResult(result));
+}
+
+resources::Texture Swapchain::create_depth_buffer() {
+    auto [x, y] = extent();
+    return resources::Texture::start_build(
+        context_.allocator(), "DepthBufferSwapchain")
+        .format(DEPTH_FORMAT_)
+        .usage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+        .extent({x, y, 1})
+        .allocation_type(VMA_MEMORY_USAGE_GPU_ONLY)
+        .allocation_required_flags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+        .build();
 }
 
 } // namespace zoo::render

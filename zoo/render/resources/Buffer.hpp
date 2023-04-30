@@ -28,7 +28,6 @@ private:
     VmaAllocation allocation_ = {};
     VmaAllocationInfo allocation_info_ = {};
     VmaMemoryUsage memory_usage_ = VMA_MEMORY_USAGE_AUTO;
-    VmaAllocationCreateFlags memory_flags_ = {};
     std::string name_ = {};
 };
 

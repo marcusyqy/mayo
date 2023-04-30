@@ -212,7 +212,7 @@ Pipeline::Pipeline(DeviceContext& context,
     rasterizer_create_info.depthBiasConstantFactor = 0.0f; // Optional
     rasterizer_create_info.depthBiasClamp = 0.0f;          // Optional
     rasterizer_create_info.depthBiasSlopeFactor = 0.0f;    // Optional
-    rasterizer_create_info.cullMode = VK_CULL_MODE_BACK_BIT; // VK_CULL_MODE_NONE;
+    rasterizer_create_info.cullMode = VK_CULL_MODE_NONE;
     rasterizer_create_info.frontFace = VK_FRONT_FACE_CLOCKWISE;
     rasterizer_create_info.lineWidth = 1.0f;
     rasterizer_create_info.polygonMode = VK_POLYGON_MODE_FILL;
@@ -272,6 +272,16 @@ Pipeline::Pipeline(DeviceContext& context,
             ZOO_LOG_ERROR("Pipeline layout creation failed, maybe we should "
                           "assert here?");
         });
+   VkPipelineDepthStencilStateCreateInfo depth_stencil_state_info = {};
+    depth_stencil_state_info.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    depth_stencil_state_info.pNext = nullptr;
+    depth_stencil_state_info.depthTestEnable = VK_TRUE;
+    depth_stencil_state_info.depthWriteEnable = VK_TRUE;
+    depth_stencil_state_info.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+    depth_stencil_state_info.depthBoundsTestEnable = VK_FALSE;
+    depth_stencil_state_info.minDepthBounds = 0.0f; // Optional
+    depth_stencil_state_info.maxDepthBounds = 1.0f; // Optional
+    depth_stencil_state_info.stencilTestEnable = VK_FALSE;
 
     VkGraphicsPipelineCreateInfo graphics_pipeline_create_info{};
     graphics_pipeline_create_info.sType =
@@ -286,7 +296,7 @@ Pipeline::Pipeline(DeviceContext& context,
     graphics_pipeline_create_info.pRasterizationState = &rasterizer_create_info;
     graphics_pipeline_create_info.pMultisampleState =
         &multisampling_create_info;
-    graphics_pipeline_create_info.pDepthStencilState = nullptr; // Optional
+    graphics_pipeline_create_info.pDepthStencilState = &depth_stencil_state_info; // Optional
     graphics_pipeline_create_info.pColorBlendState =
         &color_blend_state_create_info;
     graphics_pipeline_create_info.pDynamicState = &dynamic_state;

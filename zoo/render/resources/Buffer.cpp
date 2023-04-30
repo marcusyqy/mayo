@@ -35,11 +35,6 @@ Builder& Builder::allocation_type(VmaMemoryUsage usage) noexcept {
     return *this;
 }
 
-Builder& Builder::allocation_flag(VmaAllocationCreateFlags flags) noexcept {
-    memory_flags_ = flags;
-    return *this;
-}
-
 Builder::Builder(const Allocator& allocator, std::string_view name) noexcept {
     allocator_ = allocator;
     name_ = name;
