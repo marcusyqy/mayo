@@ -24,7 +24,10 @@ public:
     VmaAllocator get() const noexcept { return underlying_; }
     operator VmaAllocator() const noexcept { return get(); };
 
+    VkDevice device() const noexcept { return create_info_.device; }
+
 private:
+    VmaAllocatorCreateInfo create_info_ ;
     VmaAllocator underlying_;
 };
 

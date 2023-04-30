@@ -14,7 +14,7 @@ class Builder {
 public:
     Buffer build() noexcept;
 
-    Builder(const Allocator& allocator) noexcept;
+    Builder(const Allocator& allocator, std::string_view name) noexcept;
     Builder& size(size_t size) noexcept;
     Builder& usage(VkBufferUsageFlags usage) noexcept;
     Builder& allocation_type(VmaMemoryUsage usage) noexcept;
@@ -29,6 +29,7 @@ private:
     VmaAllocationInfo allocation_info_ = {};
     VmaMemoryUsage memory_usage_ = VMA_MEMORY_USAGE_AUTO;
     VmaAllocationCreateFlags memory_flags_ = {};
+    std::string name_ = {};
 };
 
 } // namespace buffer
@@ -39,9 +40,9 @@ class Buffer {
 public:
     using builder_type = buffer::Builder;
 
-    static builder_type start_build(const Allocator& allocator) noexcept;
+    static builder_type start_build(const Allocator& allocator, std::string_view name) noexcept;
 
-    explicit Buffer(VkBuffer buffer, VkBufferUsageFlags usage, size_t size,
+    explicit Buffer(std::string name, VkBuffer buffer, VkBufferUsageFlags usage, size_t size,
         VmaAllocator allocator, VmaAllocation allocation,
         VmaAllocationInfo allocation_info) noexcept;
 
@@ -70,6 +71,8 @@ public:
     VkDeviceSize offset() const noexcept;
 
 private:
+    std::string name_;
+
     VkBuffer buffer_;
     VkBufferUsageFlags usage_;
     size_t size_;

@@ -16,7 +16,8 @@ Buffer Builder::build() noexcept {
     VK_EXPECT_SUCCESS(vmaCreateBuffer(allocator_, &buffer_info, &alloc_info,
         &buffer_, &allocation_, &allocation_info_));
 
-    return Buffer(buffer_, usage_, size_, allocator_, allocation_, allocation_info_);
+    return Buffer(name_, buffer_, usage_, size_, allocator_, allocation_,
+        allocation_info_);
 }
 
 Builder& Builder::size(size_t size) noexcept {
@@ -39,24 +40,26 @@ Builder& Builder::allocation_flag(VmaAllocationCreateFlags flags) noexcept {
     return *this;
 }
 
-Builder::Builder(const Allocator& allocator) noexcept {
+Builder::Builder(const Allocator& allocator, std::string_view name) noexcept {
     allocator_ = allocator;
+    name_ = name;
 }
 
 } // namespace buffer
 
-Buffer::Buffer(VkBuffer buffer, VkBufferUsageFlags usage, size_t size,
-    VmaAllocator allocator, VmaAllocation allocation,
+Buffer::Buffer(std::string name, VkBuffer buffer, VkBufferUsageFlags usage,
+    size_t size, VmaAllocator allocator, VmaAllocation allocation,
     VmaAllocationInfo allocation_info) noexcept
-    : buffer_{buffer}, usage_{usage}, size_{size}, allocator_{allocator},
-      allocation_{allocation}, allocation_info_{allocation_info} {}
+    : name_{name}, buffer_{buffer}, usage_{usage}, size_{size},
+      allocator_{allocator}, allocation_{allocation}, allocation_info_{
+                                                          allocation_info} {}
 
 Buffer::~Buffer() noexcept {
     vmaDestroyBuffer(allocator_, buffer_, allocation_);
 }
 
-buffer::Builder Buffer::start_build(const Allocator& allocator) noexcept {
-    return {allocator};
+buffer::Builder Buffer::start_build(const Allocator& allocator, std::string_view name) noexcept {
+    return {allocator, name};
 }
 
 void* Buffer::map() noexcept {

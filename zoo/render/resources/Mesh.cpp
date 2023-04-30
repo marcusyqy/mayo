@@ -93,8 +93,9 @@ std::array<VertexBufferDescription, 3> Vertex::describe() noexcept {
             2, render::ShaderType::vec3, offsetof(Vertex, color)}};
 }
 
-Mesh::Mesh(Allocator& allocator, std::vector<Vertex> vertices) noexcept
-    : buffer_(Buffer::start_build(allocator)
+Mesh::Mesh(Allocator& allocator, std::vector<Vertex> vertices,
+    std::string_view name) noexcept
+    : buffer_(Buffer::start_build(allocator, name)
                   .usage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
                   .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
                   .size(sizeof(Vertex) * vertices.size())
@@ -106,6 +107,6 @@ Mesh::Mesh(Allocator& allocator, std::vector<Vertex> vertices) noexcept
 }
 
 Mesh::Mesh(Allocator& allocator, std::string_view file_name) noexcept
-    : Mesh(allocator, load_vertices(file_name)) {}
+    : Mesh(allocator, load_vertices(file_name), file_name) {}
 
 } // namespace zoo::render::resources

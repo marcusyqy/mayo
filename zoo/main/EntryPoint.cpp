@@ -111,7 +111,7 @@ application::ExitStatus main(application::Settings args) noexcept {
     auto& context = render_engine.context();
 
     auto vertex_buffer =
-        render::resources::Buffer::start_build(context.allocator())
+        render::resources::Buffer::start_build(context.allocator(), "entry point vertex buffer")
             .usage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
             .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
             .size(sizeof(render::resources::Vertex) * vertices.size())
@@ -123,7 +123,7 @@ application::ExitStatus main(application::Settings args) noexcept {
         });
 
     auto index_buffer =
-        render::resources::Buffer::start_build(context.allocator())
+        render::resources::Buffer::start_build(context.allocator(), "entry point index buffer")
             .usage(VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
             .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
             .size(sizeof(uint32_t) * indices.size())

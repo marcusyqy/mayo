@@ -21,7 +21,7 @@ struct Vertex {
 
 class Mesh {
 public:
-    Mesh(Allocator& allocator, std::vector<Vertex> vertices) noexcept;
+    Mesh(Allocator& allocator, std::vector<Vertex> vertices, std::string_view name) noexcept;
     Mesh(Allocator& allocator, std::string_view file_name) noexcept;
     Mesh(Allocator& allocator, const char* file_name) noexcept : Mesh(allocator, std::string_view(file_name)){};
 
