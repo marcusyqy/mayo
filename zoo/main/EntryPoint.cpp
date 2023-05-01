@@ -132,7 +132,7 @@ application::ExitStatus main(application::Settings args) noexcept {
     });
 
     render::resources::Mesh monkey_mesh{
-        context.allocator(), "static/assets/monkey_flat.obj"};
+        context.allocator(), "static/assets/viking_room.obj"};
 
     render::Shader vertex_shader{context, vertex_bytes, "main"};
     render::Shader fragment_shader{context, fragment_bytes, "main"};
@@ -165,22 +165,31 @@ application::ExitStatus main(application::Settings args) noexcept {
 
     PushConstantData push_constant_data{};
 
-    size_t frame_counter{};
+    auto start_time = std::chrono::high_resolution_clock::now();
     auto populate_command_ctx =
         [&](render::scene::CommandBuffer& command_context,
             VkRenderPassBeginInfo renderpass_info) {
             command_context.set_viewport(viewport_info.viewport);
             command_context.set_scissor(viewport_info.scissor);
             command_context.exec(renderpass_info, [&]() {
-                glm::vec3 cam_pos = {0.f, 0.f, -2.f};
-                glm::mat4 view = glm::translate(glm::mat4(1.f), cam_pos);
+                // glm::vec3 cam_pos = {0.f, 0.f, -2.f};
+                // glm::mat4 view = glm::translate(glm::mat4(1.f), cam_pos);
+                glm::mat4 view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f),
+                    glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
                 // camera projection
                 glm::mat4 projection = glm::perspective(
                     glm::radians(70.f), 1700.f / 900.f, 0.1f, 200.0f);
                 projection[1][1] *= -1;
                 // model rotation
+
+                auto current_time = std::chrono::high_resolution_clock::now();
+                float time =
+                    std::chrono::duration<float, std::chrono::seconds::period>(
+                        current_time - start_time)
+                        .count();
+
                 glm::mat4 model = glm::rotate(glm::mat4{1.0f},
-                    glm::radians(frame_counter++ * 0.05f), glm::vec3(0, 1, 0));
+                    time * glm::radians(90.0f), glm::vec3(0, 0, 1));
 
                 // calculate final mesh matrix
                 glm::mat4 mesh_matrix = projection * view * model;
@@ -191,9 +200,10 @@ application::ExitStatus main(application::Settings args) noexcept {
                 command_context.bind_mesh(monkey_mesh);
                 // command_context.bind_vertex_buffers(&vertex_buffer);
                 // command_context.bind_index_buffer(index_buffer);
-                command_context.draw((uint32_t)monkey_mesh.count(), 1, 0, 0);
-                // command_context.draw_indexed(
-                //     (uint32_t)indices.size(), 1, 0, 0, 0);
+                // command_context.draw((uint32_t)monkey_mesh.count(), 1, 0, 0);
+                // TODO: honestly I just want to call draw mesh.
+                command_context.draw_indexed(
+                    (uint32_t)monkey_mesh.count(), 1, 0, 0, 0);
             });
         };
 

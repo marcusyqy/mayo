@@ -115,7 +115,8 @@ void CommandBuffer::bind_index_buffer(
 }
 
 void CommandBuffer::bind_mesh(const render::resources::Mesh& mesh) noexcept {
-    bind_vertex_buffers(&mesh.get());
+    bind_vertex_buffers(&mesh.vertices());
+    bind_index_buffer(mesh.indices());
 }
 
 void CommandBuffer::begin_renderpass(

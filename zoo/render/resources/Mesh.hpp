@@ -19,9 +19,14 @@ struct Vertex {
     static std::array<VertexBufferDescription, 3> describe() noexcept;
 };
 
+struct MeshData {
+    std::vector<Vertex> vertices;
+    std::vector<uint32_t> indices;
+};
+
 class Mesh {
 public:
-    Mesh(Allocator& allocator, std::vector<Vertex> vertices,
+    Mesh(Allocator& allocator, MeshData mesh_data,
         std::string_view name) noexcept;
     Mesh(Allocator& allocator, std::string_view file_name) noexcept;
     Mesh(Allocator& allocator, const char* file_name) noexcept
@@ -30,14 +35,15 @@ public:
     Mesh(const Mesh& other) = delete;
     Mesh& operator=(const Mesh& other) = delete;
 
-    operator const Buffer&() const noexcept { return buffer_; }
-    const Buffer& get() const noexcept { return buffer_; }
+    const Buffer& vertices() const noexcept { return buffer_; }
+    const Buffer& indices() const noexcept { return index_buffer_; }
 
-    size_t count() const noexcept { return vertices_.size(); }
+    size_t count() const noexcept { return data_.vertices.size(); }
 
 private:
     Buffer buffer_;
-    std::vector<Vertex> vertices_;
+    Buffer index_buffer_;
+    MeshData data_;
 };
 
 } // namespace zoo::render::resources
