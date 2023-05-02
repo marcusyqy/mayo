@@ -97,7 +97,7 @@ MeshData load_mesh_data(std::string_view file_name) {
             vertex.color = vertex.normal;
 
             vertices.push_back(vertex);
-            indices.push_back(indices.size());
+            indices.push_back(uint32_t(indices.size()));
         }
     }
 
@@ -118,15 +118,15 @@ std::array<VertexBufferDescription, 3> Vertex::describe() noexcept {
 
 Mesh::Mesh(
     Allocator& allocator, MeshData mesh_data, std::string_view name) noexcept
-    : buffer_(Buffer::start_build(allocator, name)
+    : buffer_(Buffer::start_build<Vertex>(allocator, name)
                   .usage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
                   .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
-                  .size(sizeof(Vertex) * mesh_data.vertices.size())
+                  .count(mesh_data.vertices.size())
                   .build()),
-      index_buffer_(Buffer::start_build(allocator, name)
+      index_buffer_(Buffer::start_build<uint32_t>(allocator, name)
                         .usage(VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
                         .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
-                        .size(sizeof(uint32_t) * mesh_data.indices.size())
+                        .count(mesh_data.indices.size())
                         .build()),
       data_(std::move(mesh_data)) {
 

@@ -49,13 +49,11 @@ public:
     void bind_index_buffer(const render::resources::Buffer& ib) noexcept;
     void bind_mesh(const render::resources::Mesh& mesh) noexcept;
 
-    // maybe struct?
-    void draw(uint32_t vertex_count, uint32_t instance_count,
-        uint32_t first_vertex, uint32_t first_instance) noexcept;
+    void draw(uint32_t instance_count, uint32_t first_vertex = 0,
+        uint32_t first_instance = 0) noexcept;
 
-    void draw_indexed(uint32_t index_count, uint32_t instance_count,
-        uint32_t first_index, uint32_t first_vertex,
-        uint32_t first_instance) noexcept;
+    void draw_indexed(uint32_t instance_count, uint32_t first_index = 0,
+        uint32_t first_vertex = 0, uint32_t first_instance = 0) noexcept;
 
     void exec(const VkRenderPassBeginInfo& begin_info,
         stdx::function_ref<void()> c) noexcept;
@@ -74,6 +72,8 @@ private:
     void begin_renderpass(const VkRenderPassBeginInfo& begin_info) noexcept;
     void end_renderpass() noexcept;
 
+    void clear_context() noexcept;
+
 private:
     DeviceContext* context_;
     underlying_type underlying_;
@@ -81,12 +81,14 @@ private:
     struct VertexBufferBindContext {
         std::vector<VkBuffer> buffers_;
         std::vector<VkDeviceSize> offsets_;
+        size_t count_;
     } vertex_buffer_bind_context_;
 
     struct IndexBufferBindContext {
         VkBuffer buffer_;
         VkDeviceSize offset_;
         VkIndexType index_type_;
+        size_t count_;
     } index_buffer_bind_context_;
 };
 } // namespace zoo::render::scene

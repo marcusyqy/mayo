@@ -3,6 +3,26 @@
 
 namespace zoo::render::scene {
 
+namespace {
+const auto default_index_type = VK_INDEX_TYPE_UINT32;
+
+VkIndexType size_to_index_type(size_t size) noexcept {
+    switch (size) {
+    case 1:
+        return VK_INDEX_TYPE_UINT8_EXT;
+    case 2:
+        return VK_INDEX_TYPE_UINT16;
+    case 4:
+        return VK_INDEX_TYPE_UINT32;
+    default:
+        ZOO_LOG_ERROR(
+            "[index type not recognised!] Defaulting to the largest {}", size);
+        return default_index_type;
+    }
+}
+
+} // namespace
+
 PipelineBindContext& PipelineBindContext::push_constants(
     const PushConstant& constant, void* data) noexcept {
     vkCmdPushConstants(cmd_buffer_, pipeline_layout_, constant.stageFlags,
@@ -63,17 +83,31 @@ void CommandBuffer::end_record() noexcept {
         vkEndCommandBuffer(underlying_), [](VkResult /* result */) {});
 }
 
-void CommandBuffer::draw(uint32_t vertex_count, uint32_t instance_count,
-    uint32_t first_vertex, uint32_t first_instance) noexcept {
-    vkCmdDraw(underlying_, vertex_count, instance_count, first_vertex,
-        first_instance);
+void CommandBuffer::draw(uint32_t instance_count, uint32_t first_vertex,
+    uint32_t first_instance) noexcept {
+    if(vertex_buffer_bind_context_.buffers_.empty()){
+        ZOO_LOG_ERROR("`draw` called without `bind_vertex_buffers`");
+        return;
+    }
+    vkCmdDraw(underlying_,
+        static_cast<uint32_t>(vertex_buffer_bind_context_.count_),
+        instance_count, first_vertex, first_instance);
 }
 
-void CommandBuffer::draw_indexed(uint32_t index_count, uint32_t instance_count,
-    uint32_t first_index, uint32_t first_vertex,
-    uint32_t first_instance) noexcept {
-    vkCmdDrawIndexed(underlying_, index_count, instance_count, first_index,
-        first_vertex, first_instance);
+void CommandBuffer::draw_indexed(uint32_t instance_count, uint32_t first_index,
+    uint32_t first_vertex, uint32_t first_instance) noexcept {
+    if(vertex_buffer_bind_context_.buffers_.empty()){
+        ZOO_LOG_ERROR("`draw_indexed` called without `bind_vertex_buffers`");
+        return;
+    }
+
+    if(index_buffer_bind_context_.buffer_ == nullptr){
+        ZOO_LOG_ERROR("`draw_indexed` called without `bind_index_buffer`");
+        return;
+    }
+    vkCmdDrawIndexed(underlying_,
+            static_cast<uint32_t>(index_buffer_bind_context_.count_),
+            instance_count, first_index, first_vertex, first_instance);
 }
 
 PipelineBindContext CommandBuffer::bind_pipeline(
@@ -93,9 +127,13 @@ void CommandBuffer::bind_vertex_buffers(
     vboffsets.clear();
     vboffsets.reserve(size);
 
+    auto& vbcounts = vertex_buffer_bind_context_.count_;
+    vbcounts = std::numeric_limits<size_t>::max();
+
     for (const auto& x : buffers) {
         vbbuffers.emplace_back(x.handle());
         vboffsets.emplace_back(x.offset());
+        vbcounts = std::min(vbcounts, x.count());
     }
 
     vkCmdBindVertexBuffers(underlying_, 0, static_cast<uint32_t>(size),
@@ -107,7 +145,9 @@ void CommandBuffer::bind_index_buffer(
 
     index_buffer_bind_context_.buffer_ = ib.handle();
     index_buffer_bind_context_.offset_ = 0;
-    index_buffer_bind_context_.index_type_ = VK_INDEX_TYPE_UINT32; // for now.
+    index_buffer_bind_context_.index_type_ =
+        size_to_index_type(ib.object_size());
+    index_buffer_bind_context_.count_ = ib.count();
 
     vkCmdBindIndexBuffer(underlying_, index_buffer_bind_context_.buffer_,
         index_buffer_bind_context_.offset_,
@@ -147,6 +187,17 @@ void CommandBuffer::exec(const VkRenderPassBeginInfo& begin_info,
     begin_renderpass(begin_info);
     c();
     end_renderpass();
+}
+
+void CommandBuffer::clear_context() noexcept {
+    vertex_buffer_bind_context_.count_ = 0;
+    vertex_buffer_bind_context_.buffers_.clear();
+    vertex_buffer_bind_context_.offsets_.clear();
+
+    index_buffer_bind_context_.buffer_ = nullptr;
+    index_buffer_bind_context_.offset_ = 0;
+    index_buffer_bind_context_.index_type_ = default_index_type;
+    index_buffer_bind_context_.count_ = 0;
 }
 
 void CommandBuffer::submit(Operation op_type,

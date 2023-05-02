@@ -14,8 +14,9 @@ class Builder {
 public:
     Buffer build() noexcept;
 
-    Builder(const Allocator& allocator, std::string_view name) noexcept;
-    Builder& size(size_t size) noexcept;
+    Builder(const Allocator& allocator, std::string_view name,
+        size_t size) noexcept;
+    Builder& count(size_t count) noexcept;
     Builder& usage(VkBufferUsageFlags usage) noexcept;
     Builder& allocation_type(VmaMemoryUsage usage) noexcept;
     Builder& allocation_flag(VmaAllocationCreateFlags flags) noexcept;
@@ -23,7 +24,8 @@ public:
 private:
     VkBuffer buffer_ = {};
     VkBufferUsageFlags usage_ = {};
-    size_t size_ = {};
+    size_t obj_size_ = {};
+    size_t count_ = {};
     VmaAllocator allocator_ = {};
     VmaAllocation allocation_ = {};
     VmaAllocationInfo allocation_info_ = {};
@@ -34,17 +36,22 @@ private:
 } // namespace buffer
 
 // IDEA: create a buffer descriptor here.
-
 class Buffer {
 public:
     using builder_type = buffer::Builder;
 
+    template<typename Type>
     static builder_type start_build(
-        const Allocator& allocator, std::string_view name) noexcept;
+        const Allocator& allocator, std::string_view name) noexcept {
+        return start_build(allocator, name, sizeof(Type));
+    }
+
+    static builder_type start_build(const Allocator& allocator,
+        std::string_view name, size_t size) noexcept;
 
     explicit Buffer(std::string name, VkBuffer buffer, VkBufferUsageFlags usage,
-        size_t size, VmaAllocator allocator, VmaAllocation allocation,
-        VmaAllocationInfo allocation_info) noexcept;
+        size_t obj_size, size_t count, VmaAllocator allocator,
+        VmaAllocation allocation, VmaAllocationInfo allocation_info) noexcept;
 
     Buffer(const Buffer&) = delete;
     Buffer& operator=(const Buffer&) = delete;
@@ -70,15 +77,23 @@ public:
     VkBuffer handle() const noexcept;
     VkDeviceSize offset() const noexcept;
 
+    inline size_t allocated_size() const noexcept { return obj_size_ * count_; }
+    inline size_t object_size() const noexcept { return obj_size_; }
+    inline size_t count() const noexcept { return count_; }
+
 private:
     std::string name_;
 
     VkBuffer buffer_;
     VkBufferUsageFlags usage_;
-    size_t size_;
+
+    size_t obj_size_;
+    size_t count_;
+
     VmaAllocator allocator_;
     VmaAllocation allocation_;
     VmaAllocationInfo allocation_info_;
 };
+
 
 } // namespace zoo::render::resources
