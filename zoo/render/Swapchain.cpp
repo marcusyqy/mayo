@@ -184,6 +184,11 @@ bool Swapchain::create_swapchain_and_resources() noexcept {
         vkCreateSwapchainKHR(context_, &create_info, nullptr, &underlying_),
         [&failed](VkResult /* result */) { failed = true; });
 
+    // required to safely destroy after creating new swapchain.
+    if (create_info.oldSwapchain != nullptr) {
+        vkDestroySwapchainKHR(context_, create_info.oldSwapchain, nullptr);
+    }
+
     // retrieve images
     vkGetSwapchainImagesKHR(context_, underlying_, &image_count, nullptr);
     images_.resize(image_count);
