@@ -35,11 +35,7 @@ VkImageAspectFlags vk_image_usage_to_aspect_mask(
 } // namespace
 namespace texture {
 
-Builder::Builder(const Allocator& allocator, std::string_view name) noexcept {
-    allocator_ = allocator;
-    device_ = allocator.device();
-    name_ = name;
-}
+Builder::Builder(std::string_view name) noexcept { name_ = name; }
 
 Builder& Builder::allocation_type(VmaMemoryUsage usage) noexcept {
     memory_usage_ = usage;
@@ -90,7 +86,7 @@ Builder& Builder::extent(VkExtent3D extent) noexcept {
     return *this;
 }
 
-Texture Builder::build() noexcept {
+Texture Builder::build(const Allocator& allocator) noexcept {
     VkImageCreateInfo info{};
     info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     info.pNext = nullptr;
@@ -115,11 +111,12 @@ Texture Builder::build() noexcept {
     alloc_info.requiredFlags = memory_properties_flags_;
 
     VkImage image = {};
-    VK_EXPECT_SUCCESS(vmaCreateImage(allocator_, &info, &alloc_info, &image,
-        &allocation_, &allocation_info_));
+    VmaAllocation allocation = {};
+    VK_EXPECT_SUCCESS(vmaCreateImage(
+        allocator, &info, &alloc_info, &image, &allocation, &allocation_info_));
 
-    return Texture{
-        name_, image, info, device_, allocator_, allocation_, allocation_info_};
+    return Texture{name_, image, info, allocator.device(), allocator,
+        allocation, allocation_info_};
 }
 
 } // namespace texture
@@ -186,9 +183,8 @@ VkImageViewCreateInfo Texture::create_image_view_info() const noexcept {
 
     return info;
 }
-Texture::builder_type Texture::start_build(
-    const Allocator& allocator, std::string_view name) noexcept {
-    return {allocator, name};
+Texture::builder_type Texture::start_build(std::string_view name) noexcept {
+    return {name};
 }
 
 TextureView& Texture::view() noexcept { return view_; }
@@ -236,6 +232,5 @@ TextureView& TextureView::operator=(TextureView&& other) noexcept {
 
 void TextureView::invalidate() noexcept { view_ = nullptr; }
 bool TextureView::valid() const noexcept { return view_ != nullptr; }
-
 
 } // namespace zoo::render::resources

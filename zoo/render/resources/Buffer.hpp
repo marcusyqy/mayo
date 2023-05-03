@@ -12,10 +12,9 @@ namespace buffer {
 
 class Builder {
 public:
-    Buffer build() noexcept;
+    Buffer build(const Allocator& allocator) noexcept;
 
-    Builder(const Allocator& allocator, std::string_view name,
-        size_t size) noexcept;
+    Builder(std::string_view name, size_t size) noexcept;
     Builder& count(size_t count) noexcept;
     Builder& usage(VkBufferUsageFlags usage) noexcept;
     Builder& allocation_type(VmaMemoryUsage usage) noexcept;
@@ -26,8 +25,6 @@ private:
     VkBufferUsageFlags usage_ = {};
     size_t obj_size_ = {};
     size_t count_ = {};
-    VmaAllocator allocator_ = {};
-    VmaAllocation allocation_ = {};
     VmaAllocationInfo allocation_info_ = {};
     VmaMemoryUsage memory_usage_ = VMA_MEMORY_USAGE_AUTO;
     std::string name_ = {};
@@ -41,12 +38,11 @@ public:
     using builder_type = buffer::Builder;
 
     template<typename Type>
-    static builder_type start_build(
-        const Allocator& allocator, std::string_view name) noexcept {
-        return start_build(allocator, name, sizeof(Type));
+    static builder_type start_build(std::string_view name) noexcept {
+        return start_build(name, sizeof(Type));
     }
 
-    static builder_type start_build(const Allocator& allocator,
+    static builder_type start_build(
         std::string_view name, size_t size) noexcept;
 
     explicit Buffer(std::string name, VkBuffer buffer, VkBufferUsageFlags usage,
@@ -94,6 +90,5 @@ private:
     VmaAllocation allocation_;
     VmaAllocationInfo allocation_info_;
 };
-
 
 } // namespace zoo::render::resources

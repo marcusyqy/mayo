@@ -118,26 +118,24 @@ std::array<VertexBufferDescription, 3> Vertex::describe() noexcept {
 
 Mesh::Mesh(
     Allocator& allocator, MeshData mesh_data, std::string_view name) noexcept
-    : buffer_(Buffer::start_build<Vertex>(allocator, name)
+    : buffer_(Buffer::start_build<Vertex>(name)
                   .usage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
                   .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
                   .count(mesh_data.vertices.size())
-                  .build()),
-      index_buffer_(Buffer::start_build<uint32_t>(allocator, name)
+                  .build(allocator)),
+      index_buffer_(Buffer::start_build<uint32_t>(name)
                         .usage(VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
                         .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
                         .count(mesh_data.indices.size())
-                        .build()),
+                        .build(allocator)),
       data_(std::move(mesh_data)) {
 
     buffer_.map<Vertex>([this](Vertex* data) {
-        std::copy(
-            std::begin(data_.vertices), std::end(data_.vertices), data);
+        std::copy(std::begin(data_.vertices), std::end(data_.vertices), data);
     });
 
     index_buffer_.map<uint32_t>([this](uint32_t* data) {
-        std::copy(
-            std::begin(data_.indices), std::end(data_.indices), data);
+        std::copy(std::begin(data_.indices), std::end(data_.indices), data);
     });
 }
 

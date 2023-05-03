@@ -27,6 +27,12 @@ struct PushConstantData {
     glm::mat4 render_matrix;
 };
 
+struct GPUCameraData {
+    glm::mat4 view;
+    glm::mat4 proj;
+    glm::mat4 view_proj;
+};
+
 stdx::expected<std::string, std::runtime_error> read_file(
     std::string_view filename) noexcept {
     std::ifstream file{filename.data(), std::ios::ate | std::ios::binary};
@@ -109,11 +115,11 @@ application::ExitStatus main(application::Settings args) noexcept {
 
     auto vertex_buffer =
         render::resources::Buffer::start_build<render::resources::Vertex>(
-            context.allocator(), "entry point vertex buffer")
+            "entry point vertex buffer")
             .usage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
             .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
             .count(vertices.size())
-            .build();
+            .build(context.allocator());
 
     vertex_buffer.map<render::resources::Vertex>(
         [&vertices](render::resources::Vertex* data) {
@@ -121,11 +127,11 @@ application::ExitStatus main(application::Settings args) noexcept {
         });
 
     auto index_buffer = render::resources::Buffer::start_build<uint32_t>(
-        context.allocator(), "entry point index buffer")
+        "entry point index buffer")
                             .usage(VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
                             .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
                             .count(indices.size())
-                            .build();
+                            .build(context.allocator());
 
     index_buffer.map<uint32_t>([&indices](uint32_t* data) {
         std::copy(std::begin(indices), std::end(indices), data);

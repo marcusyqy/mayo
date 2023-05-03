@@ -4,7 +4,7 @@ namespace zoo::render::resources {
 
 namespace buffer {
 
-Buffer Builder::build() noexcept {
+Buffer Builder::build(const Allocator& allocator) noexcept {
     VkBufferCreateInfo buffer_info{};
     buffer_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     buffer_info.size = count_ * obj_size_;
@@ -13,11 +13,12 @@ Buffer Builder::build() noexcept {
     VmaAllocationCreateInfo alloc_info{};
     alloc_info.usage = memory_usage_;
 
-    VK_EXPECT_SUCCESS(vmaCreateBuffer(allocator_, &buffer_info, &alloc_info,
-        &buffer_, &allocation_, &allocation_info_));
+    VmaAllocation allocation{};
+    VK_EXPECT_SUCCESS(vmaCreateBuffer(allocator, &buffer_info, &alloc_info,
+        &buffer_, &allocation, &allocation_info_));
 
-    return Buffer(name_, buffer_, usage_, obj_size_, count_, allocator_,
-        allocation_, allocation_info_);
+    return Buffer(name_, buffer_, usage_, obj_size_, count_, allocator,
+        allocation, allocation_info_);
 }
 
 Builder& Builder::count(size_t count) noexcept {
@@ -35,9 +36,7 @@ Builder& Builder::allocation_type(VmaMemoryUsage usage) noexcept {
     return *this;
 }
 
-Builder::Builder(
-    const Allocator& allocator, std::string_view name, size_t size) noexcept {
-    allocator_ = allocator;
+Builder::Builder(std::string_view name, size_t size) noexcept {
     name_ = name;
     obj_size_ = size;
 }
@@ -55,10 +54,9 @@ Buffer::~Buffer() noexcept {
     vmaDestroyBuffer(allocator_, buffer_, allocation_);
 }
 
-
 buffer::Builder Buffer::start_build(
-    const Allocator& allocator, std::string_view name, size_t size) noexcept {
-    return {allocator, name, size};
+    std::string_view name, size_t size) noexcept {
+    return {name, size};
 }
 
 void* Buffer::map() noexcept {

@@ -41,9 +41,9 @@ namespace texture {
 
 class Builder {
 public:
-    Builder(const Allocator& allocator, std::string_view name) noexcept;
+    Builder(std::string_view name) noexcept;
 
-    Texture build() noexcept;
+    Texture build(const Allocator& allocator) noexcept;
 
     Builder& allocation_type(VmaMemoryUsage usage) noexcept;
     Builder& allocation_required_flags(VkMemoryPropertyFlags flags) noexcept;
@@ -61,9 +61,6 @@ public:
 private:
     std::string name_;
 
-    VkDevice device_ = {};
-    VmaAllocator allocator_ = {};
-    VmaAllocation allocation_ = {};
     VmaAllocationInfo allocation_info_ = {};
     VmaMemoryUsage memory_usage_ = VMA_MEMORY_USAGE_AUTO;
 
@@ -87,8 +84,7 @@ class Texture {
 public:
     using builder_type = texture::Builder;
 
-    static builder_type start_build(
-        const Allocator& allocator, std::string_view name) noexcept;
+    static builder_type start_build(std::string_view name) noexcept;
 
     explicit Texture(std::string name, VkImage image,
         VkImageCreateInfo create_info, VkDevice device, VmaAllocator allocator,

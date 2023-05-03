@@ -444,14 +444,13 @@ void Swapchain::assure(VkResult result) noexcept {
 
 resources::Texture Swapchain::create_depth_buffer() {
     auto [x, y] = extent();
-    return resources::Texture::start_build(
-        context_.allocator(), "DepthBufferSwapchain")
+    return resources::Texture::start_build("DepthBufferSwapchain")
         .format(DEPTH_FORMAT_)
         .usage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
         .extent({x, y, 1})
         .allocation_type(VMA_MEMORY_USAGE_GPU_ONLY)
         .allocation_required_flags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
-        .build();
+        .build(context_.allocator());
 }
 
 } // namespace zoo::render
