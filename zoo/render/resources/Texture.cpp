@@ -140,7 +140,6 @@ Texture::Texture(Texture&& other) noexcept
       allocation_(std::move(other.allocation_)),
       allocation_info_(std::move(other.allocation_info_)),
       view_(std::move(other.view_)) {
-    view_.update(*this);
     other.invalidate();
 }
 
@@ -154,7 +153,6 @@ Texture& Texture::operator=(Texture&& other) noexcept {
     allocation_ = std::move(other.allocation_);
     allocation_info_ = std::move(other.allocation_info_);
     view_ = std::move(other.view_);
-    view_.update(*this);
     other.invalidate();
     return *this;
 }
@@ -201,14 +199,15 @@ void Texture::invalidate() noexcept { image_ = nullptr; }
 
 TextureView::TextureView(
     const Texture& reference, VkImageViewCreateInfo create_info) noexcept
-    : reference_(&reference), create_info_(create_info), view_(nullptr) {
+    : name_(reference.name()), device_(reference.device()),
+      create_info_(create_info), view_(nullptr) {
     VK_EXPECT_SUCCESS(
         vkCreateImageView(reference.device(), &create_info_, nullptr, &view_));
 }
 
 void TextureView::destroy() noexcept {
-    if (view_ != nullptr && reference_->valid()) {
-        vkDestroyImageView(reference_->device(), view_, nullptr);
+    if (view_ != nullptr) {
+        vkDestroyImageView(device_, view_, nullptr);
         view_ = nullptr;
     }
 }
@@ -216,7 +215,8 @@ void TextureView::destroy() noexcept {
 TextureView::~TextureView() noexcept { destroy(); }
 
 TextureView::TextureView(TextureView&& other) noexcept
-    : reference_(other.reference_), create_info_(std::move(other.create_info_)),
+    : name_(std::move(other.name_)), device_(std::move(other.device_)),
+      create_info_(std::move(other.create_info_)),
       view_(std::move(other.view_)) {
     other.invalidate();
 }
@@ -224,7 +224,10 @@ TextureView::TextureView(TextureView&& other) noexcept
 TextureView& TextureView::operator=(TextureView&& other) noexcept {
     // don't set this to null because we don't want a `nullptr`
     destroy();
-    reference_ = other.reference_;
+    name_ = std::move(other.name_);
+
+    // TODO: will this break if another device comes to play?
+    device_ = std::move(other.device_);
     create_info_ = std::move(other.create_info_);
     view_ = std::move(other.view_);
     other.invalidate();
@@ -234,9 +237,5 @@ TextureView& TextureView::operator=(TextureView&& other) noexcept {
 void TextureView::invalidate() noexcept { view_ = nullptr; }
 bool TextureView::valid() const noexcept { return view_ != nullptr; }
 
-// feels like a hack...
-void TextureView::update(Texture& reference) noexcept {
-    reference_ = &reference;
-}
 
 } // namespace zoo::render::resources

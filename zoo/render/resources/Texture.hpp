@@ -8,6 +8,7 @@ namespace zoo::render::resources {
 
 class Texture;
 
+/// This may break if another device appears.
 class TextureView {
 public:
     TextureView(
@@ -29,12 +30,9 @@ public:
     operator VkImageView() const noexcept { return view_; }
 
 private:
-    friend Texture;
-    // feels like a hack...
-    void update(Texture& reference) noexcept;
+    std::string_view name_;
+    VkDevice device_;
 
-private:
-    const Texture* reference_;
     VkImageViewCreateInfo create_info_;
     VkImageView view_;
 };
