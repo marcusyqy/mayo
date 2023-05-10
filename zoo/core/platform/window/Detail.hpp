@@ -29,16 +29,12 @@ struct Traits {
     std::string_view name;
 };
 
-struct Context {
-public:
-    Context() noexcept;
-    ~Context() noexcept;
-
-    void poll_events() noexcept;
-    void wait_for_vsync() const noexcept;
-};
-
 using InputCallback = std::function<void(Window&, input::KeyCode)>;
 
 } // namespace window
+  //
+
+namespace windows {
+void poll_events() noexcept;
+}
 } // namespace zoo

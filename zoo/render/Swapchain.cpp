@@ -144,6 +144,8 @@ bool Swapchain::create_swapchain_and_resources() noexcept {
     description_.surface_format = choose_surface_format(details.formats);
     description_.present_mode = choose_present_mode(details.present_modes);
     description_.capabilities = std::move(details.capabilities);
+
+    // TODO: move this out.
     renderpass_ =
         RenderPass{context_, description_.surface_format.format, DEPTH_FORMAT_};
 

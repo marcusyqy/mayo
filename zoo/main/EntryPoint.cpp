@@ -52,6 +52,7 @@ stdx::expected<std::string, std::runtime_error> read_file(
 } // namespace
 
 application::ExitStatus main(application::Settings args) noexcept {
+    // TODO: to make runtime arguments for different stuff.
     (void)args;
 
     const application::Info app_context{{0, 0, 0}, "Zoo Engine Application"};
@@ -59,7 +60,6 @@ application::ExitStatus main(application::Settings args) noexcept {
 
     ZOO_LOG_INFO("Starting application");
 
-    window::Context win_context{};
 
     render::Engine render_engine{render_engine_info};
     auto& context = render_engine.context();
@@ -201,7 +201,8 @@ application::ExitStatus main(application::Settings args) noexcept {
     while (main_window.is_open()) {
         swapchain.render(populate_command_ctx);
         swapchain.present();
-        win_context.poll_events();
+
+        windows::poll_events();
     }
     // TODO: we can remove this after we find out how to properly tie
     // resources to each frame.

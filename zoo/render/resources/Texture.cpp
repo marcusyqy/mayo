@@ -33,6 +33,7 @@ VkImageAspectFlags vk_image_usage_to_aspect_mask(
     return aspect_mask;
 }
 } // namespace
+
 namespace texture {
 
 Builder::Builder(std::string_view name) noexcept { name_ = name; }
