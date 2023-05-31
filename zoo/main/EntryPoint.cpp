@@ -203,6 +203,7 @@ application::ExitStatus main(application::Settings args) noexcept {
 
         windows::poll_events();
     }
+
     // TODO: we can remove this after we find out how to properly tie
     // resources to each frame.
     context.wait();

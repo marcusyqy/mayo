@@ -55,25 +55,26 @@ enum class Key {
     kp_equal,
 
     menu,
-    last
+    none,
+    MAX_COUNT
     // clang-format on
 };
 
 // this should probably be a bit operation
 enum class Mod {
     none,
-    left_shift,
-    left_control,
-    left_alt,
-    left_super,
-    right_shift,
-    right_control,
-    right_alt,
-    right_super,
-    last
+    l_shift,
+    l_control,
+    l_alt,
+    l_super,
+    r_shift,
+    r_control,
+    r_alt,
+    r_super,
+    MAX_COUNT
 };
 
-enum class Action { pressed, released, repeat };
+enum class Action { pressed, released, repeat, none, MAX_COUNT };
 
 struct KeyCode {
     Key key_;

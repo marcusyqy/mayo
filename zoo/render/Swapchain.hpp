@@ -25,6 +25,7 @@ public:
     // initialize with the device
     Swapchain(render::Engine& engine, underlying_window_type glfw_window,
         width_type x, width_type y) noexcept;
+
     ~Swapchain() noexcept;
 
     void resize(width_type x, width_type y) noexcept;

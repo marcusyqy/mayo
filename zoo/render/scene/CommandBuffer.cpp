@@ -85,7 +85,7 @@ void CommandBuffer::end_record() noexcept {
 
 void CommandBuffer::draw(uint32_t instance_count, uint32_t first_vertex,
     uint32_t first_instance) noexcept {
-    if(vertex_buffer_bind_context_.buffers_.empty()){
+    if (vertex_buffer_bind_context_.buffers_.empty()) {
         ZOO_LOG_ERROR("`draw` called without `bind_vertex_buffers`");
         return;
     }
@@ -96,18 +96,18 @@ void CommandBuffer::draw(uint32_t instance_count, uint32_t first_vertex,
 
 void CommandBuffer::draw_indexed(uint32_t instance_count, uint32_t first_index,
     uint32_t first_vertex, uint32_t first_instance) noexcept {
-    if(vertex_buffer_bind_context_.buffers_.empty()){
+    if (vertex_buffer_bind_context_.buffers_.empty()) {
         ZOO_LOG_ERROR("`draw_indexed` called without `bind_vertex_buffers`");
         return;
     }
 
-    if(index_buffer_bind_context_.buffer_ == nullptr){
+    if (index_buffer_bind_context_.buffer_ == nullptr) {
         ZOO_LOG_ERROR("`draw_indexed` called without `bind_index_buffer`");
         return;
     }
     vkCmdDrawIndexed(underlying_,
-            static_cast<uint32_t>(index_buffer_bind_context_.count_),
-            instance_count, first_index, first_vertex, first_instance);
+        static_cast<uint32_t>(index_buffer_bind_context_.count_),
+        instance_count, first_index, first_vertex, first_instance);
 }
 
 PipelineBindContext CommandBuffer::bind_pipeline(
