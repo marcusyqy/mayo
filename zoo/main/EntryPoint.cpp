@@ -60,7 +60,6 @@ application::ExitStatus main(application::Settings args) noexcept {
 
     ZOO_LOG_INFO("Starting application");
 
-
     render::Engine render_engine{render_engine_info};
     auto& context = render_engine.context();
     // TODO: I think we should just merge swapchain and window
