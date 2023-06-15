@@ -16,9 +16,6 @@
 
 namespace zoo {
 
-// fwd declaration
-class Window;
-
 class Window {
 public:
     explicit Window(render::Engine& engine, const window::Traits& traits,

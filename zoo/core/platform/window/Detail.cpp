@@ -17,21 +17,26 @@ static void error_callback(
     ZOO_LOG_ERROR("Error: {}", description);
 }
 
-const core::wrappers::Initializer<> initializer{
-    []() {
-        glfwSetErrorCallback(error_callback);
-        if (!glfwInit()) {
-            ZOO_LOG_ERROR("Something went wrong when initializing glfw");
-            std::abort();
-        }
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+namespace detail {
+void construct() {
+    glfwSetErrorCallback(error_callback);
+    if (!glfwInit()) {
+        ZOO_LOG_ERROR("Something went wrong when initializing glfw");
+        std::abort();
+    }
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-        // disable resizing for now
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-    },
-    []() { glfwTerminate(); }};
+    // disable resizing for now
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+}
+
+void destruct() { glfwTerminate(); }
+} // namespace detail
+
+const core::wrappers::Initializer<> initializer{
+    detail::construct, detail::destruct};
 
 } // namespace
 
