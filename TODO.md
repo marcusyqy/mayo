@@ -11,3 +11,8 @@
 
 ## Core
 - [ ] : Event System : Scope out
+
+
+## Reminder
+Don't overscope. Do the minimal thing then start putting things into boxes.
+
