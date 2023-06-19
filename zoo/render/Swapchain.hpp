@@ -52,6 +52,7 @@ public:
             exec) noexcept;
 
     void present() noexcept;
+
     void render(
         std::function<void(render::scene::CommandBuffer& command_context,
             VkRenderPassBeginInfo renderpass_info)>

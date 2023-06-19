@@ -27,7 +27,7 @@ std::optional<size_t> get_queue_index_if_physical_device_is_chosen(
     for (const auto& queue_properties : physical_device.queue_properties()) {
         if (queue_properties.has_graphics() &&
             physical_device.has_present(queue_properties, instance))
-            return std::make_optional(index);
+            return {index};
         ++index;
     }
     return std::nullopt;
@@ -99,7 +99,7 @@ std::vector<utils::PhysicalDevice> populate_physical_devices(
 std::optional<debug::Messenger> create_debugger(
     VkInstance instance, const engine::Info& info) noexcept {
     return instance != nullptr && info.debug_layer
-               ? std::make_optional<debug::Messenger>(instance)
+               ? std::make_optional(instance)
                : std::nullopt;
 }
 
@@ -117,7 +117,7 @@ DeviceContext create_context(VkInstance instance,
     }
 
     ZOO_ASSERT(false, "Something went wrong when choosing physical devices");
-    // default to this.
+    // default to first device.
     return {instance, physical_devices.front(),
         physical_devices.front().queue_properties()[0], query};
 }

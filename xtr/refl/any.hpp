@@ -61,12 +61,12 @@ struct any {
 
 enum class type_id {
     object,
-    integer8,
-    integer16,
-    integer32,
-    integer64,
-    floating32,
-    floating64,
+    i8,
+    i16,
+    i32,
+    i64,
+    f32,
+    f64,
     pointer,
     reference, // same as pointer but maybe we need to denote the dereference
     _stdx_enum_as_bitmask

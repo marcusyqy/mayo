@@ -66,7 +66,7 @@ VkFormat convert_to_shader_stage(ShaderType t) {
 } // namespace
 
 void Shader::reset() noexcept {
-    if (module_ != nullptr && context_)
+    if (module_ != nullptr && context_ != nullptr)
         vkDestroyShaderModule(*context_, module_, nullptr);
 
     module_ = nullptr;
