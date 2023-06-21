@@ -6,8 +6,6 @@
 namespace zoo::main {
 
 Application::Application(const application::Info& info) noexcept
-    : info_(info) {
-
-}
+    : info_(info) {}
 
 } // namespace zoo::main

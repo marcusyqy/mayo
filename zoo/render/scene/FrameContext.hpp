@@ -10,5 +10,4 @@ private:
     resources::PoolAllocator allocator_;
 };
 
-
 } // namespace zoo::render::scene

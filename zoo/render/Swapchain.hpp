@@ -9,6 +9,7 @@
 #include <cstdint>
 
 #include "RenderPass.hpp"
+#include "core/fwd.hpp"
 #include "resources/Texture.hpp"
 #include "sync/Fence.hpp"
 #include "sync/Semaphore.hpp"
@@ -58,6 +59,14 @@ public:
             VkRenderPassBeginInfo renderpass_info)>
             exec) noexcept;
 
+    // TODO: remove when "abstracted"
+    struct FrameInfo {
+        s32 current;
+        s32 count;
+    };
+
+    FrameInfo frame_info() const noexcept;
+
 private:
     bool create_swapchain_and_resources() noexcept;
     void cleanup_swapchain_and_resources() noexcept;
@@ -105,7 +114,7 @@ private:
     dyn_array<render::scene::CommandBuffer> command_buffers_;
     RenderPass renderpass_; // has a default renderpass in swapchain
 
-    uint32_t current_frame_ = 0; // TODO: change this
+    u32 current_frame_ = 0; // TODO: change this
     bool should_resize_ = false;
     static constexpr VkFormat DEPTH_FORMAT_ = VK_FORMAT_D32_SFLOAT;
 };

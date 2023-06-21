@@ -18,9 +18,14 @@
 
 #include "render/resources/Mesh.hpp"
 
+#include "core/Array.hpp"
+
 namespace zoo {
 
 namespace {
+
+struct FrameData {};
+constexpr s32 MAX_FRAMES = 3;
 
 struct PushConstantData {
     glm::vec4 data;
@@ -40,7 +45,7 @@ stdx::expected<std::string, std::runtime_error> read_file(
         return stdx::unexpected{std::runtime_error("unable to open file!")};
     }
 
-    const std::size_t file_size = static_cast<size_t>(file.tellg());
+    const auto file_size = static_cast<u64>(file.tellg());
     std::string buffer;
     buffer.resize(file_size);
     file.seekg(0);
@@ -49,6 +54,50 @@ stdx::expected<std::string, std::runtime_error> read_file(
     return buffer;
 }
 
+using ShaderBytes = std::vector<u32>;
+
+std::pair<ShaderBytes, ShaderBytes> read_shaders() {
+    render::tools::ShaderCompiler compiler;
+    auto vertex_bytes = read_file("static/shaders/test.vert");
+    ZOO_ASSERT(vertex_bytes, "vertex shader must have value!");
+    auto fragment_bytes = read_file("static/shaders/test.frag");
+    ZOO_ASSERT(fragment_bytes, "fragment shader must have value!");
+
+    render::tools::ShaderWork vertex_work{
+        shaderc_vertex_shader, "Test.vert", *vertex_bytes};
+    render::tools::ShaderWork fragment_work{
+        shaderc_fragment_shader, "Test.frag", *fragment_bytes};
+
+    auto vertex_spirv = compiler.compile(vertex_work);
+    auto fragment_spirv = compiler.compile(fragment_work);
+    if (!vertex_spirv) {
+        spdlog::error("Vertex has error : {}", vertex_spirv.error().what());
+    }
+
+    if (!fragment_spirv) {
+        spdlog::error("Fragment has error : {}", fragment_spirv.error().what());
+    }
+
+    return std::make_pair(std::move(*vertex_spirv), std::move(*fragment_spirv));
+}
+
+void init_frame_data(FrameData& frame_data) { (void)frame_data; }
+
+FrameData& assure_up_to_date(core::Array<FrameData, MAX_FRAMES>& frame_data,
+    render::Swapchain& swapchain) {
+    auto [frame_curr, frame_count] = swapchain.frame_info();
+
+    if (frame_count != frame_data.size()) {
+        frame_data.resize(frame_count);
+    }
+
+    for (auto i = frame_data.size(); i < frame_count; ++i) {
+        // create
+        init_frame_data(frame_data[i]);
+    }
+
+    return frame_data[frame_curr];
+}
 } // namespace
 
 application::ExitStatus main(application::Settings args) noexcept {
@@ -57,6 +106,8 @@ application::ExitStatus main(application::Settings args) noexcept {
 
     const application::Info app_context{{0, 0, 0}, "Zoo Engine Application"};
     const render::engine::Info render_engine_info{app_context, true};
+
+    core::Array<FrameData, MAX_FRAMES> frame_data;
 
     ZOO_LOG_INFO("Starting application");
 
@@ -71,6 +122,7 @@ application::ExitStatus main(application::Settings args) noexcept {
                 win.close();
             }
         }};
+
     // const std::vector<render::resources::Vertex> vertices = {
     //     {{0.0f, -0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
     //     {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
@@ -83,35 +135,9 @@ application::ExitStatus main(application::Settings args) noexcept {
         {{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}}};
 
     // we try to use uint32_t for indices
-    const std::vector<uint32_t> indices = {0, 1, 2, 2, 3, 0};
+    const std::vector<u32> indices = {0, 1, 2, 2, 3, 0};
 
-    auto [vertex_bytes, fragment_bytes] = []() {
-        render::tools::ShaderCompiler compiler;
-        auto vertex_bytes = read_file("static/shaders/test.vert");
-        ZOO_ASSERT(vertex_bytes, "vertex shader must have value!");
-        auto fragment_bytes = read_file("static/shaders/test.frag");
-        ZOO_ASSERT(fragment_bytes, "fragment shader must have value!");
-
-        render::tools::ShaderWork vertex_work{
-            shaderc_vertex_shader, "Test.vert", *vertex_bytes};
-        render::tools::ShaderWork fragment_work{
-            shaderc_fragment_shader, "Test.frag", *fragment_bytes};
-
-        auto vertex_spirv = compiler.compile(vertex_work);
-        auto fragment_spirv = compiler.compile(fragment_work);
-        if (!vertex_spirv) {
-            spdlog::error("Vertex has error : {}", vertex_spirv.error().what());
-        }
-
-        if (!fragment_spirv) {
-            spdlog::error(
-                "Fragment has error : {}", fragment_spirv.error().what());
-        }
-
-        return std::make_pair(
-            std::move(*vertex_spirv), std::move(*fragment_spirv));
-    }();
-
+    auto [vertex_bytes, fragment_bytes] = read_shaders();
     auto vertex_buffer =
         render::resources::Buffer::start_build<render::resources::Vertex>(
             "entry point vertex buffer")
@@ -165,9 +191,14 @@ application::ExitStatus main(application::Settings args) noexcept {
     PushConstantData push_constant_data{};
 
     auto start_time = std::chrono::high_resolution_clock::now();
-    auto populate_command_ctx =
-        [&](render::scene::CommandBuffer& command_context,
-            VkRenderPassBeginInfo renderpass_info) {
+
+    while (main_window.is_open()) {
+        [[maybe_unused]] auto& frame = assure_up_to_date(frame_data, swapchain);
+
+        // TODO: add frame data in.
+        auto populate_command_ctx = [&](render::scene::CommandBuffer&
+                                            command_context,
+                                        VkRenderPassBeginInfo renderpass_info) {
             command_context.set_viewport(viewport_info.viewport);
             command_context.set_scissor(viewport_info.scissor);
             command_context.exec(renderpass_info, [&]() {
@@ -197,7 +228,6 @@ application::ExitStatus main(application::Settings args) noexcept {
             });
         };
 
-    while (main_window.is_open()) {
         swapchain.render(populate_command_ctx);
         swapchain.present();
 

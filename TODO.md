@@ -8,6 +8,9 @@
     - [ ] : Buffer
     - [ ] : Texture
 
+- [ ] : Make reference counter or asset system for pipeline.
+        They need to know the concept of frames and resource sharing.
+
 
 ## Core
 - [ ] : Event System : Scope out
