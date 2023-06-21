@@ -1,6 +1,6 @@
 project "zoo"
     language "C++"
-    cppdialect "C++17"
+    cppdialect "C++20"
     staticruntime "on"
     characterset "MBCS"
     targetdir("bin/" .. outputdir .. "/%{prj.name}")

@@ -65,6 +65,7 @@ std::pair<ShaderBytes, ShaderBytes> read_shaders() {
 
     render::tools::ShaderWork vertex_work{
         shaderc_vertex_shader, "Test.vert", *vertex_bytes};
+
     render::tools::ShaderWork fragment_work{
         shaderc_fragment_shader, "Test.frag", *fragment_bytes};
 
