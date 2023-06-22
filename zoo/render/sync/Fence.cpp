@@ -21,13 +21,23 @@ void Fence::wait() noexcept {
         std::numeric_limits<uint64_t>::max());
 }
 
+Fence::Status Fence::is_signaled() const noexcept {
+    switch (vkGetFenceStatus(*context_, underlying_)) {
+    case VK_SUCCESS:
+        return Status::signaled;
+    case VK_NOT_READY:
+        return Status::unsignaled;
+    default:
+        return Status::error;
+    }
+}
+
 Fence::Fence(DeviceContext& context) noexcept
     : context_(std::addressof(context)), underlying_(create_fence(context)) {}
 
 Fence::~Fence() noexcept {
-    if (context_ != nullptr) {
+    if (underlying_ != nullptr) {
         context_->release_device_resource(underlying_);
-        context_ = nullptr;
         underlying_ = nullptr;
     }
 }
@@ -35,7 +45,6 @@ Fence::~Fence() noexcept {
 Fence::Fence(Fence&& other) noexcept
     : context_(std::move(other.context_)),
       underlying_(std::move(other.underlying_)) {
-    other.context_ = nullptr;
     other.underlying_ = nullptr;
 }
 
