@@ -24,7 +24,10 @@ namespace zoo {
 
 namespace {
 
-struct FrameData {};
+struct FrameData {
+
+};
+
 constexpr s32 MAX_FRAMES = 3;
 
 struct PushConstantData {

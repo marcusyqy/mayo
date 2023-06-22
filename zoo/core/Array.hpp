@@ -122,7 +122,6 @@ struct Array : private Bucket<Type, N> {
     // decides to put a pointer to myself and require to update the pointer when
     // moving. This will create a crash.
     Array(Array&& other) noexcept {
-        // should maybe move this?
         std::memcpy(other.storage, other.storage + other.count, self::storage);
         self::count = other.count;
         other.count = 0;
@@ -130,7 +129,7 @@ struct Array : private Bucket<Type, N> {
 
     Array& operator=(Array&& other) noexcept {
         clear();
-        // should maybe move this?
+
         std::memcpy(other.storage, other.storage + other.count, self::storage);
         self::count = other.count;
         other.count = 0;
