@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/fwd.hpp"
 #include "core/platform/Input.hpp"
 #include "render/Engine.hpp"
 
@@ -16,7 +17,7 @@ namespace zoo {
 class Window;
 namespace window {
 
-using size_type = std::uint32_t;
+using size_type = u32;
 
 struct Size {
     size_type x;

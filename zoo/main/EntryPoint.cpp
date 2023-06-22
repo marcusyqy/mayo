@@ -1,32 +1,167 @@
-#include "EntryPoint.hpp"
-#include "core/Log.hpp"
 
+#include "EntryPoint.hpp"
+
+#include "Utility.hpp"
+
+#include "core/Array.hpp"
+#include "core/Log.hpp"
 #include "core/platform/Window.hpp"
+
 #include "render/Engine.hpp"
 #include "render/Pipeline.hpp"
 #include "render/resources/Buffer.hpp"
+#include "render/resources/Mesh.hpp"
 #include "render/scene/CommandBuffer.hpp"
 
 #include "stdx/expected.hpp"
-#include <array>
-#include <fstream>
-#include <string_view>
 
 #include "render/tools/ShaderCompiler.hpp"
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
 
-#include "render/resources/Mesh.hpp"
-
-#include "core/Array.hpp"
+#include <array>
+#include <fstream>
+#include <string_view>
 
 namespace zoo {
 
 namespace {
 
+static constexpr VkFormat DEPTH_FORMAT = VK_FORMAT_D32_SFLOAT;
+
+render::resources::Texture create_depth_buffer(
+    u32 x, u32 y, render::resources::Allocator& allocator) noexcept {
+    return render::resources::Texture::start_build("DepthBufferSwapchain")
+        .format(DEPTH_FORMAT)
+        .usage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+        .extent({x, y, 1})
+        .allocation_type(VMA_MEMORY_USAGE_GPU_ONLY)
+        .allocation_required_flags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+        .build(allocator);
+}
+
 struct FrameData {
 
+    FrameData(render::DeviceContext& context) noexcept
+        : allocator(context.allocator()), command_context(context),
+          in_flight_fence(context), render_done(context) {}
+
+    // this is a mess.
+    // it should be copyable/movable.
+    FrameData(const FrameData& o) = delete;
+    FrameData& operator=(const FrameData& o) = delete;
+    FrameData(FrameData&& o) = delete;
+    FrameData& operator=(FrameData&& o) = delete;
+
+    // render target(s).
+    render::resources::Allocator& allocator;
+    render::resources::Texture depth_buffer;
+    render::RenderPass renderpass;
+    VkFramebuffer framebuffer;
+
+    // commands.
+    render::scene::CommandBuffer command_context;
+
+    // syncing.
+    render::sync::Fence in_flight_fence;
+    render::sync::Semaphore render_done;
+
+    // methods
+    void on_resize(window::Size size) noexcept {
+        auto [x, y] = size;
+        depth_buffer = create_depth_buffer(x, y, allocator);
+
+        // we also need swapchain native image view for this.
+        // we should learn to abstract this.
+        // recreate renderpass and framebuffer.
+    }
 };
+
+VkRenderPass create_renderpass(
+    render::DeviceContext& context, VkFormat format) noexcept {
+
+    VkAttachmentDescription color_attachment{};
+    color_attachment.format = format;
+    color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+    VkAttachmentDescription depth_attachment{};
+    depth_attachment.format = DEPTH_FORMAT;
+    depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
+    depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    depth_attachment.finalLayout =
+        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+    VkSubpassDependency dependency{};
+    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    dependency.dstSubpass = 0;
+    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.srcAccessMask = 0;
+    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+    VkSubpassDependency depth_dependency = {};
+    depth_dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    depth_dependency.dstSubpass = 0;
+    depth_dependency.srcStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                                    VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+    depth_dependency.srcAccessMask = 0;
+    depth_dependency.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                                    VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+    depth_dependency.dstAccessMask =
+        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+    VkAttachmentReference color_attachment_ref{};
+    color_attachment_ref.attachment = 0;
+    color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    VkAttachmentReference depth_attachment_ref{};
+    depth_attachment_ref.attachment = 1;
+    depth_attachment_ref.layout =
+        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+    VkSubpassDescription subpass{};
+    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpass.colorAttachmentCount = 1;
+    subpass.pColorAttachments = &color_attachment_ref;
+    subpass.pDepthStencilAttachment = &depth_attachment_ref;
+
+    // is this really needed(?)
+    std::array attachments = {color_attachment, depth_attachment};
+    std::array dependencies = {dependency, depth_dependency};
+
+    VkRenderPassCreateInfo renderpass_info{};
+    renderpass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    renderpass_info.attachmentCount = uint32_t(attachments.size());
+    renderpass_info.pAttachments = attachments.data();
+    renderpass_info.subpassCount = 1;
+    renderpass_info.pSubpasses = &subpass;
+    renderpass_info.dependencyCount = uint32_t(dependencies.size());
+    renderpass_info.pDependencies = dependencies.data();
+
+    VkRenderPass renderpass{};
+    VK_EXPECT_SUCCESS(
+        vkCreateRenderPass(context, &renderpass_info, nullptr, &renderpass));
+
+    return renderpass;
+}
+
+void release_renderpass(
+    render::DeviceContext& context, VkRenderPass renderpass) {
+    context.release_device_resource(renderpass);
+}
+
+void init_frame_data(FrameData& frame_data) { (void)frame_data; }
+void release_frame_data(FrameData& frame_data) { (void)frame_data; }
 
 constexpr s32 MAX_FRAMES = 3;
 
@@ -35,31 +170,14 @@ struct PushConstantData {
     glm::mat4 render_matrix;
 };
 
-struct GPUCameraData {
-    glm::mat4 view;
-    glm::mat4 proj;
-    glm::mat4 view_proj;
-};
-
-stdx::expected<std::string, std::runtime_error> read_file(
-    std::string_view filename) noexcept {
-    std::ifstream file{filename.data(), std::ios::ate | std::ios::binary};
-    if (!file.is_open()) {
-        return stdx::unexpected{std::runtime_error("unable to open file!")};
-    }
-
-    const auto file_size = static_cast<u64>(file.tellg());
-    std::string buffer;
-    buffer.resize(file_size);
-    file.seekg(0);
-    file.read(buffer.data(), file_size);
-    file.close();
-    return buffer;
-}
-
 using ShaderBytes = std::vector<u32>;
 
-std::pair<ShaderBytes, ShaderBytes> read_shaders() {
+struct Shaders {
+    ShaderBytes vertex;
+    ShaderBytes fragment;
+};
+
+Shaders read_shaders() {
     render::tools::ShaderCompiler compiler;
     auto vertex_bytes = read_file("static/shaders/test.vert");
     ZOO_ASSERT(vertex_bytes, "vertex shader must have value!");
@@ -82,17 +200,20 @@ std::pair<ShaderBytes, ShaderBytes> read_shaders() {
         spdlog::error("Fragment has error : {}", fragment_spirv.error().what());
     }
 
-    return std::make_pair(std::move(*vertex_spirv), std::move(*fragment_spirv));
+    return {.vertex = std::move(*vertex_spirv),
+        .fragment = std::move(*fragment_spirv)};
 }
 
-void init_frame_data(FrameData& frame_data) { (void)frame_data; }
-
 FrameData& assure_up_to_date(core::Array<FrameData, MAX_FRAMES>& frame_data,
-    render::Swapchain& swapchain) {
+    render::Swapchain& swapchain, render::DeviceContext& context) {
     auto [frame_curr, frame_count] = swapchain.frame_info();
 
+    for (auto i = frame_count; i < frame_data.size(); ++i) {
+        release_frame_data(frame_data[i]);
+    }
+
     if (frame_count != frame_data.size()) {
-        frame_data.resize(frame_count);
+        frame_data.resize(frame_count, context);
     }
 
     for (auto i = frame_data.size(); i < frame_count; ++i) {
@@ -127,50 +248,12 @@ application::ExitStatus main(application::Settings args) noexcept {
             }
         }};
 
-    // const std::vector<render::resources::Vertex> vertices = {
-    //     {{0.0f, -0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-    //     {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-    //     {{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}}};
-
-    const std::vector<render::resources::Vertex> vertices = {
-        {{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-        {{0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-        {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-        {{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}}};
-
-    // we try to use uint32_t for indices
-    const std::vector<u32> indices = {0, 1, 2, 2, 3, 0};
-
     auto [vertex_bytes, fragment_bytes] = read_shaders();
-    auto vertex_buffer =
-        render::resources::Buffer::start_build<render::resources::Vertex>(
-            "entry point vertex buffer")
-            .usage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
-            .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
-            .count(vertices.size())
-            .build(context.allocator());
-
-    vertex_buffer.map<render::resources::Vertex>(
-        [&vertices](render::resources::Vertex* data) {
-            std::copy(std::begin(vertices), std::end(vertices), data);
-        });
-
-    auto index_buffer = render::resources::Buffer::start_build<uint32_t>(
-        "entry point index buffer")
-                            .usage(VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
-                            .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
-                            .count(indices.size())
-                            .build(context.allocator());
-
-    index_buffer.map<uint32_t>([&indices](uint32_t* data) {
-        std::copy(std::begin(indices), std::end(indices), data);
-    });
+    render::Shader vertex_shader{context, vertex_bytes, "main"};
+    render::Shader fragment_shader{context, fragment_bytes, "main"};
 
     render::resources::Mesh mesh{
         context.allocator(), "static/assets/viking_room.obj"};
-
-    render::Shader vertex_shader{context, vertex_bytes, "main"};
-    render::Shader fragment_shader{context, fragment_bytes, "main"};
 
     auto& swapchain = main_window.swapchain();
 
@@ -190,21 +273,20 @@ application::ExitStatus main(application::Settings args) noexcept {
         swapchain.get_viewport_info(), swapchain.get_renderpass(),
         &push_constant};
 
-    const auto& viewport_info = swapchain.get_viewport_info();
-
     PushConstantData push_constant_data{};
-
     auto start_time = std::chrono::high_resolution_clock::now();
 
     while (main_window.is_open()) {
-        [[maybe_unused]] auto& frame = assure_up_to_date(frame_data, swapchain);
+        [[maybe_unused]] auto& frame = assure_up_to_date(frame_data, swapchain, context);
 
         // TODO: add frame data in.
         auto populate_command_ctx = [&](render::scene::CommandBuffer&
                                             command_context,
                                         VkRenderPassBeginInfo renderpass_info) {
+            const auto& viewport_info = swapchain.get_viewport_info();
             command_context.set_viewport(viewport_info.viewport);
             command_context.set_scissor(viewport_info.scissor);
+
             command_context.exec(renderpass_info, [&]() {
                 glm::mat4 view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f),
                     glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));

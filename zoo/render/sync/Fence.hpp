@@ -14,6 +14,7 @@ public:
     underlying_type get() const noexcept { return underlying_; }
     operator underlying_type() const noexcept { return get(); }
 
+    Fence() noexcept;
     Fence(DeviceContext& context) noexcept;
     ~Fence() noexcept;
 
@@ -23,9 +24,12 @@ public:
     Fence(Fence&& other) noexcept;
     Fence& operator=(Fence&& other) noexcept;
 
+    enum Status { signaled, unsignaled, error };
+    Status is_signaled() const noexcept;
+
 private:
-    DeviceContext* context_;
-    underlying_type underlying_;
+    DeviceContext* context_ = nullptr;
+    underlying_type underlying_ = VK_NULL_HANDLE;
 };
 
 } // namespace zoo::render::sync

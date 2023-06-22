@@ -14,6 +14,7 @@ public:
     TextureView(
         const Texture& reference, VkImageViewCreateInfo create_info) noexcept;
 
+    TextureView() = default;
     ~TextureView() noexcept;
 
     void destroy() noexcept;
@@ -30,11 +31,11 @@ public:
     operator VkImageView() const noexcept { return view_; }
 
 private:
-    std::string_view name_;
-    VkDevice device_;
+    std::string_view name_ = "ZOO_UNINITIALIZED_TEXTURE_VIEW";
+    VkDevice device_ = VK_NULL_HANDLE;
 
-    VkImageViewCreateInfo create_info_;
-    VkImageView view_;
+    VkImageViewCreateInfo create_info_ = {};
+    VkImageView view_ = VK_NULL_HANDLE;
 };
 
 namespace texture {
@@ -89,6 +90,9 @@ public:
     explicit Texture(std::string name, VkImage image,
         VkImageCreateInfo create_info, VkDevice device, VmaAllocator allocator,
         VmaAllocation allocation, VmaAllocationInfo allocation_info) noexcept;
+
+    Texture() noexcept = default;
+
     ~Texture() noexcept;
 
     Texture(const Texture& other) noexcept = delete;
@@ -116,15 +120,15 @@ private:
     VkImageViewCreateInfo create_image_view_info() const noexcept;
 
 private:
-    std::string name_;
+    std::string name_ = "ZOO_UNINITIALIZED_TEXTURE";
 
-    VkImage image_;
+    VkImage image_ = VK_NULL_HANDLE;
     VkImageCreateInfo create_info_ = {};
 
-    VkDevice device_;
-    VmaAllocator allocator_;
-    VmaAllocation allocation_;
-    VmaAllocationInfo allocation_info_;
+    VkDevice device_ = VK_NULL_HANDLE;
+    VmaAllocator allocator_ = VK_NULL_HANDLE;
+    VmaAllocation allocation_ = VK_NULL_HANDLE;
+    VmaAllocationInfo allocation_info_ = {};
 
     TextureView view_;
 };
