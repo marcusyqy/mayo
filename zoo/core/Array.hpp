@@ -17,8 +17,10 @@ struct Bucket {
     s32 count{};
 };
 
+// This is a managed array that never resizes.
+// For when we know the maximum size of the array.
 template<typename Type, s32 N>
-struct Array : private Bucket<Type, N> {
+struct Array : public Bucket<Type, N> {
     using self = Bucket<Type, N>;
     using reference = Type&;
     using const_reference = const Type&;

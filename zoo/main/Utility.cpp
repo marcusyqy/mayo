@@ -57,6 +57,6 @@ void populate_vertices(render::DeviceContext& context) {
         std::copy(std::begin(indices), std::end(indices), data);
     });
 }
-}
+} // namespace example
 
 } // namespace zoo

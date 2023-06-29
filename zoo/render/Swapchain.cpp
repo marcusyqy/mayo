@@ -120,7 +120,7 @@ Swapchain::Swapchain(render::Engine& engine, underlying_window_type glfw_window,
                 vkGetPhysicalDeviceSurfaceSupportKHR(context_.physical(),
                     queue_properties.index(), surface_, &is_present_supported);
 
-                if (VK_TRUE == is_present_supported)
+                if (is_present_supported == VK_TRUE)
                     return true;
             }
             return false;
