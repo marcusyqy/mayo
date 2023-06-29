@@ -79,7 +79,6 @@ struct FrameData {
 
 VkRenderPass create_renderpass(
     render::DeviceContext& context, VkFormat format) noexcept {
-
     VkAttachmentDescription color_attachment{};
     color_attachment.format = format;
     color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -229,7 +228,7 @@ application::ExitStatus main(application::Settings args) noexcept {
     // TODO: to make runtime arguments for different stuff.
     (void)args;
 
-    const application::Info app_context{{0, 0, 0}, "Zoo Engine Application"};
+    const application::Info app_context{{0, 0, 0}, "Zoo::Application"};
     const render::engine::Info render_engine_info{app_context, true};
 
     core::Array<FrameData, MAX_FRAMES> frame_data;
@@ -277,7 +276,8 @@ application::ExitStatus main(application::Settings args) noexcept {
     auto start_time = std::chrono::high_resolution_clock::now();
 
     while (main_window.is_open()) {
-        [[maybe_unused]] auto& frame = assure_up_to_date(frame_data, swapchain, context);
+        [[maybe_unused]] auto& frame =
+            assure_up_to_date(frame_data, swapchain, context);
 
         // TODO: add frame data in.
         auto populate_command_ctx = [&](render::scene::CommandBuffer&

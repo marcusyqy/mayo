@@ -66,7 +66,9 @@ public:
     };
 
     FrameInfo frame_info() const noexcept;
+
     s32 num_images() const noexcept;
+    s32 current_image() const noexcept;
 
 private:
     bool create_swapchain_and_resources() noexcept;
