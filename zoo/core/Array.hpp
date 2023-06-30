@@ -21,13 +21,14 @@ struct Bucket {
 // For when we know the maximum size of the array.
 template<typename Type, s32 N>
 struct Array : public Bucket<Type, N> {
+
     using self = Bucket<Type, N>;
     using reference = Type&;
     using const_reference = const Type&;
     using pointer = Type*;
     using const_pointer = const Type*;
-    using size_type = constants::size_type;
-    using index_type = constants::index_type;
+    using size_type = s32;
+    using index_type = s32;
 
     reference operator[](index_type idx) noexcept {
         return const_cast<reference>(std::as_const(*this)[idx]);
@@ -61,15 +62,37 @@ struct Array : public Bucket<Type, N> {
     }
 
     void clear() noexcept {
+        auto storage = std::launder(reinterpret_cast<pointer>(+self::storage));
         for (s32 i = 0; i < self::count; ++i) {
-            std::destroy_at(self::storage + i);
+            std::destroy_at(storage + i);
         }
         self::count = 0;
     }
 
-    Array() noexcept = default;
+    size_type size() const noexcept { return self::count; }
 
+    template<typename... TArgs>
+    void resize(const s32 n, TArgs&&... args) noexcept {
+        ZOO_ASSERT(n <= N,
+            "resize target must at least be lesser or equal to size of Array");
+
+        if (n < self::count) {
+            for (s32 i = n; i < self::count; ++i) {
+                pop();
+            }
+        } else if (n > self::count) {
+            for (s32 i = self::count; i < n; ++i) {
+                emplace(std::forward<TArgs&&>(args)...);
+            }
+        } else {
+            return;
+        }
+        self::count = n;
+    }
+
+public: // all the operators and constructors
     Array(const Array& other) noexcept { *this = other; }
+    Array(Array&& other) noexcept { *this = std::move(other); }
 
     Array& operator=(const Array& other) noexcept {
         auto storage_t = reinterpret_cast<pointer>(+self::storage);
@@ -96,55 +119,79 @@ struct Array : public Bucket<Type, N> {
         return *this;
     }
 
-    size_type size() const noexcept { return self::count; }
-
-    template<typename... TArgs>
-    void resize(const s32 n, TArgs&&... args) noexcept {
-        ZOO_ASSERT(n <= N,
-            "resize target must at least be lesser or equal to size of Array");
-
-        if (n < self::count) {
-            for (s32 i = n; i < self::count; ++i) {
-                pop();
-            }
-        } else if (n > self::count) {
-            for (s32 i = self::count; i < n; ++i) {
-                emplace(std::forward<TArgs&&>(args)...);
-            }
-        } else {
-            return;
-        }
-        self::count = n;
-    }
-
-    // Assumption: For move, the reason why we're memcpy-ing is basically that
-    // we assume the user(me) will not do something stupid so `moving` is
-    // essentially just overwriting the data and clearing the other side's data.
-    // We actually don't have to do any new changes. HOWEVER. If the user(me)
-    // decides to put a pointer to myself and require to update the pointer when
-    // moving. This will create a crash.
-    Array(Array&& other) noexcept {
-        std::memcpy(other.storage, other.storage + other.count, self::storage);
-        self::count = other.count;
-        other.count = 0;
-    }
-
     Array& operator=(Array&& other) noexcept {
-        clear();
+        auto storage_t = reinterpret_cast<pointer>(+self::storage);
+        auto other_storage_t = reinterpret_cast<pointer>(+other.storage);
 
-        std::memcpy(other.storage, other.storage + other.count, self::storage);
+        // NOTE: this looks exactly the same as the copy assignment due to not
+        // wanting any additional overhead when evaluating this kinds of
+        // operator= move each of the variables 1 by 1
+        s32 i = 0;
+        for (; i < self::count && i < other.count; ++i) {
+            storage_t[i] = std::move(other_storage_t[i]);
+        }
+
+        // initialize more
+        for (; i < other.count; ++i) {
+            new (self::storage + i) Type{std::move(other_storage_t[i])};
+        }
+
+        auto laundered = std::launder(storage_t);
+        for (; i < self::count; ++i) {
+            std::destroy_at(laundered + i);
+        }
+
         self::count = other.count;
-        other.count = 0;
+
+        other.clear();
         return *this;
     }
 
+    Array() noexcept = default;
     ~Array() noexcept { clear(); }
 };
 
+// Not ready for use.
 template<typename Type, s32 N>
-struct BucketArray {
+class BucketArray {
     // use a linked list to make the bucket array
-    Bucket<Type, N>* buckets;
+    using BucketT = Bucket<Type, N>;
+    struct BucketNode {
+        BucketT data;
+        BucketNode* next;
+    };
+
+public:
+    void resize(s32 size) noexcept {
+        auto bucket_size = size / N;
+        [[maybe_unused]] auto size_in_bucket = size % N;
+
+        auto* bucket = head;
+        for (s32 i = 0; i < bucket_size; ++i) {
+            if (bucket->next == nullptr) {
+                // allocate.
+            }
+            bucket = bucket->next;
+        }
+    }
+
+    void deinit(BucketT& bucket) {
+        // TODO: fix this!!
+        (void)bucket;
+    }
+
+    ~BucketArray() noexcept {
+        auto bucket = head;
+        while (bucket) {
+            auto b_temp = bucket;
+            bucket = bucket->next;
+            deinit(b_temp->data);
+            delete b_temp;
+        }
+    }
+
+private:
+    BucketNode* head;
     s32 count;
 };
 
