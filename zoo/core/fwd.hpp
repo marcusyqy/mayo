@@ -24,12 +24,6 @@ using u64 = uint64_t;
 using f32 = float;
 using f64 = double;
 
-namespace constants {
-// defines
-using size_type = s32;
-using index_type = size_type;
-} // namespace constants
-
 namespace core {
 
 struct Version {
@@ -42,7 +36,7 @@ namespace engine {
 
 constexpr core::Version version = {0, 0, 0};
 // should i remove this data?
-constexpr std::string_view name = "zoo_engine";
+constexpr std::string_view name = "Zoo Engine";
 
 } // namespace engine
 

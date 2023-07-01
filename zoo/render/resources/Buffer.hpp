@@ -32,6 +32,13 @@ private:
 
 } // namespace buffer
 
+class MappedData {
+public:
+private:
+    void* data;
+    size_t size;
+};
+
 // IDEA: create a buffer descriptor here.
 class Buffer {
 public:
@@ -78,6 +85,7 @@ public:
     inline size_t count() const noexcept { return count_; }
 
 private:
+    // simply for debugging.
     std::string name_;
 
     VkBuffer buffer_;

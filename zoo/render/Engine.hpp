@@ -21,8 +21,7 @@ struct Info {
 } // namespace engine
 
 // this class should be just to query for properties that are related to
-// rendering
-//
+// rendering.
 // all other rendering logic should be in `device_context`
 class Engine {
 public:

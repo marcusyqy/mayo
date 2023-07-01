@@ -44,8 +44,7 @@ DeviceContext::DeviceContext([[maybe_unused]] VkInstance instance,
     //
     // TODO: remove this when proven not to be needed. (only need to be set in
     // VkInstance which is `engine.cpp`)
-    //
-    const char* validation_layer{"VK_LAYER_KHRONOS_validation"};
+    const char* validation_layer = "VK_LAYER_KHRONOS_validation";
     if (query.get_params().validation_) {
         create_info.enabledLayerCount = 1;
         create_info.ppEnabledLayerNames = std::addressof(validation_layer);

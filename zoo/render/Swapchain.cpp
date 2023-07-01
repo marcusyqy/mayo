@@ -77,8 +77,8 @@ VkPresentModeKHR choose_present_mode(const std::vector<VkPresentModeKHR>&
     return VK_PRESENT_MODE_FIFO_KHR;
 }
 
-VkExtent2D choose_extent(const VkSurfaceCapabilitiesKHR& capabilities,
-    window::size_type width, window::size_type height) {
+VkExtent2D choose_extent(
+    const VkSurfaceCapabilitiesKHR& capabilities, s32 width, s32 height) {
     if (capabilities.currentExtent.width !=
         std::numeric_limits<uint32_t>::max()) {
         return capabilities.currentExtent;
@@ -104,7 +104,7 @@ Swapchain::~Swapchain() noexcept {
 }
 //
 Swapchain::Swapchain(render::Engine& engine, underlying_window_type glfw_window,
-    width_type x, width_type y) noexcept
+    s32 x, s32 y) noexcept
     : instance_(engine.vk_instance()), window_(glfw_window),
       context_(engine.context()), sync_objects_{} {
 
@@ -113,7 +113,7 @@ Swapchain::Swapchain(render::Engine& engine, underlying_window_type glfw_window,
         glfwCreateWindowSurface(instance_, window_, nullptr, &surface_));
 
     ZOO_ASSERT(
-        [this]() {
+        [this]() noexcept {
             for (const auto& queue_properties :
                 context_.physical().queue_properties()) {
                 VkBool32 is_present_supported{VK_FALSE};
@@ -161,25 +161,25 @@ bool Swapchain::create_swapchain_and_resources() noexcept {
             description_.capabilities.minImageCount,
             description_.capabilities.maxImageCount);
 
-    VkSwapchainCreateInfoKHR create_info{};
-    create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    create_info.flags = 0;
-    create_info.surface = surface_;
-    create_info.minImageCount = image_count;
-    create_info.imageFormat = description_.surface_format.format;
-    create_info.imageColorSpace = description_.surface_format.colorSpace;
-    create_info.imageExtent = extent;
-    create_info.imageArrayLayers = 1;
-    create_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    create_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    create_info.queueFamilyIndexCount = 0;
-    create_info.pQueueFamilyIndices = nullptr;
-    create_info.preTransform = description_.capabilities.currentTransform;
-    create_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-    create_info.presentMode = description_.present_mode;
-    create_info.clipped = VK_TRUE;
-    create_info.oldSwapchain = underlying_;
-    create_info.pNext = nullptr;
+    VkSwapchainCreateInfoKHR create_info{
+        .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+        .pNext = nullptr,
+        .flags = 0,
+        .surface = surface_,
+        .minImageCount = image_count,
+        .imageFormat = description_.surface_format.format,
+        .imageColorSpace = description_.surface_format.colorSpace,
+        .imageExtent = extent,
+        .imageArrayLayers = 1,
+        .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+        .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
+        .queueFamilyIndexCount = 0,
+        .pQueueFamilyIndices = nullptr,
+        .preTransform = description_.capabilities.currentTransform,
+        .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+        .presentMode = description_.present_mode,
+        .clipped = VK_TRUE,
+        .oldSwapchain = underlying_};
 
     bool failed = false;
     VK_EXPECT_SUCCESS(
@@ -310,7 +310,7 @@ void Swapchain::cleanup_swapchain_and_resources() noexcept {
 }
 
 void Swapchain::resize(
-    [[maybe_unused]] width_type x, [[maybe_unused]] width_type y) noexcept {
+    [[maybe_unused]] s32 x, [[maybe_unused]] s32 y) noexcept {
     should_resize_ = true;
 }
 
@@ -357,7 +357,8 @@ void Swapchain::render(
     renderpass_info.renderPass = renderpass_;
     renderpass_info.framebuffer = framebuffers_[current_frame_];
     renderpass_info.renderArea.offset = {0, 0};
-    renderpass_info.renderArea.extent = {size_.x, size_.y};
+    renderpass_info.renderArea.extent = {
+        static_cast<u32>(size_.x), static_cast<u32>(size_.y)};
     renderpass_info.pNext = nullptr;
 
     const static VkClearValue clear_color = {{{0.1f, 0.1f, 0.1f, 1.0f}}};
@@ -394,7 +395,8 @@ void Swapchain::for_each(
         renderpass_info.renderPass = renderpass_;
         renderpass_info.framebuffer = fb;
         renderpass_info.renderArea.offset = {0, 0};
-        renderpass_info.renderArea.extent = {size_.x, size_.y};
+        renderpass_info.renderArea.extent = {
+            static_cast<u32>(size_.x), static_cast<u32>(size_.y)};
         renderpass_info.pNext = nullptr;
 
         static const VkClearValue clear_color = {{{0.1f, 0.1f, 0.1f, 1.0f}}};
