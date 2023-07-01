@@ -60,11 +60,10 @@ VkInstance create_instance(const engine::Info& info) noexcept {
         create_info.flags = 0;
         create_info.pApplicationInfo = &app_info;
 
-        create_info.enabledLayerCount =
-            static_cast<uint32_t>(enabled_layers.size());
+        create_info.enabledLayerCount = static_cast<u32>(enabled_layers.size());
         create_info.ppEnabledLayerNames = enabled_layers.data();
         create_info.enabledExtensionCount =
-            static_cast<uint32_t>(enabled_extensions.size());
+            static_cast<u32>(enabled_extensions.size());
         create_info.ppEnabledExtensionNames = enabled_extensions.data();
     }
 

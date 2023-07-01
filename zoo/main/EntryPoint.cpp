@@ -40,11 +40,17 @@ render::resources::Texture create_depth_buffer(
         .build(allocator);
 }
 
+struct SyncObjects {
+    render::sync::Semaphore image_avail;
+    render::sync::Semaphore render_done;
+    render::sync::Fence in_flight_fence;
+};
+
 struct FrameData {
 
     FrameData(render::DeviceContext& context) noexcept
         : allocator(context.allocator()), command_context(context),
-          in_flight_fence(context), render_done(context) {}
+          in_flight_fence(context), render_done(context), ready(context) {}
 
     // this is a mess.
     // it should be copyable/movable.
@@ -65,6 +71,7 @@ struct FrameData {
     // syncing.
     render::sync::Fence in_flight_fence;
     render::sync::Semaphore render_done;
+    render::sync::Semaphore ready;
 
     // methods
     void on_resize(window::Size size) noexcept {
@@ -164,6 +171,8 @@ void release_frame_data(FrameData& frame_data) { (void)frame_data; }
 
 constexpr s32 MAX_FRAMES = 3;
 
+using FrameDatas = core::Array<FrameData, MAX_FRAMES>;
+
 struct PushConstantData {
     glm::vec4 data;
     glm::mat4 render_matrix;
@@ -205,6 +214,7 @@ Shaders read_shaders() {
 
 FrameData& assure_up_to_date(core::Array<FrameData, MAX_FRAMES>& frame_data,
     render::Swapchain& swapchain, render::DeviceContext& context) {
+    (void)context;
     auto [frame_curr, frame_count] = swapchain.frame_info();
 
     for (auto i = frame_count; i < frame_data.size(); ++i) {
@@ -225,13 +235,14 @@ FrameData& assure_up_to_date(core::Array<FrameData, MAX_FRAMES>& frame_data,
 } // namespace
 
 application::ExitStatus main(application::Settings args) noexcept {
+
     // TODO: to make runtime arguments for different stuff.
     (void)args;
 
     const application::Info app_context{{0, 0, 0}, "Zoo::Application"};
     const render::engine::Info render_engine_info{app_context, true};
 
-    core::Array<FrameData, MAX_FRAMES> frame_data;
+    FrameDatas frame_data{};
 
     ZOO_LOG_INFO("Starting application");
 
@@ -295,8 +306,8 @@ application::ExitStatus main(application::Settings args) noexcept {
                 projection[1][1] *= -1;
 
                 auto current_time = std::chrono::high_resolution_clock::now();
-                float time =
-                    std::chrono::duration<float, std::chrono::seconds::period>(
+                f32 time =
+                    std::chrono::duration<f32, std::chrono::seconds::period>(
                         current_time - start_time)
                         .count();
 
@@ -323,6 +334,7 @@ application::ExitStatus main(application::Settings args) noexcept {
     // TODO: we can remove this after we find out how to properly tie
     // resources to each frame.
     context.wait();
+    frame_data.clear();
 
     return application::ExitStatus::ok;
 }

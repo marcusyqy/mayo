@@ -5,6 +5,7 @@
 #include "Engine.hpp"
 #include "core/platform/window/Detail.hpp"
 #include "fwd.hpp"
+#include "core/fwd.hpp"
 #include "render/scene/CommandBuffer.hpp"
 #include <cstdint>
 
@@ -20,16 +21,15 @@ class Swapchain {
 public:
     using underlying_type = VkSwapchainKHR;
     using surface_type = VkSurfaceKHR;
-    using width_type = window::size_type;
     using underlying_window_type = GLFWwindow*;
 
     // initialize with the device
-    Swapchain(render::Engine& engine, underlying_window_type glfw_window,
-        width_type x, width_type y) noexcept;
+    Swapchain(render::Engine& engine, underlying_window_type glfw_window, s32 x,
+        s32 y) noexcept;
 
     ~Swapchain() noexcept;
 
-    void resize(width_type x, width_type y) noexcept;
+    void resize(s32 x, s32 y) noexcept;
     void reset() noexcept;
 
     [[nodiscard]] VkFormat format() const noexcept {
@@ -37,7 +37,7 @@ public:
     }
 
     [[nodiscard]] VkExtent2D extent() const noexcept {
-        return {size_.x, size_.y};
+        return {static_cast<u32>(size_.x), static_cast<u32>(size_.y)};
     }
 
     // renderpass& renderpass() noexcept { return renderpass_; }
@@ -90,8 +90,8 @@ private:
     DeviceContext& context_;
 
     struct {
-        width_type x;
-        width_type y;
+        s32 x;
+        s32 y;
     } size_ = {};
 
     struct {

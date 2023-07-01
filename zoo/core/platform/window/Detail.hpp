@@ -17,11 +17,9 @@ namespace zoo {
 class Window;
 namespace window {
 
-using size_type = u32;
-
 struct Size {
-    size_type x;
-    size_type y;
+    s32 x;
+    s32 y;
 };
 
 struct Traits {
