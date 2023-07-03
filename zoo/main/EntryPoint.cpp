@@ -30,7 +30,7 @@ namespace {
 render::resources::Texture load_house_texture(
     u32 x, u32 y, render::resources::Allocator& allocator) noexcept {
     return render::resources::Texture::start_build("House Texture")
-        .format(DEPTH_FORMAT)
+        .format(VK_FORMAT_UNDEFINED)
         .usage(VK_IMAGE_USAGE_SAMPLED_BIT)
         .extent({ x, y, 1 })
         .allocation_type(VMA_MEMORY_USAGE_GPU_ONLY)
@@ -114,8 +114,7 @@ void initialize_persistent_data(
     };
 
     VK_EXPECT_SUCCESS(vkCreateDescriptorSetLayout(context, &set_create_info,
-                          nullptr, &persistent_data.set_layout),
-        "Descriptor Layout could not be created!");
+                          nullptr, &persistent_data.set_layout));
 }
 
 void clear_persistent_data(
