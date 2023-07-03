@@ -1,5 +1,7 @@
 
 #include "Pipeline.hpp"
+#include "core/fwd.hpp"
+
 namespace zoo::render {
 
 namespace {
@@ -112,6 +114,7 @@ Shader::~Shader() noexcept { reset(); }
 Pipeline::Pipeline(DeviceContext& context,
     const ShaderStagesSpecification& specifications,
     const ViewportInfo& viewport_info, const RenderPass& renderpass,
+    stdx::span<BindingDescriptor> binding_descriptors,
     stdx::span<PushConstant> push_constants) noexcept
     : context_(context) {
 
@@ -120,7 +123,8 @@ Pipeline::Pipeline(DeviceContext& context,
     VkPipelineShaderStageCreateInfo shaders_create_info[shader_stages]{};
     {
         VkPipelineShaderStageCreateInfo& vertex_create_info{
-            shaders_create_info[vertex_stage]};
+            shaders_create_info[vertex_stage]
+        };
         vertex_create_info.sType =
             VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         vertex_create_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -129,7 +133,8 @@ Pipeline::Pipeline(DeviceContext& context,
     }
     {
         VkPipelineShaderStageCreateInfo& fragment_create_info{
-            shaders_create_info[fragment_stage]};
+            shaders_create_info[fragment_stage]
+        };
         fragment_create_info.sType =
             VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         fragment_create_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -138,8 +143,8 @@ Pipeline::Pipeline(DeviceContext& context,
             specifications.fragment.entry_point().data();
     }
 
-    VkDynamicState dynamic_states_array[]{
-        VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+    VkDynamicState dynamic_states_array[]{ VK_DYNAMIC_STATE_VIEWPORT,
+        VK_DYNAMIC_STATE_SCISSOR };
 
     VkPipelineDynamicStateCreateInfo dynamic_state{};
     dynamic_state.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
@@ -164,7 +169,6 @@ Pipeline::Pipeline(DeviceContext& context,
     std::vector<VkVertexInputBindingDescription> vk_vertex_input_bind_desc{};
     const auto& vertex_description = specifications.description;
 
-    // TODO: test this out.
     uint32_t binding{};
     for (const auto& desc : vertex_description) {
         for (const auto& buf_desc : desc.buffer_description) {
@@ -188,11 +192,11 @@ Pipeline::Pipeline(DeviceContext& context,
     vertex_input_state_create_info.sType =
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     vertex_input_state_create_info.vertexBindingDescriptionCount =
-        static_cast<uint32_t>(std::size(vk_vertex_input_bind_desc));
+        static_cast<u32>(std::size(vk_vertex_input_bind_desc));
     vertex_input_state_create_info.pVertexBindingDescriptions =
         vk_vertex_input_bind_desc.data();
     vertex_input_state_create_info.vertexAttributeDescriptionCount =
-        static_cast<uint32_t>(std::size(vk_vertex_input_attr_desc));
+        static_cast<u32>(std::size(vk_vertex_input_attr_desc));
     vertex_input_state_create_info.pVertexAttributeDescriptions =
         vk_vertex_input_attr_desc.data();
 

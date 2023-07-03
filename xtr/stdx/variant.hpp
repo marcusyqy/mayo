@@ -89,7 +89,7 @@ public:
         emplace<std::decay_t<T>>(std::forward<T&&>(arg));
     }
 
-    variant() noexcept : idx_(0), args_{0} {}
+    variant() noexcept : idx_(0), args_{ 0 } {}
 
 private:
     size_t idx_ = 0;

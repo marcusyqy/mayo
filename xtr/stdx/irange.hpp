@@ -70,7 +70,7 @@ private:
 
 template<typename I>
 integer_range<I> irange(I begin, I end) noexcept {
-    return {begin, end};
+    return { begin, end };
 }
 
 // TODO: right now we're just assigning the bigger size number into I for

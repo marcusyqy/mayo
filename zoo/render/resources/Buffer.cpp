@@ -46,9 +46,9 @@ Builder::Builder(std::string_view name, size_t size) noexcept {
 Buffer::Buffer(std::string name, VkBuffer buffer, VkBufferUsageFlags usage,
     size_t obj_size, size_t count, VmaAllocator allocator,
     VmaAllocation allocation, VmaAllocationInfo allocation_info) noexcept
-    : name_{name}, buffer_{buffer}, usage_{usage}, obj_size_{obj_size},
-      count_{count}, allocator_{allocator}, allocation_{allocation},
-      allocation_info_{allocation_info} {}
+    : name_{ name }, buffer_{ buffer }, usage_{ usage }, obj_size_{ obj_size },
+      count_{ count }, allocator_{ allocator }, allocation_{ allocation },
+      allocation_info_{ allocation_info } {}
 
 Buffer::~Buffer() noexcept {
     vmaDestroyBuffer(allocator_, buffer_, allocation_);
@@ -56,7 +56,7 @@ Buffer::~Buffer() noexcept {
 
 buffer::Builder Buffer::start_build(
     std::string_view name, size_t size) noexcept {
-    return {name, size};
+    return { name, size };
 }
 
 void* Buffer::map() noexcept {

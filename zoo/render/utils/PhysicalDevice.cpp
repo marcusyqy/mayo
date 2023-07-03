@@ -11,7 +11,7 @@
 namespace zoo::render::utils {
 
 PhysicalDevice::PhysicalDevice(underlying_type underlying) noexcept
-    : underlying_{underlying} {
+    : underlying_{ underlying } {
     query_properties_and_features();
 }
 
@@ -31,7 +31,7 @@ void PhysicalDevice::query_properties_and_features() noexcept {
             std::back_inserter(queue_family_properties_),
             [&idx](
                 const VkQueueFamilyProperties& props) -> QueueFamilyProperties {
-                return {idx++, props};
+                return { idx++, props };
             });
     }
     {

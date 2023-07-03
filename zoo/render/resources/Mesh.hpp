@@ -14,9 +14,10 @@ struct Vertex {
     glm::vec3 pos;
     glm::vec3 normal;
     glm::vec3 color;
+    glm::vec2 uv;
 
     // out of the lack of anywhere else to put this.
-    static std::array<VertexBufferDescription, 3> describe() noexcept;
+    static std::array<VertexBufferDescription, 4> describe() noexcept;
 };
 
 struct MeshData {

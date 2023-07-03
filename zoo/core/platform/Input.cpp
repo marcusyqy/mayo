@@ -315,7 +315,7 @@ input::KeyCode convert(KeyCode value) noexcept {
         break;
     }
 
-    return input::KeyCode{key, action, mod};
+    return input::KeyCode{ key, action, mod };
 }
 
 } // namespace zoo::input::glfw_layer

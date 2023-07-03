@@ -13,8 +13,8 @@ namespace zoo::render {
 
 namespace {
 
-platform::render::Parameters params{true};
-platform::render::Query query{params};
+platform::render::Parameters params{ true };
+platform::render::Query query{ params };
 
 std::optional<size_t> get_queue_index_if_physical_device_is_chosen(
     const render::utils::PhysicalDevice& physical_device,
@@ -27,7 +27,7 @@ std::optional<size_t> get_queue_index_if_physical_device_is_chosen(
     for (const auto& queue_properties : physical_device.queue_properties()) {
         if (queue_properties.has_graphics() &&
             physical_device.has_present(queue_properties, instance))
-            return {index};
+            return { index };
         ++index;
     }
     return std::nullopt;
@@ -38,16 +38,13 @@ uint32_t make_version(core::Version version) noexcept {
 }
 
 VkInstance create_instance(const engine::Info& info) noexcept {
-    VkApplicationInfo app_info{};
-    {
-        app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-        app_info.pNext = nullptr; // for now
-        app_info.pApplicationName = info.app_info.name.c_str();
-        app_info.applicationVersion = make_version(info.app_info.version);
-        app_info.pEngineName = core::engine::name.data();
-        app_info.engineVersion = make_version(core::engine::version);
-        app_info.apiVersion = Defines::vk_version;
-    }
+    VkApplicationInfo app_info{ .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+        .pNext = nullptr, // for now
+        .pApplicationName = info.app_info.name.c_str(),
+        .applicationVersion = make_version(info.app_info.version),
+        .pEngineName = core::engine::name.data(),
+        .engineVersion = make_version(core::engine::version),
+        .apiVersion = Defines::vk_version };
 
     VkInstanceCreateInfo create_info{};
 
@@ -77,7 +74,7 @@ std::vector<utils::PhysicalDevice> populate_physical_devices(
     if (instance == nullptr)
         return {};
 
-    uint32_t device_count = 0;
+    u32 device_count = 0;
     VK_EXPECT_SUCCESS(
         vkEnumeratePhysicalDevices(instance, &device_count, nullptr));
 
@@ -93,7 +90,7 @@ std::vector<utils::PhysicalDevice> populate_physical_devices(
     VK_EXPECT_SUCCESS(
         vkEnumeratePhysicalDevices(instance, &device_count, devices.data()));
 
-    return {std::begin(devices), std::end(devices)};
+    return { std::begin(devices), std::end(devices) };
 }
 
 std::optional<debug::Messenger> create_debugger(
@@ -111,15 +108,15 @@ DeviceContext create_context(VkInstance instance,
             get_queue_index_if_physical_device_is_chosen(pd, instance);
 
         if (optional_index) {
-            return {
-                instance, pd, pd.queue_properties()[*optional_index], query};
+            return { instance, pd, pd.queue_properties()[*optional_index],
+                query };
         }
     }
 
     ZOO_ASSERT(false, "Something went wrong when choosing physical devices");
     // default to first device.
-    return {instance, physical_devices.front(),
-        physical_devices.front().queue_properties()[0], query};
+    return { instance, physical_devices.front(),
+        physical_devices.front().queue_properties()[0], query };
 }
 
 } // namespace

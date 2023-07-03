@@ -35,8 +35,8 @@ void construct() {
 void destruct() { glfwTerminate(); }
 } // namespace detail
 
-const core::wrappers::Initializer<> initializer{
-    detail::construct, detail::destruct};
+const core::wrappers::Initializer<> initializer{ detail::construct,
+    detail::destruct };
 
 } // namespace
 

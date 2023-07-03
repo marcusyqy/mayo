@@ -45,8 +45,8 @@ public:
     }
 
 private:
-    FunctionPtr on_construct_{nullptr};
-    FunctionPtr on_destruct_{nullptr};
+    FunctionPtr on_construct_{ nullptr };
+    FunctionPtr on_destruct_{ nullptr };
     std::tuple<Ts...> data_{};
 };
 

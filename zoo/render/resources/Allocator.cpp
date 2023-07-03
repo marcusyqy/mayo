@@ -4,7 +4,7 @@
 
 namespace zoo::render::resources {
 
-Allocator::Allocator() noexcept : underlying_{nullptr} {}
+Allocator::Allocator() noexcept : underlying_{ nullptr } {}
 
 Allocator::~Allocator() noexcept {
     if (underlying_ != nullptr)

@@ -8,10 +8,10 @@ namespace zoo {
 
 Window::Window(render::Engine& engine, const window::Traits& traits,
     window::InputCallback callback) noexcept
-    : traits_{traits}, callback_{std::move(callback)},
-      impl_{glfwCreateWindow(
-          traits_.size.x, traits_.size.y, traits_.name.data(), NULL, NULL)},
-      context_set_{false},
+    : traits_{ traits }, callback_{ std::move(callback) },
+      impl_{ glfwCreateWindow(
+          traits_.size.x, traits_.size.y, traits_.name.data(), NULL, NULL) },
+      context_set_{ false },
       swapchain_(engine, impl_, traits_.size.x, traits_.size.y) {
 
     glfwSetWindowUserPointer(impl_, this);
@@ -21,7 +21,7 @@ Window::Window(render::Engine& engine, const window::Traits& traits,
             static_cast<Window*>(glfwGetWindowUserPointer(glfw_window));
         self->callback_(*self,
             input::glfw_layer::convert(
-                input::glfw_layer::KeyCode{key, scancode, action, mods}));
+                input::glfw_layer::KeyCode{ key, scancode, action, mods }));
     });
 
     glfwSetFramebufferSizeCallback(impl_,

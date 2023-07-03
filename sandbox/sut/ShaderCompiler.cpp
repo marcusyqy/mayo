@@ -17,9 +17,9 @@ ShaderCompiler::compile(const ShaderWork& work) noexcept {
     options.SetOptimizationLevel(shaderc_optimization_level_performance);
 
     if (module.GetCompilationStatus() != shaderc_compilation_status_success) {
-        return stdx::unexpected{std::runtime_error(module.GetErrorMessage())};
+        return stdx::unexpected{ std::runtime_error(module.GetErrorMessage()) };
     }
 
-    return std::vector<uint32_t>{module.cbegin(), module.cend()};
+    return std::vector<uint32_t>{ module.cbegin(), module.cend() };
 }
 } // namespace sut

@@ -34,7 +34,7 @@ struct Version {
 
 namespace engine {
 
-constexpr core::Version version = {0, 0, 0};
+constexpr core::Version version = { 0, 0, 0 };
 // should i remove this data?
 constexpr std::string_view name = "Zoo Engine";
 

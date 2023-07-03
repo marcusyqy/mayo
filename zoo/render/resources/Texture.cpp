@@ -67,6 +67,7 @@ Builder& Builder::usage(VkImageUsageFlags usage) noexcept {
     usage_flags_ = usage;
     return *this;
 }
+
 Builder& Builder::type(VkImageType type) noexcept {
     image_type_ = type;
     return *this;
@@ -116,8 +117,8 @@ Texture Builder::build(const Allocator& allocator) noexcept {
     VK_EXPECT_SUCCESS(vmaCreateImage(
         allocator, &info, &alloc_info, &image, &allocation, &allocation_info_));
 
-    return Texture{name_, image, info, allocator.device(), allocator,
-        allocation, allocation_info_};
+    return Texture{ name_, image, info, allocator.device(), allocator,
+        allocation, allocation_info_ };
 }
 
 } // namespace texture
@@ -185,7 +186,7 @@ VkImageViewCreateInfo Texture::create_image_view_info() const noexcept {
     return info;
 }
 Texture::builder_type Texture::start_build(std::string_view name) noexcept {
-    return {name};
+    return { name };
 }
 
 TextureView& Texture::view() noexcept { return view_; }

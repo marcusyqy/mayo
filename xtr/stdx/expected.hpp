@@ -48,18 +48,19 @@ public:
     using unexpected_type = unexpected<error_type>;
 
     // constructors
-    constexpr expected() : value_{error_type()} {}
-    constexpr expected(const ValueType& value) : value_{value} {}
-    constexpr expected(ValueType&& value) : value_{std::move(value)} {}
+    constexpr expected() : value_{ error_type() } {}
+    constexpr expected(const ValueType& value) : value_{ value } {}
+    constexpr expected(ValueType&& value) : value_{ std::move(value) } {}
     // constexpr expected(unexpected_type&& ut) : value_{std::move(ut.error())}
     // {}
 
     template<typename OtherError>
-    constexpr expected(const unexpected<OtherError>& ut) : value_{ut.error()} {}
+    constexpr expected(const unexpected<OtherError>& ut)
+        : value_{ ut.error() } {}
 
     template<typename OtherError>
     constexpr expected(unexpected<OtherError>&& ut)
-        : value_{std::move(ut.error())} {}
+        : value_{ std::move(ut.error()) } {}
 
     constexpr expected(const expected& other) : value_(other.value_) {}
     constexpr expected(expected&& other) : value_(std::move(other.value_)) {}
@@ -146,8 +147,5 @@ public:
 private:
     std::variant<value_type, error_type> value_;
 };
-
-// TODO : write (expect) function so that we can still code that throws but
-// wraps it into an expected call instead
 
 } // namespace stdx

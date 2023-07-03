@@ -22,7 +22,7 @@ struct Info {
 
 // this class should be just to query for properties that are related to
 // rendering.
-// all other rendering logic should be in `device_context`
+// all other rendering logic should be in `DeviceContext`
 class Engine {
 public:
     using Info = engine::Info;
@@ -51,10 +51,6 @@ public:
 
     DeviceContext& context() noexcept { return context_; }
     const DeviceContext& context() const noexcept { return context_; }
-
-private:
-    void initialize() noexcept;
-    void cleanup() noexcept;
 
 private:
     Info info_;

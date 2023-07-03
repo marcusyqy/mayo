@@ -8,9 +8,9 @@
 
 stdx::expected<std::string, std::runtime_error> read_file(
     std::string_view filename) noexcept {
-    std::ifstream file{filename.data(), std::ios::ate | std::ios::binary};
+    std::ifstream file{ filename.data(), std::ios::ate | std::ios::binary };
     if (!file.is_open()) {
-        return stdx::unexpected{std::runtime_error("unable to open file!")};
+        return stdx::unexpected{ std::runtime_error("unable to open file!") };
     }
 
     const std::size_t file_size = static_cast<size_t>(file.tellg());
@@ -31,10 +31,10 @@ int main() {
 
     sut::ShaderCompiler compiler{};
 
-    sut::ShaderWork vert_shader{
-        shaderc_glsl_vertex_shader, "vertex shader", *vertex_bytes};
-    sut::ShaderWork frag_shader{
-        shaderc_glsl_fragment_shader, "fragment shader", *fragment_bytes};
+    sut::ShaderWork vert_shader{ shaderc_glsl_vertex_shader, "vertex shader",
+        *vertex_bytes };
+    sut::ShaderWork frag_shader{ shaderc_glsl_fragment_shader,
+        "fragment shader", *fragment_bytes };
 
     auto vertex_spirv = compiler.compile(vert_shader);
     auto fragment_spirv = compiler.compile(frag_shader);

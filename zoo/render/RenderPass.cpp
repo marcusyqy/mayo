@@ -61,8 +61,8 @@ VkRenderPass create_vk_renderpass(
     subpass.pDepthStencilAttachment = &depth_attachment_ref;
 
     // is this really needed(?)
-    std::array attachments = {color_attachment, depth_attachment};
-    std::array dependencies = {dependency, depth_dependency};
+    std::array attachments = { color_attachment, depth_attachment };
+    std::array dependencies = { dependency, depth_dependency };
 
     VkRenderPassCreateInfo renderpass_info{};
     renderpass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;

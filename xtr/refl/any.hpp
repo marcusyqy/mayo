@@ -32,13 +32,13 @@ struct static_info {
     static constexpr auto copy_constructor = [](void* ptr,
                                                  void* other) -> void* {
         return new (std::launder(reinterpret_cast<Type*>(ptr)))
-            Type{*(static_cast<Type*>(other))};
+            Type{ *(static_cast<Type*>(other)) };
     };
 
     static constexpr auto move_constructor = [](void* ptr,
                                                  void* other) -> void* {
         return new (std::launder(reinterpret_cast<Type*>(ptr)))
-            Type{std::move(*(static_cast<Type*>(other)))};
+            Type{ std::move(*(static_cast<Type*>(other))) };
     };
 
     static constexpr auto destructor = [](void* ptr) {
@@ -46,8 +46,8 @@ struct static_info {
     };
 
     static erase_info to_erase_info() noexcept {
-        return {alignment, size, default_constructor, copy_constructor,
-            move_constructor, destructor};
+        return { alignment, size, default_constructor, copy_constructor,
+            move_constructor, destructor };
     }
 
     operator erase_info() const noexcept { return to_erase_info(); }

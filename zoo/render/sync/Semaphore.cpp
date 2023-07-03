@@ -17,7 +17,7 @@ VkSemaphore create_semaphore(VkDevice device) noexcept {
 } // namespace
 
 Semaphore::Semaphore(DeviceContext& context) noexcept
-    : context_{std::addressof(context)},
+    : context_{ std::addressof(context) },
       underlying_(create_semaphore(context)) {}
 
 Semaphore::~Semaphore() noexcept {

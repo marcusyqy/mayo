@@ -27,151 +27,28 @@ namespace zoo {
 
 namespace {
 
-static constexpr VkFormat DEPTH_FORMAT = VK_FORMAT_D32_SFLOAT;
-
-render::resources::Texture create_depth_buffer(
+render::resources::Texture load_house_texture(
     u32 x, u32 y, render::resources::Allocator& allocator) noexcept {
-    return render::resources::Texture::start_build("DepthBufferSwapchain")
+    return render::resources::Texture::start_build("House Texture")
         .format(DEPTH_FORMAT)
-        .usage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
-        .extent({x, y, 1})
+        .usage(VK_IMAGE_USAGE_SAMPLED_BIT)
+        .extent({ x, y, 1 })
         .allocation_type(VMA_MEMORY_USAGE_GPU_ONLY)
         .allocation_required_flags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
         .build(allocator);
 }
 
-struct SyncObjects {
-    render::sync::Semaphore image_avail;
-    render::sync::Semaphore render_done;
-    render::sync::Fence in_flight_fence;
+struct FrameData {};
+
+// lazy
+struct PersistentData {
+    VkDescriptorPool pool;
+    VkDescriptorSetLayout set_layout;
 };
-
-struct FrameData {
-
-    FrameData(render::DeviceContext& context) noexcept
-        : allocator(context.allocator()), command_context(context),
-          in_flight_fence(context), render_done(context), ready(context) {}
-
-    // this is a mess.
-    // it should be copyable/movable.
-    FrameData(const FrameData& o) = delete;
-    FrameData& operator=(const FrameData& o) = delete;
-    FrameData(FrameData&& o) = delete;
-    FrameData& operator=(FrameData&& o) = delete;
-
-    // render target(s).
-    render::resources::Allocator& allocator;
-    render::resources::Texture depth_buffer;
-    render::RenderPass renderpass;
-    VkFramebuffer framebuffer;
-
-    // commands.
-    render::scene::CommandBuffer command_context;
-
-    // syncing.
-    render::sync::Fence in_flight_fence;
-    render::sync::Semaphore render_done;
-    render::sync::Semaphore ready;
-
-    // methods
-    void on_resize(window::Size size) noexcept {
-        auto [x, y] = size;
-        depth_buffer = create_depth_buffer(x, y, allocator);
-
-        // we also need swapchain native image view for this.
-        // we should learn to abstract this.
-        // recreate renderpass and framebuffer.
-    }
-};
-
-VkRenderPass create_renderpass(
-    render::DeviceContext& context, VkFormat format) noexcept {
-    VkAttachmentDescription color_attachment{};
-    color_attachment.format = format;
-    color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-    color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-    VkAttachmentDescription depth_attachment{};
-    depth_attachment.format = DEPTH_FORMAT;
-    depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-    depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    depth_attachment.finalLayout =
-        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-    VkSubpassDependency dependency{};
-    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-    dependency.dstSubpass = 0;
-    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependency.srcAccessMask = 0;
-    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-    VkSubpassDependency depth_dependency = {};
-    depth_dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-    depth_dependency.dstSubpass = 0;
-    depth_dependency.srcStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
-                                    VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-    depth_dependency.srcAccessMask = 0;
-    depth_dependency.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
-                                    VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
-    depth_dependency.dstAccessMask =
-        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-
-    VkAttachmentReference color_attachment_ref{};
-    color_attachment_ref.attachment = 0;
-    color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-    VkAttachmentReference depth_attachment_ref{};
-    depth_attachment_ref.attachment = 1;
-    depth_attachment_ref.layout =
-        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-    VkSubpassDescription subpass{};
-    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpass.colorAttachmentCount = 1;
-    subpass.pColorAttachments = &color_attachment_ref;
-    subpass.pDepthStencilAttachment = &depth_attachment_ref;
-
-    // is this really needed(?)
-    std::array attachments = {color_attachment, depth_attachment};
-    std::array dependencies = {dependency, depth_dependency};
-
-    VkRenderPassCreateInfo renderpass_info{};
-    renderpass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    renderpass_info.attachmentCount = uint32_t(attachments.size());
-    renderpass_info.pAttachments = attachments.data();
-    renderpass_info.subpassCount = 1;
-    renderpass_info.pSubpasses = &subpass;
-    renderpass_info.dependencyCount = uint32_t(dependencies.size());
-    renderpass_info.pDependencies = dependencies.data();
-
-    VkRenderPass renderpass{};
-    VK_EXPECT_SUCCESS(
-        vkCreateRenderPass(context, &renderpass_info, nullptr, &renderpass));
-
-    return renderpass;
-}
-
-void release_renderpass(
-    render::DeviceContext& context, VkRenderPass renderpass) {
-    context.release_device_resource(renderpass);
-}
-
-void init_frame_data(FrameData& frame_data) { (void)frame_data; }
-void release_frame_data(FrameData& frame_data) { (void)frame_data; }
 
 constexpr s32 MAX_FRAMES = 3;
 
-using FrameDatas = core::Array<FrameData, MAX_FRAMES>;
+using FrameDatas = FrameData[MAX_FRAMES];
 
 struct PushConstantData {
     glm::vec4 data;
@@ -187,16 +64,16 @@ struct Shaders {
 
 Shaders read_shaders() {
     render::tools::ShaderCompiler compiler;
-    auto vertex_bytes = read_file("static/shaders/test.vert");
+    auto vertex_bytes = read_file("static/shaders/Test.vert");
     ZOO_ASSERT(vertex_bytes, "vertex shader must have value!");
-    auto fragment_bytes = read_file("static/shaders/test.frag");
+    auto fragment_bytes = read_file("static/shaders/Test.frag");
     ZOO_ASSERT(fragment_bytes, "fragment shader must have value!");
 
-    render::tools::ShaderWork vertex_work{
-        shaderc_vertex_shader, "Test.vert", *vertex_bytes};
+    render::tools::ShaderWork vertex_work{ shaderc_vertex_shader, "Test.vert",
+        *vertex_bytes };
 
-    render::tools::ShaderWork fragment_work{
-        shaderc_fragment_shader, "Test.frag", *fragment_bytes};
+    render::tools::ShaderWork fragment_work{ shaderc_fragment_shader,
+        "Test.frag", *fragment_bytes };
 
     auto vertex_spirv = compiler.compile(vertex_work);
     auto fragment_spirv = compiler.compile(fragment_work);
@@ -208,30 +85,45 @@ Shaders read_shaders() {
         spdlog::error("Fragment has error : {}", fragment_spirv.error().what());
     }
 
-    return {.vertex = std::move(*vertex_spirv),
-        .fragment = std::move(*fragment_spirv)};
+    return { .vertex = std::move(*vertex_spirv),
+        .fragment = std::move(*fragment_spirv) };
 }
 
-FrameData& assure_up_to_date(core::Array<FrameData, MAX_FRAMES>& frame_data,
-    render::Swapchain& swapchain, render::DeviceContext& context) {
-    (void)context;
-    auto [frame_curr, frame_count] = swapchain.frame_info();
+// primitive style and not oop because i just want to make this work now.
+void initialize_frame_data(FrameDatas& frame_datas,
+    render::DeviceContext& context, PersistentData& persistent_data) noexcept {}
 
-    for (auto i = frame_count; i < frame_data.size(); ++i) {
-        release_frame_data(frame_data[i]);
-    }
+void clear_frame_data(
+    render::DeviceContext& context, FrameDatas& datas) noexcept {}
 
-    if (frame_count != frame_data.size()) {
-        frame_data.resize(frame_count, context);
-    }
+// primitive style and not oop because i just want to make this work now.
+void initialize_persistent_data(
+    PersistentData& persistent_data, render::DeviceContext& context) noexcept {
+    VkDescriptorSetLayoutBinding binding_0 = {};
+    binding_0.binding = 0;
+    binding_0.descriptorCount = 1;
+    binding_0.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    binding_0.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-    for (auto i = frame_data.size(); i < frame_count; ++i) {
-        // create
-        init_frame_data(frame_data[i]);
-    }
+    VkDescriptorSetLayoutCreateInfo set_create_info = {
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .bindingCount = 1,
+        .pBindings = &binding_0
+    };
 
-    return frame_data[frame_curr];
+    VK_EXPECT_SUCCESS(vkCreateDescriptorSetLayout(context, &set_create_info,
+                          nullptr, &persistent_data.set_layout),
+        "Descriptor Layout could not be created!");
 }
+
+void clear_persistent_data(
+    render::DeviceContext& context, PersistentData& datas) noexcept {
+    // NOTE: not going to care if we have a null ( ? )
+    vkDestroyDescriptorSetLayout(context, datas.set_layout, nullptr);
+}
+
 } // namespace
 
 application::ExitStatus main(application::Settings args) noexcept {
@@ -239,57 +131,71 @@ application::ExitStatus main(application::Settings args) noexcept {
     // TODO: to make runtime arguments for different stuff.
     (void)args;
 
-    const application::Info app_context{{0, 0, 0}, "Zoo::Application"};
-    const render::engine::Info render_engine_info{app_context, true};
-
-    FrameDatas frame_data{};
+    const application::Info app_context{ { 0, 0, 0 }, "Zoo::Application" };
+    const render::engine::Info render_engine_info{ app_context, true };
 
     ZOO_LOG_INFO("Starting application");
 
-    render::Engine render_engine{render_engine_info};
+    render::Engine render_engine{ render_engine_info };
     auto& context = render_engine.context();
     // TODO: I think we should just merge swapchain and window
-    Window main_window{render_engine,
-        window::Traits{window::Size{1280, 960}, false, "zoo"},
+    Window main_window{ render_engine,
+        window::Traits{ window::Size{ 1280, 960 }, false, "Zoo" },
         [](Window& win, input::KeyCode keycode) {
             if (keycode.key_ == input::Key::escape &&
                 keycode.action_ == input::Action::pressed) {
                 win.close();
             }
-        }};
+        } };
 
     auto [vertex_bytes, fragment_bytes] = read_shaders();
-    render::Shader vertex_shader{context, vertex_bytes, "main"};
-    render::Shader fragment_shader{context, fragment_bytes, "main"};
+    render::Shader vertex_shader{ context, vertex_bytes, "main" };
+    render::Shader fragment_shader{ context, fragment_bytes, "main" };
 
-    render::resources::Mesh mesh{
-        context.allocator(), "static/assets/viking_room.obj"};
+    render::resources::Mesh mesh{ context.allocator(),
+        "static/assets/viking_room.obj" };
 
     auto& swapchain = main_window.swapchain();
 
     auto buffer_description = render::resources::Vertex::describe();
-    std::array vertex_description = {
-        render::VertexInputDescription{sizeof(render::resources::Vertex),
-            buffer_description, VK_VERTEX_INPUT_RATE_VERTEX}};
+    std::array vertex_description = { render::VertexInputDescription{
+        sizeof(render::resources::Vertex), buffer_description,
+        VK_VERTEX_INPUT_RATE_VERTEX } };
 
     render::PushConstant push_constant{};
     push_constant.size = sizeof(PushConstantData);
     push_constant.offset = 0;
     push_constant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-    render::Pipeline pipeline{context,
+    // TODO: find a way to abstract binding descriptors + pool and allow adding
+    // them into pipeline. probably by creating a descriptor pool to be passed
+    // into the pipeline that has the layout and some additional stuff. see
+    // Pipeline.hpp description for more information.
+    render::BindingDescriptor binding_descriptor = {
+        .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+        .count = 1,
+        .stage = VK_SHADER_STAGE_VERTEX_BIT
+    };
+
+    render::Pipeline pipeline{ context,
         render::ShaderStagesSpecification{
-            vertex_shader, fragment_shader, vertex_description},
-        swapchain.get_viewport_info(), swapchain.get_renderpass(),
-        &push_constant};
+            vertex_shader, fragment_shader, vertex_description },
+        swapchain.get_viewport_info(),
+        // TODO: this needs to change to a normal renderpass type that can be
+        // accessed from the outside AND created AND configured outside.
+        swapchain.get_renderpass(), &binding_descriptor, &push_constant };
 
     PushConstantData push_constant_data{};
     auto start_time = std::chrono::high_resolution_clock::now();
 
-    while (main_window.is_open()) {
-        [[maybe_unused]] auto& frame =
-            assure_up_to_date(frame_data, swapchain, context);
+    // laziness
+    FrameDatas frame_datas = {};
+    PersistentData persistent_data = {};
 
+    initialize_persistent_data(persistent_data, context);
+    initialize_frame_data(frame_datas, context, persistent_data);
+
+    while (main_window.is_open()) {
         // TODO: add frame data in.
         auto populate_command_ctx = [&](render::scene::CommandBuffer&
                                             command_context,
@@ -311,7 +217,7 @@ application::ExitStatus main(application::Settings args) noexcept {
                         current_time - start_time)
                         .count();
 
-                glm::mat4 model = glm::rotate(glm::mat4{1.0f},
+                glm::mat4 model = glm::rotate(glm::mat4{ 1.0f },
                     time * glm::radians(90.0f), glm::vec3(0, 0, 1));
 
                 // calculate final mesh matrix
@@ -334,7 +240,8 @@ application::ExitStatus main(application::Settings args) noexcept {
     // TODO: we can remove this after we find out how to properly tie
     // resources to each frame.
     context.wait();
-    frame_data.clear();
+    clear_persistent_data(context, persistent_data);
+    clear_frame_data(context, frame_datas);
 
     return application::ExitStatus::ok;
 }

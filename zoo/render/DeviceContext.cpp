@@ -5,7 +5,7 @@
 
 namespace zoo::render {
 namespace {
-const char* device_extension{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+const char* device_extension{ VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
 } // namespace
 
@@ -16,7 +16,7 @@ DeviceContext::DeviceContext([[maybe_unused]] VkInstance instance,
     utils::PhysicalDevice pdevice,
     const utils::QueueFamilyProperties& family_props,
     const platform::render::Query& query) noexcept
-    : physical_(pdevice), queue_properties_{family_props} {
+    : physical_(pdevice), queue_properties_{ family_props } {
 
     // https://vulkan-tutorial.com/en/Drawing_a_triangle/Setup/Logical_device_and_queues
     VkDeviceQueueCreateInfo queue_create_info{};
@@ -139,6 +139,8 @@ VkQueue DeviceContext::retrieve(Operation op) const noexcept {
 
     switch (op) {
     case Operation::graphics:
+        [[fallthrough]];
+    case Operation::transfer:
         [[fallthrough]];
     case Operation::present:
         return queue_;

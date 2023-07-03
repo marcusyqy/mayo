@@ -3,9 +3,9 @@
 
 #include "DeviceContext.hpp"
 #include "Engine.hpp"
+#include "core/fwd.hpp"
 #include "core/platform/window/Detail.hpp"
 #include "fwd.hpp"
-#include "core/fwd.hpp"
 #include "render/scene/CommandBuffer.hpp"
 #include <cstdint>
 
@@ -37,7 +37,7 @@ public:
     }
 
     [[nodiscard]] VkExtent2D extent() const noexcept {
-        return {static_cast<u32>(size_.x), static_cast<u32>(size_.y)};
+        return { static_cast<u32>(size_.x), static_cast<u32>(size_.y) };
     }
 
     // renderpass& renderpass() noexcept { return renderpass_; }
@@ -60,6 +60,7 @@ public:
             exec) noexcept;
 
     // TODO: remove when "abstracted"
+    // do we need to abstract this ?
     struct FrameInfo {
         s32 current;
         s32 count;
@@ -107,17 +108,17 @@ private:
     };
 
     // frame specific stuff
-    dyn_array<VkImage> images_;
-    dyn_array<resources::Texture> depth_buffers_;
-    dyn_array<SyncObjects> sync_objects_;
+    std::vector<VkImage> images_;
+    std::vector<resources::Texture> depth_buffers_;
+    std::vector<SyncObjects> sync_objects_;
     size_t current_sync_objects_index_ = {};
 
-    dyn_array<VkImageView> views_;
-    dyn_array<VkFramebuffer> framebuffers_;
-    dyn_array<render::scene::CommandBuffer> command_buffers_;
+    std::vector<VkImageView> views_;
+    std::vector<VkFramebuffer> framebuffers_;
+    std::vector<render::scene::CommandBuffer> command_buffers_;
     RenderPass renderpass_; // has a default renderpass in swapchain
 
-    u32 current_frame_ = 0; // TODO: change this
+    u32 current_frame_ = 0;
     bool should_resize_ = false;
     static constexpr VkFormat DEPTH_FORMAT_ = VK_FORMAT_D32_SFLOAT;
 };

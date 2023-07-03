@@ -36,12 +36,13 @@ PipelineBindContext::PipelineBindContext(VkCommandBuffer cmd_buffer,
       pipeline_layout_(pipeline_layout) {}
 
 CommandBuffer::CommandBuffer(DeviceContext& context) noexcept
-    : context_{std::addressof(context)},
-      underlying_{context_->vk_command_buffer_from_pool()} {}
+    : context_{ std::addressof(context) }, underlying_{
+          context_->vk_command_buffer_from_pool()
+      } {}
 
 CommandBuffer::CommandBuffer(CommandBuffer&& other) noexcept
-    : context_{std::move(other.context_)}, underlying_{
-                                               std::move(other.underlying_)} {
+    : context_{ std::move(other.context_) }, underlying_{ std::move(
+                                                 other.underlying_) } {
     other.reset();
 }
 
@@ -113,7 +114,7 @@ void CommandBuffer::draw_indexed(uint32_t instance_count, uint32_t first_index,
 PipelineBindContext CommandBuffer::bind_pipeline(
     const render::Pipeline& pipeline) noexcept {
     vkCmdBindPipeline(underlying_, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-    return {underlying_, pipeline.get(), pipeline.layout()};
+    return { underlying_, pipeline.get(), pipeline.layout() };
 }
 
 void CommandBuffer::bind_vertex_buffers(

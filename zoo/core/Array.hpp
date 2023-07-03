@@ -8,6 +8,17 @@
 
 namespace zoo::core {
 
+struct DefaultAllocator {
+    static DefaultAllocator& get_instance() noexcept {
+        static DefaultAllocator instance;
+        return instance;
+    }
+
+    void* alloc(s32 size, s32 alignment) noexcept;
+
+    void free(void* memory) noexcept;
+};
+
 template<typename Type, s32 N>
 struct Bucket {
     using uninitialized_type = stdx::typed_aligned_storage_t<Type>;
@@ -51,7 +62,8 @@ struct Array : public Bucket<Type, N> {
             "Seems like the current index has gone way past "
             "the storage size? If you require some sort of "
             "dynamic array you consider BucketArray.");
-        new (self::storage + self::count++) Type{std::forward<Args&&>(args)...};
+        new (self::storage + self::count++)
+            Type{ std::forward<Args&&>(args)... };
     }
 
     void pop() noexcept {
@@ -106,7 +118,7 @@ public: // all the operators and constructors
 
         // initialize more
         for (; i < other.count; ++i) {
-            new (self::storage + i) Type{other_storage_t[i]};
+            new (self::storage + i) Type{ other_storage_t[i] };
         }
 
         auto laundered = std::launder(storage_t);
@@ -133,7 +145,7 @@ public: // all the operators and constructors
 
         // initialize more
         for (; i < other.count; ++i) {
-            new (self::storage + i) Type{std::move(other_storage_t[i])};
+            new (self::storage + i) Type{ std::move(other_storage_t[i]) };
         }
 
         auto laundered = std::launder(storage_t);
@@ -149,6 +161,43 @@ public: // all the operators and constructors
 
     Array() noexcept = default;
     ~Array() noexcept { clear(); }
+};
+
+template<typename T, typename Allocator = DefaultAllocator>
+class AllocatedArray {
+public:
+    T* data() noexcept { return data_; }
+    const T* data() const noexcept { return data_; }
+
+    s32 size() const noexcept { return size_; }
+
+    template<typename... Args>
+    AllocatedArray(s32 size, Allocator& allocator, Args&&... args) noexcept
+        : allocator_(&allocator),
+          data_(new(allocator_->allocate(sizeof(T) * size, alignof(T)))
+                  T{ std::forward<Args&&>(args)... }),
+          size_(size) {}
+
+    template<typename... Args>
+    AllocatedArray(s32 size, Args&&... args) noexcept
+        : AllocatedArray(
+              size, Allocator::get_instance(), std::forward<Args&&>(args)...) {}
+
+    ~AllocatedArray() noexcept {
+        if (data_ != nullptr && size_ != 0)
+            allocator_->free(data_);
+    }
+
+    AllocatedArray& operator=(const AllocatedArray& other) noexcept {}
+    AllocatedArray(const AllocatedArray& other) noexcept {}
+    AllocatedArray& operator=(AllocatedArray&& other) noexcept {}
+    AllocatedArray(AllocatedArray&& other) noexcept {}
+
+private:
+    Allocator* allocator_;
+
+    T* data_;
+    s32 size_;
 };
 
 // Not ready for use.

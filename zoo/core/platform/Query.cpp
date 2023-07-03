@@ -8,7 +8,7 @@
 
 namespace zoo::platform::render {
 
-Query::Query(Parameters parameters) noexcept : parameters_{parameters} {}
+Query::Query(Parameters parameters) noexcept : parameters_{ parameters } {}
 
 info Query::get_info() const noexcept {
     info info{};
@@ -35,7 +35,7 @@ std::vector<const char*> Query::get_extensions() const noexcept {
 
 std::vector<const char*> Query::get_layers() const noexcept {
     if (parameters_.validation_) {
-        const char* validation_layer{"VK_LAYER_KHRONOS_validation"};
+        const char* validation_layer{ "VK_LAYER_KHRONOS_validation" };
         uint32_t layer_count;
         vkEnumerateInstanceLayerProperties(&layer_count, nullptr);
         std::vector<VkLayerProperties> available_layers(
@@ -45,7 +45,7 @@ std::vector<const char*> Query::get_layers() const noexcept {
 
         for (const auto& available_layer : available_layers) {
             if (strcmp(validation_layer, available_layer.layerName)) {
-                return std::vector<const char*>{validation_layer};
+                return std::vector<const char*>{ validation_layer };
             }
         }
     }

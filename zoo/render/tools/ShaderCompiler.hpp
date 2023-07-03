@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/fwd.hpp"
 #include "stdx/expected.hpp"
 #include "stdx/span.hpp"
 #include <shaderc/shaderc.hpp>
@@ -22,7 +23,7 @@ struct ShaderWork {
 class ShaderCompiler {
 public:
     using define_type = ShaderDefType;
-    stdx::expected<std::vector<uint32_t>, std::runtime_error> compile(
+    stdx::expected<std::vector<u32>, std::runtime_error> compile(
         const ShaderWork& work) noexcept;
 
 private:

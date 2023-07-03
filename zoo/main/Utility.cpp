@@ -9,9 +9,9 @@ namespace zoo {
 
 stdx::expected<std::string, std::runtime_error> read_file(
     std::string_view filename) noexcept {
-    std::ifstream file{filename.data(), std::ios::ate | std::ios::binary};
+    std::ifstream file{ filename.data(), std::ios::ate | std::ios::binary };
     if (!file.is_open()) {
-        return stdx::unexpected{std::runtime_error("unable to open file!")};
+        return stdx::unexpected{ std::runtime_error("unable to open file!") };
     }
 
     const auto file_size = static_cast<u64>(file.tellg());
@@ -26,13 +26,14 @@ stdx::expected<std::string, std::runtime_error> read_file(
 namespace example {
 void populate_vertices(render::DeviceContext& context) {
     const std::vector<render::resources::Vertex> vertices = {
-        {{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-        {{0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}},
-        {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
-        {{-0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}}};
+        { { -0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f } },
+        { { 0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f } },
+        { { 0.5f, 0.5f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 1.0f, 0.0f } },
+        { { -0.5f, 0.5f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 0.0f, 0.0f, 1.0f } }
+    };
 
     // we try to use uint32_t for indices
-    const std::vector<u32> indices = {0, 1, 2, 2, 3, 0};
+    const std::vector<u32> indices = { 0, 1, 2, 2, 3, 0 };
     auto vertex_buffer =
         render::resources::Buffer::start_build<render::resources::Vertex>(
             "entry point vertex buffer")

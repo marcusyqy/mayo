@@ -5,8 +5,6 @@
 // #define VK_USE_PLATFORM_WIN32_KHR
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-// #define GLFW_EXPOSE_NATIVE_WIN32
-// #include <GLFW/glfw3native.h>
 
 #include "stdx/irange.hpp"
 #include <optional>
@@ -56,8 +54,8 @@ bool is_device_compatible(const SwapchainSupportDetails& details) noexcept {
     return !details.formats.empty() && !details.present_modes.empty();
 }
 
-// TODO: create a priority list to choose suface format. for now just hardcode
-// this.
+// TODO: create a priority list to choose surface format.
+// for now just hardcode this.
 VkSurfaceFormatKHR choose_surface_format(
     const std::vector<VkSurfaceFormatKHR>& available_formats) noexcept {
     for (const auto& format : available_formats) {
@@ -84,8 +82,8 @@ VkExtent2D choose_extent(
         return capabilities.currentExtent;
     }
 
-    VkExtent2D actual_extent = {
-        static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
+    VkExtent2D actual_extent = { static_cast<uint32_t>(width),
+        static_cast<uint32_t>(height) };
     actual_extent.width = std::clamp(actual_extent.width,
         capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
 
@@ -116,7 +114,7 @@ Swapchain::Swapchain(render::Engine& engine, underlying_window_type glfw_window,
         [this]() noexcept {
             for (const auto& queue_properties :
                 context_.physical().queue_properties()) {
-                VkBool32 is_present_supported{VK_FALSE};
+                VkBool32 is_present_supported{ VK_FALSE };
                 vkGetPhysicalDeviceSurfaceSupportKHR(context_.physical(),
                     queue_properties.index(), surface_, &is_present_supported);
 
@@ -137,7 +135,7 @@ bool Swapchain::create_swapchain_and_resources() noexcept {
     // wait for device to be idle
     context_.wait();
 
-    SwapchainSupportDetails details{context_.physical(), surface_};
+    SwapchainSupportDetails details{ context_.physical(), surface_ };
     ZOO_ASSERT(is_device_compatible(details),
         "Device chosen must be compatible with the swapchain!");
 
@@ -146,15 +144,15 @@ bool Swapchain::create_swapchain_and_resources() noexcept {
     description_.capabilities = std::move(details.capabilities);
 
     // TODO: move this out.
-    renderpass_ =
-        RenderPass{context_, description_.surface_format.format, DEPTH_FORMAT_};
+    renderpass_ = RenderPass{ context_, description_.surface_format.format,
+        DEPTH_FORMAT_ };
 
     VkExtent2D extent =
         choose_extent(description_.capabilities, size_.x, size_.y);
 
     // set to the right extent
-    size_.x = extent.width;
-    size_.y = extent.height;
+    size_.x = static_cast<s32>(extent.width);
+    size_.y = static_cast<s32>(extent.height);
 
     uint32_t image_count =
         std::clamp(description_.capabilities.minImageCount + 1,
@@ -179,7 +177,8 @@ bool Swapchain::create_swapchain_and_resources() noexcept {
         .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
         .presentMode = description_.present_mode,
         .clipped = VK_TRUE,
-        .oldSwapchain = underlying_};
+        .oldSwapchain = underlying_
+    };
 
     bool failed = false;
     VK_EXPECT_SUCCESS(
@@ -244,8 +243,8 @@ bool Swapchain::create_swapchain_and_resources() noexcept {
     framebuffers_.resize(image_count);
 
     for (size_t i = 0; i < std::size(views_); i++) {
-        std::array<VkImageView, 2> attachments = {
-            views_[i], depth_buffers_[i].view()};
+        std::array<VkImageView, 2> attachments = { views_[i],
+            depth_buffers_[i].view() };
 
         VkFramebufferCreateInfo framebuffer_create_info{};
         framebuffer_create_info.sType =
@@ -257,9 +256,8 @@ bool Swapchain::create_swapchain_and_resources() noexcept {
         framebuffer_create_info.height = size_.y;
         framebuffer_create_info.layers = 1;
 
-        VK_EXPECT_SUCCESS(
-            vkCreateFramebuffer(context_, &framebuffer_create_info, nullptr,
-                std::addressof(framebuffers_[i])));
+        VK_EXPECT_SUCCESS(vkCreateFramebuffer(context_,
+            &framebuffer_create_info, nullptr, framebuffers_.data() + i));
     }
 
     while (command_buffers_.size() < image_count) {
@@ -270,9 +268,11 @@ bool Swapchain::create_swapchain_and_resources() noexcept {
     sync_objects_.clear();
     sync_objects_.reserve(std::size(images_));
 
-    stdx::irange(0, std::size(images_)).for_each([this](auto) {
-        sync_objects_.push_back(SyncObjects{context_, context_, context_});
-    });
+    // TODO : change sizes to s32.
+    for (s32 i = 0, size = static_cast<s32>(std::size(images_)); i < size;
+         ++i) {
+        sync_objects_.push_back(SyncObjects{ context_, context_, context_ });
+    }
 
     // reset sync object index so that we don't have to care about size of the
     // vector
@@ -333,15 +333,15 @@ void Swapchain::reset() noexcept {
 }
 
 ViewportInfo Swapchain::get_viewport_info() const noexcept {
-    return {VkViewport{
-                0.0f,                        // x;
-                0.0f,                        // y;
-                static_cast<float>(size_.x), // width;
-                static_cast<float>(size_.y), // height;
-                0.0f,                        // minDepth;
-                1.0f                         // maxDepth;
-            },
-        VkRect2D{VkOffset2D{0, 0}, extent()}};
+    return { VkViewport{
+                 0.0f,                        // x;
+                 0.0f,                        // y;
+                 static_cast<float>(size_.x), // width;
+                 static_cast<float>(size_.y), // height;
+                 0.0f,                        // minDepth;
+                 1.0f                         // maxDepth;
+             },
+        VkRect2D{ VkOffset2D{ 0, 0 }, extent() } };
 }
 
 void Swapchain::render(
@@ -356,16 +356,16 @@ void Swapchain::render(
     renderpass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderpass_info.renderPass = renderpass_;
     renderpass_info.framebuffer = framebuffers_[current_frame_];
-    renderpass_info.renderArea.offset = {0, 0};
-    renderpass_info.renderArea.extent = {
-        static_cast<u32>(size_.x), static_cast<u32>(size_.y)};
+    renderpass_info.renderArea.offset = { 0, 0 };
+    renderpass_info.renderArea.extent = { static_cast<u32>(size_.x),
+        static_cast<u32>(size_.y) };
     renderpass_info.pNext = nullptr;
 
-    const static VkClearValue clear_color = {{{0.1f, 0.1f, 0.1f, 1.0f}}};
+    const static VkClearValue clear_color = { { { 0.1f, 0.1f, 0.1f, 1.0f } } };
     VkClearValue clear_depth = {};
     clear_depth.depthStencil.depth = 1.0f;
 
-    VkClearValue clear_values[] = {clear_color, clear_depth};
+    VkClearValue clear_values[] = { clear_color, clear_depth };
     renderpass_info.clearValueCount = 2;
     renderpass_info.pClearValues = +clear_values;
 
@@ -373,11 +373,14 @@ void Swapchain::render(
         [&] { exec(command_buffers_[current_frame_], renderpass_info); });
 
     VkSemaphore wait_semaphores[] = {
-        sync_objects_[current_sync_objects_index_].image_avail};
+        sync_objects_[current_sync_objects_index_].image_avail
+    };
     VkPipelineStageFlags wait_stages[] = {
-        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+    };
     VkSemaphore signal_semaphores[] = {
-        sync_objects_[current_sync_objects_index_].render_done};
+        sync_objects_[current_sync_objects_index_].render_done
+    };
     command_buffers_[current_frame_].submit(Operation::graphics,
         wait_semaphores, wait_stages, signal_semaphores,
         sync_objects_[current_sync_objects_index_].in_flight_fence);
@@ -394,12 +397,14 @@ void Swapchain::for_each(
         renderpass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
         renderpass_info.renderPass = renderpass_;
         renderpass_info.framebuffer = fb;
-        renderpass_info.renderArea.offset = {0, 0};
-        renderpass_info.renderArea.extent = {
-            static_cast<u32>(size_.x), static_cast<u32>(size_.y)};
+        renderpass_info.renderArea.offset = { 0, 0 };
+        renderpass_info.renderArea.extent = { static_cast<u32>(size_.x),
+            static_cast<u32>(size_.y) };
         renderpass_info.pNext = nullptr;
 
-        static const VkClearValue clear_color = {{{0.1f, 0.1f, 0.1f, 1.0f}}};
+        static const VkClearValue clear_color = {
+            { { 0.1f, 0.1f, 0.1f, 1.0f } }
+        };
         renderpass_info.clearValueCount = 1;
         renderpass_info.pClearValues = &clear_color;
 
@@ -410,9 +415,10 @@ void Swapchain::for_each(
 }
 
 void Swapchain::present() noexcept {
-    VkSwapchainKHR swapchains[] = {underlying_};
+    VkSwapchainKHR swapchains[] = { underlying_ };
     VkSemaphore signal_semaphores[] = {
-        sync_objects_[current_sync_objects_index_].render_done};
+        sync_objects_[current_sync_objects_index_].render_done
+    };
     VkPresentInfoKHR present_info{};
     present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
@@ -451,15 +457,15 @@ resources::Texture Swapchain::create_depth_buffer() {
     return resources::Texture::start_build("DepthBufferSwapchain")
         .format(DEPTH_FORMAT_)
         .usage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
-        .extent({x, y, 1})
+        .extent({ x, y, 1 })
         .allocation_type(VMA_MEMORY_USAGE_GPU_ONLY)
         .allocation_required_flags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
         .build(context_.allocator());
 }
 
 Swapchain::FrameInfo Swapchain::frame_info() const noexcept {
-    return {.current = static_cast<s32>(current_frame_), // current
-        .count = num_images()};
+    return { .current = static_cast<s32>(current_frame_), // current
+        .count = num_images() };
 }
 
 s32 Swapchain::num_images() const noexcept {

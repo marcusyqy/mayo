@@ -47,14 +47,14 @@ public:
     using const_iterator = contiguous_iterator<true, detail::span_traits<T>>;
     using iterator = contiguous_iterator<false, detail::span_traits<T>>;
 
-    iterator begin() noexcept { return {start_, 0}; }
-    iterator end() noexcept { return {start_, N}; }
+    iterator begin() noexcept { return { start_, 0 }; }
+    iterator end() noexcept { return { start_, N }; }
 
-    const_iterator begin() const noexcept { return {start_, 0}; }
-    const_iterator end() const noexcept { return {start_, N}; }
+    const_iterator begin() const noexcept { return { start_, 0 }; }
+    const_iterator end() const noexcept { return { start_, N }; }
 
-    const_iterator cbegin() const noexcept { return {start_, 0}; }
-    const_iterator cend() const noexcept { return {start_, N}; }
+    const_iterator cbegin() const noexcept { return { start_, 0 }; }
+    const_iterator cend() const noexcept { return { start_, N }; }
 
     size_type size() const noexcept { return N; }
     pointer data() const noexcept { return start_; }
@@ -121,14 +121,14 @@ public:
     using const_iterator = contiguous_iterator<true, detail::span_traits<T>>;
     using iterator = contiguous_iterator<false, detail::span_traits<T>>;
 
-    iterator begin() noexcept { return {start_, 0}; }
-    iterator end() noexcept { return {start_, size_}; }
+    iterator begin() noexcept { return { start_, 0 }; }
+    iterator end() noexcept { return { start_, size_ }; }
 
-    const_iterator begin() const noexcept { return {start_, 0}; }
-    const_iterator end() const noexcept { return {start_, size_}; }
+    const_iterator begin() const noexcept { return { start_, 0 }; }
+    const_iterator end() const noexcept { return { start_, size_ }; }
 
-    const_iterator cbegin() const noexcept { return {start_, 0}; }
-    const_iterator cend() const noexcept { return {start_, size_}; }
+    const_iterator cbegin() const noexcept { return { start_, 0 }; }
+    const_iterator cend() const noexcept { return { start_, size_ }; }
 
     size_type size() const noexcept { return size_; }
     pointer data() const noexcept { return start_; }
