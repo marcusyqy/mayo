@@ -83,6 +83,7 @@ std::vector<utils::PhysicalDevice> populate_physical_devices(
 
     if (device_count == 0) {
         ZOO_LOG_ERROR("Devices cannot be 0 for vkEnumeratePhysicalDevices!");
+
         // TODO: this needs to fail (assertion) or some sort of termination that
         // tells us something meaningful which users can report to us about.
         return {};
