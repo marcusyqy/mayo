@@ -110,7 +110,6 @@ Shader& Shader::operator=(Shader&& other) noexcept {
 
 Shader::~Shader() noexcept { reset(); }
 
-// TODO: do some cleanup in this area.
 Pipeline::Pipeline(DeviceContext& context,
     const ShaderStagesSpecification& specifications,
     const ViewportInfo& viewport_info, const RenderPass& renderpass,
@@ -141,6 +140,31 @@ Pipeline::Pipeline(DeviceContext& context,
         fragment_create_info.module = specifications.fragment;
         fragment_create_info.pName =
             specifications.fragment.entry_point().data();
+    }
+
+    {
+        u32 i = 0;
+        std::vector<VkDescriptorSetLayoutBinding> descriptor_set_layouts;
+        descriptor_set_layouts.reserve(binding_descriptors.size());
+        for (const auto& bd : binding_descriptors) {
+            descriptor_set_layouts.emplace_back(VkDescriptorSetLayoutBinding{
+                .binding = i++,
+                .descriptorType = bd.type,
+                .descriptorCount = bd.count,
+                .stageFlags = bd.stage,
+            });
+        }
+
+        VkDescriptorSetLayoutCreateInfo set_create_info = {
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .bindingCount = static_cast<u32>(descriptor_set_layouts.size()),
+            .pBindings = descriptor_set_layouts.data()
+        };
+
+        VK_EXPECT_SUCCESS(vkCreateDescriptorSetLayout(
+            context, &set_create_info, nullptr, &set_layout_));
     }
 
     VkDynamicState dynamic_states_array[]{ VK_DYNAMIC_STATE_VIEWPORT,
@@ -246,7 +270,7 @@ Pipeline::Pipeline(DeviceContext& context,
         VK_BLEND_FACTOR_ONE; // Optional
     color_blend_attachment_state.dstAlphaBlendFactor =
         VK_BLEND_FACTOR_ZERO;                                    // Optional
-    color_blend_attachment_state.alphaBlendOp = VK_BLEND_OP_ADD; // Optional/
+    color_blend_attachment_state.alphaBlendOp = VK_BLEND_OP_ADD; // Optional
 
     VkPipelineColorBlendStateCreateInfo color_blend_state_create_info{};
     color_blend_state_create_info.sType =
@@ -263,12 +287,11 @@ Pipeline::Pipeline(DeviceContext& context,
     VkPipelineLayoutCreateInfo pipeline_layout_create_info{};
     pipeline_layout_create_info.sType =
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipeline_layout_create_info.setLayoutCount = 0;    // Optional
-    pipeline_layout_create_info.pSetLayouts = nullptr; // Optional
+    pipeline_layout_create_info.setLayoutCount = set_layout_ == nullptr ? 0 : 1;
+    pipeline_layout_create_info.pSetLayouts = &set_layout_;
     pipeline_layout_create_info.pushConstantRangeCount =
-        static_cast<uint32_t>(push_constants.size()); // Optional
-    pipeline_layout_create_info.pPushConstantRanges =
-        push_constants.data(); // Optional
+        static_cast<u32>(push_constants.size());
+    pipeline_layout_create_info.pPushConstantRanges = push_constants.data();
 
     VK_EXPECT_SUCCESS(vkCreatePipelineLayout(context_,
                           &pipeline_layout_create_info, nullptr, &layout_),
@@ -320,6 +343,7 @@ Pipeline::Pipeline(DeviceContext& context,
 Pipeline::~Pipeline() noexcept {
     if (context_) {
         vkDestroyPipelineLayout(context_, layout_, nullptr);
+        vkDestroyDescriptorSetLayout(context_, set_layout_, nullptr);
         vkDestroyPipeline(context_, underlying_, nullptr);
     }
 }

@@ -7,6 +7,7 @@
 #include "core/Log.hpp"
 #include "core/platform/Window.hpp"
 
+#include "render/DescriptorPool.hpp"
 #include "render/Engine.hpp"
 #include "render/Pipeline.hpp"
 #include "render/resources/Buffer.hpp"
@@ -43,7 +44,6 @@ struct FrameData {};
 // lazy
 struct PersistentData {
     VkDescriptorPool pool;
-    VkDescriptorSetLayout set_layout;
 };
 
 constexpr s32 MAX_FRAMES = 3;
@@ -98,35 +98,14 @@ void clear_frame_data(
 
 // primitive style and not oop because i just want to make this work now.
 void initialize_persistent_data(
-    PersistentData& persistent_data, render::DeviceContext& context) noexcept {
-    VkDescriptorSetLayoutBinding binding_0 = {};
-    binding_0.binding = 0;
-    binding_0.descriptorCount = 1;
-    binding_0.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    binding_0.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-
-    VkDescriptorSetLayoutCreateInfo set_create_info = {
-        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-        .pNext = nullptr,
-        .flags = 0,
-        .bindingCount = 1,
-        .pBindings = &binding_0
-    };
-
-    VK_EXPECT_SUCCESS(vkCreateDescriptorSetLayout(context, &set_create_info,
-                          nullptr, &persistent_data.set_layout));
-}
+    PersistentData& persistent_data, render::DeviceContext& context) noexcept {}
 
 void clear_persistent_data(
-    render::DeviceContext& context, PersistentData& datas) noexcept {
-    // NOTE: not going to care if we have a null ( ? )
-    vkDestroyDescriptorSetLayout(context, datas.set_layout, nullptr);
-}
+    render::DeviceContext& context, PersistentData& datas) noexcept {}
 
 } // namespace
 
 application::ExitStatus main(application::Settings args) noexcept {
-
     // TODO: to make runtime arguments for different stuff.
     (void)args;
 
@@ -183,6 +162,8 @@ application::ExitStatus main(application::Settings args) noexcept {
         // TODO: this needs to change to a normal renderpass type that can be
         // accessed from the outside AND created AND configured outside.
         swapchain.get_renderpass(), &binding_descriptor, &push_constant };
+
+    render::DescriptorPool descriptor_pool{ context };
 
     PushConstantData push_constant_data{};
     auto start_time = std::chrono::high_resolution_clock::now();

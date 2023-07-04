@@ -97,11 +97,14 @@ public:
 
     VkPipelineLayout layout() const { return layout_; }
 
+    friend class DescriptorPool;
+
 private:
     DeviceContext& context_;
     underlying_type underlying_ = nullptr;
 
     VkPipelineLayout layout_ = nullptr;
+    VkDescriptorSetLayout set_layout_ = nullptr;
 };
 
 } // namespace zoo::render

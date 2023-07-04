@@ -8,14 +8,16 @@
 
 namespace zoo::core {
 
-struct DefaultAllocator {
-    static DefaultAllocator& get_instance() noexcept {
-        static DefaultAllocator instance;
+template<typename T>
+struct Singleton {
+    static T& get_instance() noexcept {
+        static T instance;
         return instance;
     }
+};
 
+struct DefaultAllocator {
     void* alloc(s32 size, s32 alignment) noexcept;
-
     void free(void* memory) noexcept;
 };
 
@@ -178,10 +180,13 @@ public:
                   T{ std::forward<Args&&>(args)... }),
           size_(size) {}
 
+    // this should not be called and compiled if not intended.
     template<typename... Args>
     AllocatedArray(s32 size, Args&&... args) noexcept
         : AllocatedArray(
-              size, Allocator::get_instance(), std::forward<Args&&>(args)...) {}
+              // TODO: check if this is created when compiled.
+              size, Singleton<Allocator>::get_instance(),
+              std::forward<Args&&>(args)...) {}
 
     ~AllocatedArray() noexcept {
         if (data_ != nullptr && size_ != 0)
