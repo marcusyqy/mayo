@@ -2,6 +2,8 @@
 
 namespace zoo::render {
 
+ResourceBindings::ResourceBindings(VkDescriptorSet set) noexcept : set_(set) {}
+
 DescriptorPool::DescriptorPool(DeviceContext& context) noexcept
     : context_(context), pool_(nullptr) {
 

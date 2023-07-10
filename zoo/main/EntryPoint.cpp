@@ -28,8 +28,9 @@ namespace zoo {
 
 namespace {
 
-render::resources::Texture load_house_texture(
-    u32 x, u32 y, render::resources::Allocator& allocator) noexcept {
+render::resources::Texture load_house_texture(render::resources::Allocator& allocator, std::string_view name) noexcept {
+    // load texture here.
+
     return render::resources::Texture::start_build("House Texture")
         .format(VK_FORMAT_UNDEFINED)
         .usage(VK_IMAGE_USAGE_SAMPLED_BIT)
@@ -41,10 +42,6 @@ render::resources::Texture load_house_texture(
 
 struct FrameData {};
 
-// lazy
-struct PersistentData {
-    VkDescriptorPool pool;
-};
 
 constexpr s32 MAX_FRAMES = 3;
 
@@ -96,13 +93,6 @@ void initialize_frame_data(FrameDatas& frame_datas,
 void clear_frame_data(
     render::DeviceContext& context, FrameDatas& datas) noexcept {}
 
-// primitive style and not oop because i just want to make this work now.
-void initialize_persistent_data(
-    PersistentData& persistent_data, render::DeviceContext& context) noexcept {}
-
-void clear_persistent_data(
-    render::DeviceContext& context, PersistentData& datas) noexcept {}
-
 } // namespace
 
 application::ExitStatus main(application::Settings args) noexcept {
@@ -116,6 +106,7 @@ application::ExitStatus main(application::Settings args) noexcept {
 
     render::Engine render_engine{ render_engine_info };
     auto& context = render_engine.context();
+
     // TODO: I think we should just merge swapchain and window
     Window main_window{ render_engine,
         window::Traits{ window::Size{ 1280, 960 }, false, "Zoo" },
@@ -168,12 +159,8 @@ application::ExitStatus main(application::Settings args) noexcept {
     PushConstantData push_constant_data{};
     auto start_time = std::chrono::high_resolution_clock::now();
 
-    // laziness
+    // TODO: remove this laziness
     FrameDatas frame_datas = {};
-    PersistentData persistent_data = {};
-
-    initialize_persistent_data(persistent_data, context);
-    initialize_frame_data(frame_datas, context, persistent_data);
 
     while (main_window.is_open()) {
         // TODO: add frame data in.
@@ -220,8 +207,6 @@ application::ExitStatus main(application::Settings args) noexcept {
     // TODO: we can remove this after we find out how to properly tie
     // resources to each frame.
     context.wait();
-    clear_persistent_data(context, persistent_data);
-    clear_frame_data(context, frame_datas);
 
     return application::ExitStatus::ok;
 }

@@ -12,6 +12,17 @@ struct enum_as_bitmask<Type, std::void_t<decltype(Type::_stdx_enum_as_bitmask)>>
 
 template<typename Type>
 constexpr auto enum_as_bitmask_v = enum_as_bitmask<Type>::value;
+
+template<typename Type, typename = void>
+struct enum_decay : std::false_type {};
+
+template<typename Type>
+struct enum_decay<Type, std::void_t<decltype(Type::_std_decay)>>
+    : std::is_enum<Type> {};
+
+template<typename Type>
+constexpr auto enum_decay_v = enum_decay<Type>::value;
+
 } // namespace stdx::detail
 
 namespace stdx {
@@ -79,4 +90,11 @@ template<typename Type>
 constexpr std::enable_if_t<stdx::detail::enum_as_bitmask_v<Type>, Type&>
 operator^=(Type& lhs, const Type rhs) noexcept {
     return (lhs = (lhs ^ rhs));
+}
+
+template<typename Type>
+constexpr std::enable_if_t<stdx::detail::enum_decay_v<Type>,
+    std::underlying_type_t<Type>>
+operator+(const Type& t) noexcept {
+    return static_cast<std::underlying_type_t<Type>>(t);
 }

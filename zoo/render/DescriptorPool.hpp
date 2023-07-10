@@ -7,10 +7,11 @@ namespace zoo::render {
 
 class ResourceBindings {
 public:
-    ResourceBindings() noexcept;
+    ResourceBindings(VkDescriptorSet set) noexcept;
     ~ResourceBindings() noexcept;
 
 private:
+    VkDescriptorSet set_;
 };
 
 class DescriptorPool {
