@@ -13,6 +13,7 @@ public:
     ResourceBindings() noexcept = default;
 
 private:
+    VkDescriptorPool pool_ = nullptr;
     VkDescriptorSet set_ = nullptr;
 };
 
@@ -21,9 +22,15 @@ public:
     // TODO: keep resource count.
     ResourceBindings allocate(render::Pipeline& pipeline) noexcept;
 
+    DescriptorPool(const DescriptorPool&) = default;
+    DescriptorPool(DescriptorPool&&) = delete;
+    DescriptorPool& operator=(const DescriptorPool&) = delete;
+    DescriptorPool& operator=(DescriptorPool&&) = delete;
+
     // TODO: extend to have some sort of settings to contain all the possible
     // resource that we can have.
     DescriptorPool(DeviceContext& context) noexcept;
+    ~DescriptorPool() noexcept;
 
 private:
     DeviceContext& context_;
