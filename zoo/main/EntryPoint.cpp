@@ -24,13 +24,24 @@
 #include <fstream>
 #include <string_view>
 
+#define TESTING 1
+
+#if TESTING
+#include "render/Vulkan.hpp"
+#include "stdx/defer.hpp"
+#endif
+
 namespace zoo {
+
+#if !TESTING
 
 namespace {
 
-render::resources::Texture load_house_texture(render::resources::Allocator& allocator, std::string_view name) noexcept {
-    //TODO: some hacks were added here that should be removed when we eventually change this.
-    // load texture here.
+render::resources::Texture load_house_texture(
+    render::resources::Allocator& allocator, std::string_view name) noexcept {
+    // TODO: some hacks were added here that should be removed when we
+    // eventually change this.
+    //  load texture here.
     const auto x = 1, y = 1;
     (void)name;
 
@@ -44,7 +55,6 @@ render::resources::Texture load_house_texture(render::resources::Allocator& allo
 }
 
 struct FrameData {};
-
 
 constexpr s32 MAX_FRAMES = 3;
 
@@ -90,6 +100,7 @@ Shaders read_shaders() {
 }
 
 } // namespace
+  //
 
 application::ExitStatus main(application::Settings args) noexcept {
     // TODO: to make runtime arguments for different stuff.
@@ -206,5 +217,17 @@ application::ExitStatus main(application::Settings args) noexcept {
 
     return application::ExitStatus::ok;
 }
+
+#else
+
+application::ExitStatus main(application::Settings args) noexcept {
+    (void)args;
+    zoo::render::Vulkan::init();
+    STDX_DEFER({ zoo::render::Vulkan::deinit(); });
+
+    return application::ExitStatus::ok;
+}
+
+#endif
 
 } // namespace zoo

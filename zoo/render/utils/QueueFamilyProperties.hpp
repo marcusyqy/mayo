@@ -1,12 +1,13 @@
 #pragma once
 
 #include "render/fwd.hpp"
+#include "core/fwd.hpp"
 
 namespace zoo::render::utils {
 
 class QueueFamilyProperties {
 public:
-    using size_type = uint32_t;
+    using size_type = u32;
 
     QueueFamilyProperties(
         uint32_t queue_index, VkQueueFamilyProperties properties) noexcept;
