@@ -35,5 +35,7 @@ ResourceBindings DescriptorPool::allocate(render::Pipeline& pipeline) noexcept {
     VkDescriptorSet descriptor = nullptr;
     VK_EXPECT_SUCCESS(
         vkAllocateDescriptorSets(context_, &alloc_info, &descriptor));
+
+    return {};
 }
 } // namespace zoo::render

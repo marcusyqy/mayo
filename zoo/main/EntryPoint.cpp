@@ -29,7 +29,10 @@ namespace zoo {
 namespace {
 
 render::resources::Texture load_house_texture(render::resources::Allocator& allocator, std::string_view name) noexcept {
+    //TODO: some hacks were added here that should be removed when we eventually change this.
     // load texture here.
+    const auto x = 1, y = 1;
+    (void)name;
 
     return render::resources::Texture::start_build("House Texture")
         .format(VK_FORMAT_UNDEFINED)
@@ -85,13 +88,6 @@ Shaders read_shaders() {
     return { .vertex = std::move(*vertex_spirv),
         .fragment = std::move(*fragment_spirv) };
 }
-
-// primitive style and not oop because i just want to make this work now.
-void initialize_frame_data(FrameDatas& frame_datas,
-    render::DeviceContext& context, PersistentData& persistent_data) noexcept {}
-
-void clear_frame_data(
-    render::DeviceContext& context, FrameDatas& datas) noexcept {}
 
 } // namespace
 
