@@ -24,7 +24,7 @@
 #include <fstream>
 #include <string_view>
 
-#define TESTING 1
+#define TESTING 0
 
 #if TESTING
 #include "render/Vulkan.hpp"
