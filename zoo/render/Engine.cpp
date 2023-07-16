@@ -46,23 +46,20 @@ VkInstance create_instance(const engine::Info& info) noexcept {
         .engineVersion = make_version(core::engine::version),
         .apiVersion = Defines::vk_version };
 
-    VkInstanceCreateInfo create_info{};
-
     platform::render::info query_info = query.get_info();
     const auto& enabled_layers = query_info.layers_;
     const auto& enabled_extensions = query_info.extensions_;
-    {
-        create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-        create_info.pNext = nullptr;
-        create_info.flags = 0;
-        create_info.pApplicationInfo = &app_info;
 
-        create_info.enabledLayerCount = static_cast<u32>(enabled_layers.size());
-        create_info.ppEnabledLayerNames = enabled_layers.data();
-        create_info.enabledExtensionCount =
-            static_cast<u32>(enabled_extensions.size());
-        create_info.ppEnabledExtensionNames = enabled_extensions.data();
-    }
+    VkInstanceCreateInfo create_info{
+        .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+        .pApplicationInfo = &app_info,
+        .enabledLayerCount = static_cast<u32>(enabled_layers.size()),
+        .ppEnabledLayerNames = enabled_layers.data(),
+        .enabledExtensionCount = static_cast<u32>(enabled_extensions.size()),
+        .ppEnabledExtensionNames = enabled_extensions.data(),
+    };
 
     VkInstance instance = nullptr;
     VK_EXPECT_SUCCESS(vkCreateInstance(&create_info, nullptr, &instance));
