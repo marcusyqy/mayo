@@ -145,6 +145,8 @@ public:
     }
 
 private:
+    // TODO: change this to enum + union type.
+    // Can also be just a boolean but it's fine.
     std::variant<value_type, error_type> value_;
 };
 

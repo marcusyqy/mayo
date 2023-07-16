@@ -18,8 +18,9 @@ defer(T t) -> defer<T>;
 
 } // namespace stdx
 
-// this looks like it works. Revisit if defining multiple causes problems.
-#define STDX_DEFER_CONCAT(a, b)          STDX_DEFER_CONCAT_INNER(a, b)
-#define STDX_DEFER_CONCAT_INNER(a, b)    a##b
-#define STDX_DEFER(x) [[maybe_unused]]   ::stdx::defer STDX_DEFER_CONCAT(_defer, __LINE__)(x)
-
+// NOTE: this looks like it works.
+// TODO: Revisit if defining multiple causes problems.
+#define STDX_DEFER_CONCAT(a, b)       STDX_DEFER_CONCAT_INNER(a, b)
+#define STDX_DEFER_CONCAT_INNER(a, b) a##b
+#define STDX_DEFER(x)                                                          \
+    [[maybe_unused]] ::stdx::defer STDX_DEFER_CONCAT(_defer, __LINE__)([&] x)
