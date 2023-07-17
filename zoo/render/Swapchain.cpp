@@ -464,7 +464,7 @@ resources::Texture Swapchain::create_depth_buffer() {
 }
 
 Swapchain::FrameInfo Swapchain::frame_info() const noexcept {
-    return { .current = static_cast<s32>(current_frame_), // current
+    return { .current = current_image(), // current
         .count = num_images() };
 }
 
@@ -472,4 +472,7 @@ s32 Swapchain::num_images() const noexcept {
     return static_cast<s32>(images_.size());
 }
 
+s32 Swapchain::current_image() const noexcept {
+    return static_cast<s32>(current_frame_);
+}
 } // namespace zoo::render

@@ -1,4 +1,5 @@
 #pragma once
+#include "render/DescriptorPool.hpp"
 #include "render/DeviceContext.hpp"
 #include "render/Pipeline.hpp"
 #include "render/RenderPass.hpp"
@@ -14,6 +15,8 @@ struct PipelineBindContext {
 public:
     PipelineBindContext& push_constants(
         const PushConstant& constant, void* data) noexcept;
+
+    PipelineBindContext& bindings(const ResourceBindings& binding) noexcept;
 
     PipelineBindContext(VkCommandBuffer cmd_buffer, VkPipeline pipeline,
         VkPipelineLayout pipeline_layout) noexcept;

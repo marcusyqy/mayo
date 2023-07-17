@@ -50,9 +50,7 @@ Buffer::Buffer(std::string name, VkBuffer buffer, VkBufferUsageFlags usage,
       count_{ count }, allocator_{ allocator }, allocation_{ allocation },
       allocation_info_{ allocation_info } {}
 
-Buffer::~Buffer() noexcept {
-    vmaDestroyBuffer(allocator_, buffer_, allocation_);
-}
+Buffer::~Buffer() noexcept { release_allocation(); }
 
 buffer::Builder Buffer::start_build(
     std::string_view name, size_t size) noexcept {
@@ -76,5 +74,43 @@ VkBuffer Buffer::handle() const noexcept { return buffer_; }
 
 // TODO: find out if there is anything to do for buffer;
 VkDeviceSize Buffer::offset() const noexcept { return 0; }
+
+Buffer::Buffer(Buffer&& o) noexcept { *this = std::move(o); }
+
+Buffer& Buffer::operator=(Buffer&& o) noexcept {
+    release_allocation();
+
+    name_ = std::move(o.name_);
+
+    buffer_ = o.buffer_;
+    usage_ = o.usage_;
+
+    obj_size_ = o.obj_size_;
+    count_ = o.count_;
+
+    allocator_ = o.allocator_;
+    allocation_ = o.allocation_;
+    allocation_info_ = o.allocation_info_;
+
+    o.reset_members();
+
+    return *this;
+}
+
+void Buffer::release_allocation() noexcept {
+    if (allocator_ && buffer_ && allocation_)
+        vmaDestroyBuffer(allocator_, buffer_, allocation_);
+}
+
+void Buffer::reset_members() noexcept {
+    name_ = "DEINITIALIZED_BUFFER";
+    buffer_ = nullptr;
+    usage_ = {};
+    obj_size_ = 0;
+    count_ = 0;
+    allocator_ = nullptr;
+    allocation_ = nullptr;
+    allocation_info_ = {};
+}
 
 } // namespace zoo::render::resources

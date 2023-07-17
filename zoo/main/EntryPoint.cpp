@@ -24,37 +24,20 @@
 #include <fstream>
 #include <string_view>
 
-#define TESTING 0
-
-#if TESTING
-#include "render/Vulkan.hpp"
-#include "stdx/defer.hpp"
-#endif
-
 namespace zoo {
-
-#if !TESTING
 
 namespace {
 
-render::resources::Texture load_house_texture(
-    render::resources::Allocator& allocator, std::string_view name) noexcept {
-    // TODO: some hacks were added here that should be removed when we
-    // eventually change this.
-    //  load texture here.
-    const auto x = 1, y = 1;
-    (void)name;
+struct FrameData {
+    render::resources::Buffer uniform_buffer;
+    render::ResourceBindings bindings;
+};
 
-    return render::resources::Texture::start_build("House Texture")
-        .format(VK_FORMAT_UNDEFINED)
-        .usage(VK_IMAGE_USAGE_SAMPLED_BIT)
-        .extent({ x, y, 1 })
-        .allocation_type(VMA_MEMORY_USAGE_GPU_ONLY)
-        .allocation_required_flags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
-        .build(allocator);
-}
-
-struct FrameData {};
+struct UniformBufferData {
+    glm::mat4 view;
+    glm::mat4 proj;
+    glm::mat4 viewproj;
+};
 
 constexpr s32 MAX_FRAMES = 3;
 
@@ -72,7 +55,7 @@ struct Shaders {
     ShaderBytes fragment;
 };
 
-Shaders read_shaders() {
+Shaders read_shaders() noexcept {
     render::tools::ShaderCompiler compiler;
     auto vertex_bytes = read_file("static/shaders/Test.vert");
     ZOO_ASSERT(vertex_bytes, "vertex shader must have value!");
@@ -87,6 +70,7 @@ Shaders read_shaders() {
 
     auto vertex_spirv = compiler.compile(vertex_work);
     auto fragment_spirv = compiler.compile(fragment_work);
+
     if (!vertex_spirv) {
         spdlog::error("Vertex has error : {}", vertex_spirv.error().what());
     }
@@ -143,14 +127,10 @@ application::ExitStatus main(application::Settings args) noexcept {
     push_constant.offset = 0;
     push_constant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-    // TODO: find a way to abstract binding descriptors + pool and allow adding
-    // them into pipeline. probably by creating a descriptor pool to be passed
-    // into the pipeline that has the layout and some additional stuff. see
-    // Pipeline.hpp description for more information.
-    render::BindingDescriptor binding_descriptor = {
-        .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-        .count = 1,
-        .stage = VK_SHADER_STAGE_VERTEX_BIT
+    render::BindingDescriptor binding_descriptors[] = {
+        { .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .count = 1,
+            .stage = VK_SHADER_STAGE_VERTEX_BIT }
     };
 
     render::Pipeline pipeline{ context,
@@ -159,7 +139,7 @@ application::ExitStatus main(application::Settings args) noexcept {
         swapchain.get_viewport_info(),
         // TODO: this needs to change to a normal renderpass type that can be
         // accessed from the outside AND created AND configured outside.
-        swapchain.get_renderpass(), &binding_descriptor, &push_constant };
+        swapchain.get_renderpass(), binding_descriptors, &push_constant };
 
     render::DescriptorPool descriptor_pool{ context };
 
@@ -167,43 +147,72 @@ application::ExitStatus main(application::Settings args) noexcept {
     auto start_time = std::chrono::high_resolution_clock::now();
 
     // TODO: remove this laziness
-    FrameDatas frame_datas = {};
+    FrameDatas frame_datas;
+
+    // initialize datas.
+    for (s32 i = 0; i < MAX_FRAMES; ++i) {
+        auto& frame_data = frame_datas[i];
+
+        const auto name = fmt::format("Uniform buffer : {}", i);
+        frame_data.uniform_buffer =
+            render::resources::Buffer::start_build<UniformBufferData>(name)
+                .count(1)
+                .usage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
+                .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
+                .build(context.allocator());
+
+        frame_data.bindings = descriptor_pool.allocate(pipeline);
+        frame_data.bindings.start_batch()
+            .bind(0, frame_data.uniform_buffer)
+            .end_batch();
+    }
 
     while (main_window.is_open()) {
         // TODO: add frame data in.
-        auto populate_command_ctx = [&](render::scene::CommandBuffer&
-                                            command_context,
-                                        VkRenderPassBeginInfo renderpass_info) {
-            const auto& viewport_info = swapchain.get_viewport_info();
-            command_context.set_viewport(viewport_info.viewport);
-            command_context.set_scissor(viewport_info.scissor);
 
-            command_context.exec(renderpass_info, [&]() {
-                glm::mat4 view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f),
-                    glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-                glm::mat4 projection = glm::perspective(
-                    glm::radians(70.f), 1700.f / 900.f, 0.1f, 200.0f);
-                projection[1][1] *= -1;
+        const auto current_idx = swapchain.current_image();
+        auto& frame_data = frame_datas[current_idx];
 
-                auto current_time = std::chrono::high_resolution_clock::now();
-                f32 time =
-                    std::chrono::duration<f32, std::chrono::seconds::period>(
-                        current_time - start_time)
-                        .count();
+        glm::mat4 view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f),
+            glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        glm::mat4 projection =
+            glm::perspective(glm::radians(70.f), 1700.f / 900.f, 0.1f, 200.0f);
+        projection[1][1] *= -1;
 
-                glm::mat4 model = glm::rotate(glm::mat4{ 1.0f },
-                    time * glm::radians(90.0f), glm::vec3(0, 0, 1));
-
-                // calculate final mesh matrix
-                glm::mat4 mesh_matrix = projection * view * model;
-                push_constant_data.render_matrix = mesh_matrix;
-
-                command_context.bind_pipeline(pipeline).push_constants(
-                    push_constant, &push_constant_data);
-                command_context.bind_mesh(mesh);
-                command_context.draw_indexed(1);
+        frame_data.uniform_buffer.map<UniformBufferData>(
+            [&](UniformBufferData* data) {
+                if (data) {
+                    data->view = view;
+                    data->proj = projection;
+                    data->viewproj = projection * view;
+                }
             });
-        };
+
+        auto current_time = std::chrono::high_resolution_clock::now();
+        f32 time = std::chrono::duration<f32, std::chrono::seconds::period>(
+            current_time - start_time)
+                       .count();
+
+        glm::mat4 model = glm::rotate(
+            glm::mat4{ 1.0f }, time * glm::radians(90.0f), glm::vec3(0, 0, 1));
+        push_constant_data.render_matrix = model;
+
+        auto populate_command_ctx =
+            [&](render::scene::CommandBuffer& command_context,
+                VkRenderPassBeginInfo renderpass_info) {
+                const auto& viewport_info = swapchain.get_viewport_info();
+                command_context.set_viewport(viewport_info.viewport);
+                command_context.set_scissor(viewport_info.scissor);
+
+                command_context.exec(renderpass_info, [&]() {
+                    command_context.bind_pipeline(pipeline)
+                        .push_constants(push_constant, &push_constant_data)
+                        .bindings(frame_data.bindings);
+
+                    command_context.bind_mesh(mesh);
+                    command_context.draw_indexed(1);
+                });
+            };
 
         swapchain.render(populate_command_ctx);
         swapchain.present();
@@ -217,17 +226,5 @@ application::ExitStatus main(application::Settings args) noexcept {
 
     return application::ExitStatus::ok;
 }
-
-#else
-
-application::ExitStatus main(application::Settings args) noexcept {
-    (void)args;
-    zoo::render::Vulkan::init();
-    STDX_DEFER({ zoo::render::Vulkan::deinit(); });
-
-    return application::ExitStatus::ok;
-}
-
-#endif
 
 } // namespace zoo

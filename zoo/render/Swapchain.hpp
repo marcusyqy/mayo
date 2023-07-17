@@ -60,7 +60,6 @@ public:
             exec) noexcept;
 
     // TODO: remove when "abstracted"
-    // do we need to abstract this ?
     struct FrameInfo {
         s32 current;
         s32 count;

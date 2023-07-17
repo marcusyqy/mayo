@@ -169,7 +169,7 @@ public:
     template<typename TT, size_t N>
     span(TT (&arr)[N]) noexcept : span(arr, N) {}
 
-    span(pointer data) noexcept : span(data, data != nullptr  ? 1 : 0) {}
+    span(pointer data) noexcept : span(data, data != nullptr ? 1 : 0) {}
 
 private:
     pointer start_;

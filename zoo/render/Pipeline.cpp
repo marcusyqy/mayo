@@ -1,6 +1,7 @@
 
 #include "Pipeline.hpp"
 #include "core/fwd.hpp"
+#include "stdx/defer.hpp"
 
 namespace zoo::render {
 
@@ -144,23 +145,28 @@ Pipeline::Pipeline(DeviceContext& context,
 
     {
         u32 i = 0;
-        std::vector<VkDescriptorSetLayoutBinding> descriptor_set_layouts;
-        descriptor_set_layouts.reserve(binding_descriptors.size());
+        VkDescriptorSetLayoutBinding* descriptor_set_layouts =
+            new VkDescriptorSetLayoutBinding[binding_descriptors.size()];
+        STDX_DEFER({ delete[] descriptor_set_layouts; });
+
         for (const auto& bd : binding_descriptors) {
-            descriptor_set_layouts.emplace_back(VkDescriptorSetLayoutBinding{
-                .binding = i++,
+            descriptor_set_layouts[i] = VkDescriptorSetLayoutBinding{
+                .binding = i,
                 .descriptorType = bd.type,
                 .descriptorCount = bd.count,
                 .stageFlags = bd.stage,
-            });
+            };
+            ++i;
         }
+
+        const auto descriptor_set_count = i;
 
         VkDescriptorSetLayoutCreateInfo set_create_info = {
             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
             .pNext = nullptr,
             .flags = 0,
-            .bindingCount = static_cast<u32>(descriptor_set_layouts.size()),
-            .pBindings = descriptor_set_layouts.data()
+            .bindingCount = descriptor_set_count,
+            .pBindings = descriptor_set_layouts
         };
 
         VK_EXPECT_SUCCESS(vkCreateDescriptorSetLayout(

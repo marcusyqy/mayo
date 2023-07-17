@@ -30,6 +30,15 @@ PipelineBindContext& PipelineBindContext::push_constants(
     return *this;
 }
 
+PipelineBindContext& PipelineBindContext::bindings(
+    const ResourceBindings& binding) noexcept {
+    auto set = binding.set();
+    // TODO: change this when compute exists bind point
+    vkCmdBindDescriptorSets(cmd_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS,
+        pipeline_layout_, 0, 1, &set, 0, nullptr);
+    return *this;
+}
+
 PipelineBindContext::PipelineBindContext(VkCommandBuffer cmd_buffer,
     VkPipeline pipeline, VkPipelineLayout pipeline_layout) noexcept
     : cmd_buffer_(cmd_buffer), pipeline_(pipeline),

@@ -59,6 +59,10 @@ public:
     Buffer(const Buffer&) = delete;
     Buffer& operator=(const Buffer&) = delete;
 
+    Buffer(Buffer&&) noexcept;
+    Buffer& operator=(Buffer&&) noexcept;
+
+    Buffer() noexcept = default;
     ~Buffer() noexcept;
 
     void* map() noexcept;
@@ -84,19 +88,26 @@ public:
     inline size_t object_size() const noexcept { return obj_size_; }
     inline size_t count() const noexcept { return count_; }
 
+    operator bool() const noexcept { return valid(); }
+    bool valid() const noexcept { return buffer_ != nullptr; }
+
+private:
+    void release_allocation() noexcept;
+    void reset_members() noexcept;
+
 private:
     // simply for debugging.
-    std::string name_;
+    std::string name_ = "BUFFER_NOT_INITIALIZED";
 
-    VkBuffer buffer_;
-    VkBufferUsageFlags usage_;
+    VkBuffer buffer_ = nullptr;
+    VkBufferUsageFlags usage_ = {};
 
-    size_t obj_size_;
-    size_t count_;
+    size_t obj_size_ = 0;
+    size_t count_ = 0;
 
-    VmaAllocator allocator_;
-    VmaAllocation allocation_;
-    VmaAllocationInfo allocation_info_;
+    VmaAllocator allocator_ = nullptr;
+    VmaAllocation allocation_ = nullptr;
+    VmaAllocationInfo allocation_info_ = {};
 };
 
 } // namespace zoo::render::resources
