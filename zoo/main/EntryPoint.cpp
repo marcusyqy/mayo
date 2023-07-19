@@ -84,7 +84,7 @@ Shaders read_shaders() noexcept {
 }
 
 } // namespace
-  //
+
 
 application::ExitStatus main(application::Settings args) noexcept {
     // TODO: to make runtime arguments for different stuff.
