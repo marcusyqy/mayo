@@ -2,17 +2,18 @@
 
 namespace zoo::render {
 
-ResourceBindings::BindingBatch& ResourceBindings::BindingBatch::bind(u32 binding, resources::Buffer& buffer) noexcept {
-
+ResourceBindings::BindingBatch& ResourceBindings::BindingBatch::bind(
+    u32 binding,
+    VkBuffer buffer,
+    u32 offset,
+    u32 size,
+    VkDescriptorType bind_type) noexcept {
     ZOO_ASSERT(buffer_count_ < MAX_RESOURCE_SIZE, "Need to increase number of max resource size or we have a bug");
 
     VkDescriptorBufferInfo& buffer_info = buffer_infos_[buffer_count_++];
-    // it will be the camera buffer
-    buffer_info.buffer = buffer.handle();
-    // at 0 offset
-    buffer_info.offset = 0;
-    // of the size of a camera data struct
-    buffer_info.range = buffer.allocated_size();
+    buffer_info.buffer                  = buffer;
+    buffer_info.offset                  = offset;
+    buffer_info.range                   = size;
 
     ZOO_ASSERT(
         write_descriptors_count_ < MAX_RESOURCE_SIZE,
@@ -27,10 +28,25 @@ ResourceBindings::BindingBatch& ResourceBindings::BindingBatch::bind(u32 binding
     set_write.dstSet     = target_.set();
 
     set_write.descriptorCount = 1;
-    set_write.descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    set_write.descriptorType  = bind_type;
 
     set_write.pBufferInfo = &buffer_info;
 
+    return *this;
+}
+
+ResourceBindings::BindingBatch&
+    ResourceBindings::BindingBatch::bind(u32 binding, resources::Buffer& buffer, VkDescriptorType bind_type) noexcept {
+    bind(binding, buffer.handle(), 0, buffer.allocated_size(), bind_type);
+    return *this;
+}
+
+ResourceBindings::BindingBatch& ResourceBindings::BindingBatch::bind(
+    u32 binding,
+    resources::BufferView& buffer,
+    VkDescriptorType bind_type) noexcept {
+    auto [start, end] = buffer.span();
+    bind(binding, buffer.handle(), start, end - start, bind_type);
     return *this;
 }
 
@@ -92,7 +108,8 @@ DescriptorPool::DescriptorPool(DeviceContext& context) noexcept : context_(conte
 
     // clang-format off
     VkDescriptorPoolSize sizes[] {
-        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, MAX_POOL_SIZE }
+        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, MAX_POOL_SIZE },
+        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, MAX_POOL_SIZE }
     };
     // clang-format on
 

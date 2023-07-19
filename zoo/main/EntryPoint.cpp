@@ -28,6 +28,14 @@ namespace zoo {
 
 namespace {
 
+struct SceneData {
+    glm::vec4 fog_color;    // w is for exponent
+    glm::vec4 fog_distance; // x for min, y for max, zw unused
+    glm::vec4 ambient_color;
+    glm::vec4 sunlight_direction; // w for sunpower
+    glm::vec4 sunlight_color;
+};
+
 struct FrameData {
     render::resources::Buffer uniform_buffer;
     render::ResourceBindings bindings;
@@ -79,6 +87,17 @@ Shaders read_shaders() noexcept {
     return { .vertex = std::move(*vertex_spirv), .fragment = std::move(*fragment_spirv) };
 }
 
+size_t pad_uniform_buffer_size(const render::DeviceContext& context, size_t original_size) {
+    size_t min_ubo_alignment = context.physical().limits().minUniformBufferOffsetAlignment;
+    size_t aligned_size      = original_size;
+
+    if (min_ubo_alignment > 0) {
+        aligned_size = (aligned_size + min_ubo_alignment - 1) & ~(min_ubo_alignment - 1);
+    }
+
+    return aligned_size;
+}
+
 } // namespace
 
 application::ExitStatus main(application::Settings args) noexcept {
@@ -106,7 +125,7 @@ application::ExitStatus main(application::Settings args) noexcept {
     render::Shader vertex_shader{ context, vertex_bytes, "main" };
     render::Shader fragment_shader{ context, fragment_bytes, "main" };
 
-    render::resources::Mesh mesh{ context.allocator(), "static/assets/viking_room.obj" };
+    render::resources::Mesh mesh{ context.allocator(), "static/assets/monkey_flat.obj" };
 
     auto& swapchain = main_window.swapchain();
 
@@ -121,7 +140,10 @@ application::ExitStatus main(application::Settings args) noexcept {
     push_constant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
     render::BindingDescriptor binding_descriptors[] = {
-        { .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .count = 1, .stage = VK_SHADER_STAGE_VERTEX_BIT }
+        { .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .count = 1, .stage = VK_SHADER_STAGE_VERTEX_BIT },
+        { .type  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+          .count = 1,
+          .stage = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT }
     };
 
     render::Pipeline pipeline{ context,
@@ -131,7 +153,7 @@ application::ExitStatus main(application::Settings args) noexcept {
                                // accessed from the outside AND created AND configured outside.
                                swapchain.get_renderpass(),
                                binding_descriptors,
-                               &push_constant };
+                               { &push_constant, 1 } };
 
     render::DescriptorPool descriptor_pool{ context };
 
@@ -141,6 +163,15 @@ application::ExitStatus main(application::Settings args) noexcept {
     // TODO: remove this laziness
     FrameDatas frame_datas;
 
+    render::resources::Buffer scene_data_buffer = render::resources::Buffer::start_build(
+                                                      "SceneDataBuffer",
+                                                      MAX_FRAMES * pad_uniform_buffer_size(context, sizeof(SceneData)))
+                                                      .usage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
+                                                      .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
+                                                      .count(1)
+                                                      .build(context.allocator());
+
+    render::resources::BufferView buffer_view{ scene_data_buffer, 0, sizeof(SceneData) };
     // initialize datas.
     for (s32 i = 0; i < MAX_FRAMES; ++i) {
         auto& frame_data = frame_datas[i];
@@ -152,17 +183,26 @@ application::ExitStatus main(application::Settings args) noexcept {
                                         .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
                                         .build(context.allocator());
         frame_data.bindings = descriptor_pool.allocate(pipeline);
-        frame_data.bindings.start_batch().bind(0, frame_data.uniform_buffer).end_batch();
+
+        // clang-format off
+        frame_data.bindings.start_batch()
+            .bind(0, frame_data.uniform_buffer)
+            .bind(1, buffer_view, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC)
+            .end_batch();
+        // clang-format on
     }
 
+    auto counter = 0;
     while (main_window.is_open()) {
-        // TODO: add frame data in.
 
+        // TODO: add frame data in.
         const auto current_idx = swapchain.current_image();
         auto& frame_data       = frame_datas[current_idx];
 
-        glm::mat4 view =
-            glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        glm::vec3 cam_pos = { 0.6f, -6.f, -10.f };
+
+        glm::mat4 view = glm::translate(glm::mat4(1.f), cam_pos);
+        // glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
         glm::mat4 projection = glm::perspective(glm::radians(70.f), 1700.f / 900.f, 0.1f, 200.0f);
         projection[1][1] *= -1;
 
@@ -176,12 +216,28 @@ application::ExitStatus main(application::Settings args) noexcept {
 
         auto current_time = std::chrono::high_resolution_clock::now();
         f32 time          = std::chrono::duration<f32, std::chrono::seconds::period>(current_time - start_time).count();
+        f32 var           = time * glm::radians(720.0f);
 
-        glm::mat4 model = glm::rotate(glm::mat4{ 1.0f }, time * glm::radians(90.0f), glm::vec3(0, 0, 1));
+        u32 offset = current_idx * pad_uniform_buffer_size(context, sizeof(SceneData));
+        render::resources::BufferView buffer_view{ scene_data_buffer, offset, offset + sizeof(SceneData) };
+        buffer_view.map<SceneData>([&](SceneData* data) {
+            if (data) {
+                data->ambient_color = { sin(var), 0, cos(var), 1 };
+            }
+        });
+
+        glm::mat4 model = glm::rotate(glm::mat4{ 1.0f }, time * glm::radians(90.0f), glm::vec3(0, 1, 0));
         push_constant_data.render_matrix = model;
 
         auto populate_command_ctx = [&](render::scene::CommandBuffer& command_context,
                                         VkRenderPassBeginInfo renderpass_info) {
+            VkClearValue depth_clear{};
+            depth_clear.depthStencil.depth   = 1.f;
+            f32 flash                        = abs(sin(var));
+            const VkClearValue clear_color[] = { { { { 0.1f, 0.1f, flash, 1.0f } } }, depth_clear };
+            renderpass_info.clearValueCount  = 2;
+            renderpass_info.pClearValues     = clear_color;
+
             const auto& viewport_info = swapchain.get_viewport_info();
             command_context.set_viewport(viewport_info.viewport);
             command_context.set_scissor(viewport_info.scissor);
@@ -189,7 +245,7 @@ application::ExitStatus main(application::Settings args) noexcept {
             command_context.exec(renderpass_info, [&]() {
                 command_context.bind_pipeline(pipeline)
                     .push_constants(push_constant, &push_constant_data)
-                    .bindings(frame_data.bindings);
+                    .bindings(frame_data.bindings, { &offset, 1 });
 
                 command_context.bind_mesh(mesh);
                 command_context.draw_indexed(1);
@@ -200,6 +256,7 @@ application::ExitStatus main(application::Settings args) noexcept {
         swapchain.present();
 
         windows::poll_events();
+        ++counter;
     }
 
     // TODO: we can remove this after we find out how to properly tie

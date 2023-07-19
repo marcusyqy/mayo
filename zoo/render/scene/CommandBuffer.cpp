@@ -24,10 +24,18 @@ PipelineBindContext& PipelineBindContext::push_constants(const PushConstant& con
     return *this;
 }
 
-PipelineBindContext& PipelineBindContext::bindings(const ResourceBindings& binding) noexcept {
+PipelineBindContext& PipelineBindContext::bindings(const ResourceBindings& binding, stdx::span<u32> offset) noexcept {
     auto set = binding.set();
     // TODO: change this when compute exists bind point
-    vkCmdBindDescriptorSets(cmd_buffer_, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout_, 0, 1, &set, 0, nullptr);
+    vkCmdBindDescriptorSets(
+        cmd_buffer_,
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        pipeline_layout_,
+        0,
+        1,
+        &set,
+        static_cast<u32>(offset.size()),
+        offset.data());
     return *this;
 }
 
@@ -160,7 +168,7 @@ void CommandBuffer::bind_index_buffer(const render::resources::Buffer& ib) noexc
 }
 
 void CommandBuffer::bind_mesh(const render::resources::Mesh& mesh) noexcept {
-    bind_vertex_buffers(&mesh.vertices());
+    bind_vertex_buffers({ &mesh.vertices(), 1 });
     bind_index_buffer(mesh.indices());
 }
 

@@ -367,10 +367,6 @@ void Swapchain::for_each(
         renderpass_info.renderArea.extent = { static_cast<u32>(size_.x), static_cast<u32>(size_.y) };
         renderpass_info.pNext             = nullptr;
 
-        static const VkClearValue clear_color = { { { 0.1f, 0.1f, 0.1f, 1.0f } } };
-        renderpass_info.clearValueCount       = 1;
-        renderpass_info.pClearValues          = &clear_color;
-
         command_buffers_[i].record([&] { exec(command_buffers_[i], renderpass_info); });
         ++i;
     }

@@ -29,8 +29,8 @@ public:
     id_type id() const noexcept;
 
     VkPhysicalDeviceLimits limits() const noexcept;
-
     const VkPhysicalDeviceFeatures& features() const noexcept;
+    const VkPhysicalDeviceProperties& properties() const noexcept { return properties_; }
 
     // add device features
     [[nodiscard]] bool has_geometry_shader() const noexcept;

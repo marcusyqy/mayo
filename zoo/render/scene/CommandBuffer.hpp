@@ -15,7 +15,7 @@ struct PipelineBindContext {
 public:
     PipelineBindContext& push_constants(const PushConstant& constant, void* data) noexcept;
 
-    PipelineBindContext& bindings(const ResourceBindings& binding) noexcept;
+    PipelineBindContext& bindings(const ResourceBindings& binding, stdx::span<u32> offset = nullptr) noexcept;
 
     PipelineBindContext(VkCommandBuffer cmd_buffer, VkPipeline pipeline, VkPipelineLayout pipeline_layout) noexcept;
 

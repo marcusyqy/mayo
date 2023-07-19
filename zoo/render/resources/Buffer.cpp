@@ -98,6 +98,9 @@ Buffer& Buffer::operator=(Buffer&& o) noexcept {
     return *this;
 }
 
+BufferView::BufferView(const Buffer& buffer, size_t start, size_t end) noexcept :
+    buffer_(buffer.buffer_), allocator_(buffer.allocator_), allocation_(buffer.allocation_), start_(start), end_(end) {}
+
 void Buffer::release_allocation() noexcept {
     if (allocator_ && buffer_ && allocation_) vmaDestroyBuffer(allocator_, buffer_, allocation_);
 }
@@ -111,6 +114,19 @@ void Buffer::reset_members() noexcept {
     allocator_       = nullptr;
     allocation_      = nullptr;
     allocation_info_ = {};
+}
+
+void* BufferView::map() noexcept {
+    void* data = nullptr;
+    VK_EXPECT_SUCCESS(vmaMapMemory(allocator_, allocation_, &data));
+    return data;
+}
+
+void BufferView::unmap() noexcept { vmaUnmapMemory(allocator_, allocation_); }
+
+void BufferView::map(stdx::function_ref<void(void*)> fn) noexcept {
+    fn(map());
+    unmap();
 }
 
 } // namespace zoo::render::resources

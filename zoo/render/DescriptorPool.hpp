@@ -14,7 +14,16 @@ public:
     ~ResourceBindings() noexcept;
 
     struct BindingBatch {
-        BindingBatch& bind(u32 binding, resources::Buffer& buffer) noexcept;
+        BindingBatch& bind(
+            u32 binding,
+            resources::Buffer& buffer,
+            VkDescriptorType bind_type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) noexcept;
+        BindingBatch& bind(
+            u32 binding,
+            resources::BufferView& buffer,
+            VkDescriptorType bind_type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) noexcept;
+        BindingBatch& bind(u32 binding, VkBuffer buffer, u32 offset, u32 size, VkDescriptorType bind_type) noexcept;
+
         void end_batch() noexcept;
 
         BindingBatch(ResourceBindings& target) : target_(target) {}

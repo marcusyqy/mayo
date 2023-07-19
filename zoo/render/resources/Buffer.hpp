@@ -101,6 +101,7 @@ private:
     void reset_members() noexcept;
 
 private:
+    friend class BufferView;
     // simply for debugging.
     std::string name_ = "BUFFER_NOT_INITIALIZED";
 
@@ -113,6 +114,48 @@ private:
     VmaAllocator allocator_            = nullptr;
     VmaAllocation allocation_          = nullptr;
     VmaAllocationInfo allocation_info_ = {};
+};
+
+class BufferView {
+public:
+    BufferView() noexcept                                   = default;
+    BufferView(const BufferView& other) noexcept            = default;
+    BufferView(BufferView&& other) noexcept                 = default;
+    BufferView& operator=(const BufferView& other) noexcept = default;
+    BufferView& operator=(BufferView&& other) noexcept      = default;
+
+    BufferView(const Buffer& buffer, size_t start, size_t end) noexcept;
+
+    operator VkBuffer() const noexcept { return handle(); }
+    VkBuffer handle() const noexcept { return buffer_; }
+
+    std::pair<size_t, size_t> span() const noexcept { return std::make_pair(start_, end_); }
+
+    // copied from above.
+    void* map() noexcept;
+    void unmap() noexcept;
+
+    void map(stdx::function_ref<void(void*)> fn) noexcept;
+
+    template <typename Type>
+    void map(stdx::function_ref<void(Type*)> fn) noexcept {
+        fn(map<Type>());
+        unmap();
+    }
+
+    template <typename Type>
+    Type* map() noexcept {
+        return reinterpret_cast<Type*>(map());
+    }
+
+private:
+    // figure out what I actually need.
+    VkBuffer buffer_          = nullptr;
+    VmaAllocator allocator_   = nullptr;
+    VmaAllocation allocation_ = nullptr;
+
+    size_t start_ = 0;
+    size_t end_   = 0;
 };
 
 } // namespace zoo::render::resources
