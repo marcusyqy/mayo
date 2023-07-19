@@ -155,7 +155,9 @@ public:
     template <typename TT, size_t N>
     span(TT (&arr)[N]) noexcept : span(arr, N) {}
 
-    span(pointer data) noexcept : span(data, data != nullptr ? 1 : 0) {}
+    // template <typename TT>
+    // span(TT* data) noexcept : span(data, data != nullptr ? 1 : 0) {}
+    span(std::nullptr_t) noexcept : span(nullptr, 0) {}
 
 private:
     pointer start_;
@@ -163,7 +165,10 @@ private:
 };
 
 template <typename TT, size_t N>
-span(TT (&arr)[N]) -> span<TT, N>;
+span(TT (&arr)[N]) -> span<TT>;
+
+template <typename TT, size_t N>
+span(const TT (&arr)[N]) -> span<const TT>;
 
 template <typename V, typename = stdx::is_contiguous_container<V>>
 span(V&) -> span<typename V::value_type>;
