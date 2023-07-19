@@ -14,7 +14,7 @@ public:
     Semaphore(DeviceContext& context) noexcept;
     ~Semaphore() noexcept;
 
-    Semaphore(const Semaphore& other) = delete;
+    Semaphore(const Semaphore& other)            = delete;
     Semaphore& operator=(const Semaphore& other) = delete;
 
     Semaphore(Semaphore&& other) noexcept;

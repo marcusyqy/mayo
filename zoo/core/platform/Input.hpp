@@ -61,18 +61,7 @@ enum class Key {
 };
 
 // this should probably be a bit operation
-enum class Mod {
-    none,
-    l_shift,
-    l_control,
-    l_alt,
-    l_super,
-    r_shift,
-    r_control,
-    r_alt,
-    r_super,
-    MAX_COUNT
-};
+enum class Mod { none, l_shift, l_control, l_alt, l_super, r_shift, r_control, r_alt, r_super, MAX_COUNT };
 
 enum class Action { pressed, released, repeat, none, MAX_COUNT };
 

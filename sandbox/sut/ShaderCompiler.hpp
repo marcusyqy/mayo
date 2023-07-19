@@ -22,8 +22,7 @@ struct ShaderWork {
 class ShaderCompiler {
 public:
     using define_type = ShaderDefType;
-    stdx::expected<std::vector<uint32_t>, std::runtime_error> compile(
-        const ShaderWork& work) noexcept;
+    stdx::expected<std::vector<uint32_t>, std::runtime_error> compile(const ShaderWork& work) noexcept;
 
 private:
     shaderc::Compiler compiler_;

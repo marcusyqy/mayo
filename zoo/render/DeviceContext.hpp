@@ -12,23 +12,23 @@ namespace zoo::render {
 
 class DeviceContext {
 public:
-    DeviceContext(VkInstance instance, utils::PhysicalDevice pdevice,
+    DeviceContext(
+        VkInstance instance,
+        utils::PhysicalDevice pdevice,
         const utils::QueueFamilyProperties& family_props,
         const platform::render::Query& query) noexcept;
 
     ~DeviceContext() noexcept;
 
     DeviceContext(const DeviceContext& other) noexcept = delete;
-    DeviceContext(DeviceContext&& other) noexcept = delete;
+    DeviceContext(DeviceContext&& other) noexcept      = delete;
 
     DeviceContext& operator=(const DeviceContext& other) noexcept = delete;
-    DeviceContext& operator=(DeviceContext&& other) noexcept = delete;
+    DeviceContext& operator=(DeviceContext&& other) noexcept      = delete;
 
     void reset() noexcept;
 
-    operator const utils::PhysicalDevice&() const noexcept {
-        return physical();
-    }
+    operator const utils::PhysicalDevice&() const noexcept { return physical(); }
 
     const utils::PhysicalDevice& physical() const noexcept { return physical_; }
 
@@ -50,14 +50,12 @@ public:
 
     resources::Allocator& allocator() noexcept { return allocator_; }
 
-    const resources::Allocator& allocator() const noexcept {
-        return allocator_;
-    }
+    const resources::Allocator& allocator() const noexcept { return allocator_; }
 
 private:
     utils::PhysicalDevice physical_ = nullptr;
-    VkDevice logical_ = nullptr;
-    VkQueue queue_ = nullptr;
+    VkDevice logical_               = nullptr;
+    VkQueue queue_                  = nullptr;
     utils::QueueFamilyProperties queue_properties_;
     VkCommandPool command_pool_ = nullptr;
 

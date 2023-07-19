@@ -8,7 +8,6 @@
 
 namespace zoo {
 
-stdx::expected<std::string, std::runtime_error> read_file(
-    std::string_view filename) noexcept;
+stdx::expected<std::string, std::runtime_error> read_file(std::string_view filename) noexcept;
 
 } // namespace zoo

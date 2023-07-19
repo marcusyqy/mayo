@@ -9,10 +9,10 @@ public:
     PoolAllocator(const Allocator& allocator) noexcept;
     ~PoolAllocator() noexcept;
 
-    PoolAllocator(const PoolAllocator& other) = delete;
+    PoolAllocator(const PoolAllocator& other)            = delete;
     PoolAllocator& operator=(const PoolAllocator& other) = delete;
 
-    PoolAllocator(PoolAllocator&& other) noexcept = delete;
+    PoolAllocator(PoolAllocator&& other) noexcept            = delete;
     PoolAllocator& operator=(PoolAllocator&& other) noexcept = delete;
 
 private:

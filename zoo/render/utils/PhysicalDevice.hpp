@@ -11,7 +11,7 @@ namespace zoo::render::utils {
 class PhysicalDevice {
 public:
     using underlying_type = VkPhysicalDevice;
-    using id_type = uint32_t;
+    using id_type         = uint32_t;
 
     operator underlying_type() const noexcept { return get(); }
     underlying_type get() const noexcept { return underlying_; }
@@ -35,13 +35,11 @@ public:
     // add device features
     [[nodiscard]] bool has_geometry_shader() const noexcept;
 
-    [[nodiscard]] const std::vector<QueueFamilyProperties>&
-    queue_properties() const noexcept {
+    [[nodiscard]] const std::vector<QueueFamilyProperties>& queue_properties() const noexcept {
         return queue_family_properties_;
     }
 
-    [[nodiscard]] bool has_present(const QueueFamilyProperties& family_props,
-        VkInstance instance) const noexcept;
+    [[nodiscard]] bool has_present(const QueueFamilyProperties& family_props, VkInstance instance) const noexcept;
 
     bool has_required_extension(std::string_view extension_name) const noexcept;
 

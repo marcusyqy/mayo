@@ -6,8 +6,7 @@
 #include "spdlog/spdlog.h"
 #include "sut/ShaderCompiler.hpp"
 
-stdx::expected<std::string, std::runtime_error> read_file(
-    std::string_view filename) noexcept {
+stdx::expected<std::string, std::runtime_error> read_file(std::string_view filename) noexcept {
     std::ifstream file{ filename.data(), std::ios::ate | std::ios::binary };
     if (!file.is_open()) {
         return stdx::unexpected{ std::runtime_error("unable to open file!") };
@@ -31,36 +30,28 @@ int main() {
 
     sut::ShaderCompiler compiler{};
 
-    sut::ShaderWork vert_shader{ shaderc_glsl_vertex_shader, "vertex shader",
-        *vertex_bytes };
-    sut::ShaderWork frag_shader{ shaderc_glsl_fragment_shader,
-        "fragment shader", *fragment_bytes };
+    sut::ShaderWork vert_shader{ shaderc_glsl_vertex_shader, "vertex shader", *vertex_bytes };
+    sut::ShaderWork frag_shader{ shaderc_glsl_fragment_shader, "fragment shader", *fragment_bytes };
 
-    auto vertex_spirv = compiler.compile(vert_shader);
+    auto vertex_spirv   = compiler.compile(vert_shader);
     auto fragment_spirv = compiler.compile(frag_shader);
 
     if (!vertex_spirv) {
-        spdlog::error(
-            "error from vertex spirv : {}", vertex_spirv.error().what());
+        spdlog::error("error from vertex spirv : {}", vertex_spirv.error().what());
     } else {
         std::fstream fs;
-        fs.open(
-            "static/shaders/vert.spv", std::fstream::trunc | std::fstream::out);
+        fs.open("static/shaders/vert.spv", std::fstream::trunc | std::fstream::out);
         auto& spirv = vertex_spirv.value();
-        fs.write(reinterpret_cast<const char*>(spirv.data()),
-            sizeof(uint32_t) * spirv.size());
+        fs.write(reinterpret_cast<const char*>(spirv.data()), sizeof(uint32_t) * spirv.size());
     }
 
     if (!fragment_spirv) {
-        spdlog::error(
-            "error from fragment spirv : {}", fragment_spirv.error().what());
+        spdlog::error("error from fragment spirv : {}", fragment_spirv.error().what());
     } else {
 
         std::fstream fs;
-        fs.open(
-            "static/shaders/frag.spv", std::fstream::trunc | std::fstream::out);
+        fs.open("static/shaders/frag.spv", std::fstream::trunc | std::fstream::out);
         auto& spirv = fragment_spirv.value();
-        fs.write(reinterpret_cast<const char*>(spirv.data()),
-            sizeof(uint32_t) * spirv.size());
+        fs.write(reinterpret_cast<const char*>(spirv.data()), sizeof(uint32_t) * spirv.size());
     }
 }

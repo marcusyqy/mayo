@@ -8,14 +8,13 @@ public:
     Allocator() noexcept;
     ~Allocator() noexcept;
 
-    Allocator(const Allocator& other) = delete;
+    Allocator(const Allocator& other)            = delete;
     Allocator& operator=(const Allocator& other) = delete;
 
-    Allocator(Allocator&& other) noexcept = delete;
+    Allocator(Allocator&& other) noexcept            = delete;
     Allocator& operator=(Allocator&& other) noexcept = delete;
 
-    void emplace(
-        VkInstance instance, VkDevice device, VkPhysicalDevice pd) noexcept;
+    void emplace(VkInstance instance, VkDevice device, VkPhysicalDevice pd) noexcept;
 
     void reset() noexcept;
 

@@ -12,8 +12,7 @@
 namespace zoo {
 
 namespace {
-static void error_callback(
-    int, [[maybe_unused]] const char* description) noexcept {
+static void error_callback(int, [[maybe_unused]] const char* description) noexcept {
     ZOO_LOG_ERROR("Error: {}", description);
 }
 
@@ -35,8 +34,7 @@ void construct() {
 void destruct() { glfwTerminate(); }
 } // namespace detail
 
-const core::wrappers::Initializer<> initializer{ detail::construct,
-    detail::destruct };
+const core::wrappers::Initializer<> initializer{ detail::construct, detail::destruct };
 
 } // namespace
 

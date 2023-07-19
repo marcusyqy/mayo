@@ -7,13 +7,13 @@
 
 namespace zoo {
 
-using string = std::string;
+using string      = std::string;
 using string_view = std::string_view;
 
-template<typename T>
+template <typename T>
 using dyn_array = std::vector<T>;
 
-template<typename K, typename V>
+template <typename K, typename V>
 using hash_map = std::unordered_map<K, V>;
 
 } // namespace zoo

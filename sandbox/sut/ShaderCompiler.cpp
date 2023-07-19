@@ -4,15 +4,14 @@
 namespace sut {
 namespace {} // namespace
 
-stdx::expected<std::vector<uint32_t>, std::runtime_error>
-ShaderCompiler::compile(const ShaderWork& work) noexcept {
+stdx::expected<std::vector<uint32_t>, std::runtime_error> ShaderCompiler::compile(const ShaderWork& work) noexcept {
     shaderc::CompileOptions options;
     for (const auto& defines : work.defines) {
         options.AddMacroDefinition(defines.name, defines.value);
     }
 
-    shaderc::SpvCompilationResult module = compiler_.CompileGlslToSpv(
-        work.bytes, work.kind, work.name.c_str(), options);
+    shaderc::SpvCompilationResult module =
+        compiler_.CompileGlslToSpv(work.bytes, work.kind, work.name.c_str(), options);
 
     options.SetOptimizationLevel(shaderc_optimization_level_performance);
 

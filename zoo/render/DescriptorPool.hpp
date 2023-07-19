@@ -8,8 +8,7 @@ namespace zoo::render {
 
 class ResourceBindings {
 public:
-    ResourceBindings(DeviceContext& context, VkDescriptorPool pool,
-        VkDescriptorSet set) noexcept;
+    ResourceBindings(DeviceContext& context, VkDescriptorPool pool, VkDescriptorSet set) noexcept;
 
     ResourceBindings() noexcept = default;
     ~ResourceBindings() noexcept;
@@ -21,12 +20,12 @@ public:
         BindingBatch(ResourceBindings& target) : target_(target) {}
 
     private:
-        static constexpr u32 MAX_RESOURCE_SIZE = 3;
+        static constexpr u32 MAX_RESOURCE_SIZE                  = 3;
         VkDescriptorBufferInfo buffer_infos_[MAX_RESOURCE_SIZE] = {};
-        u32 buffer_count_ = 0;
+        u32 buffer_count_                                       = 0;
 
         VkWriteDescriptorSet write_descriptors_[MAX_RESOURCE_SIZE] = {};
-        u32 write_descriptors_count_ = 0;
+        u32 write_descriptors_count_                               = 0;
 
     private:
         friend ResourceBindings;
@@ -52,8 +51,8 @@ private:
 
 private:
     DeviceContext* context_ = nullptr;
-    VkDescriptorPool pool_ = nullptr;
-    VkDescriptorSet set_ = nullptr;
+    VkDescriptorPool pool_  = nullptr;
+    VkDescriptorSet set_    = nullptr;
 };
 
 class DescriptorPool {
@@ -61,10 +60,10 @@ public:
     // TODO: keep resource count.
     ResourceBindings allocate(render::Pipeline& pipeline) noexcept;
 
-    DescriptorPool(const DescriptorPool&) = default;
-    DescriptorPool(DescriptorPool&&) = delete;
+    DescriptorPool(const DescriptorPool&)            = default;
+    DescriptorPool(DescriptorPool&&)                 = delete;
     DescriptorPool& operator=(const DescriptorPool&) = delete;
-    DescriptorPool& operator=(DescriptorPool&&) = delete;
+    DescriptorPool& operator=(DescriptorPool&&)      = delete;
 
     // TODO: extend to have some sort of settings to contain all the possible
     // resource that we can have.

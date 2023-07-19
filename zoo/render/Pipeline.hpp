@@ -18,13 +18,12 @@ public:
 
     void reset() noexcept;
 
-    Shader(DeviceContext& context, stdx::span<uint32_t> code,
-        std::string_view entry_point) noexcept;
+    Shader(DeviceContext& context, stdx::span<uint32_t> code, std::string_view entry_point) noexcept;
 
     Shader() noexcept;
     ~Shader() noexcept;
 
-    Shader(const Shader& other) = delete;
+    Shader(const Shader& other)            = delete;
     Shader& operator=(const Shader& other) = delete;
 
     Shader(Shader&& other) noexcept;
@@ -84,9 +83,11 @@ class Pipeline {
 public:
     using underlying_type = VkPipeline;
 
-    Pipeline(DeviceContext& context,
+    Pipeline(
+        DeviceContext& context,
         const ShaderStagesSpecification& specifications,
-        const ViewportInfo& viewport_info, const RenderPass& renderpass,
+        const ViewportInfo& viewport_info,
+        const RenderPass& renderpass,
         stdx::span<BindingDescriptor> binding_descriptors,
         stdx::span<PushConstant> push_constants) noexcept;
 
@@ -103,7 +104,7 @@ private:
     DeviceContext& context_;
     underlying_type underlying_ = nullptr;
 
-    VkPipelineLayout layout_ = nullptr;
+    VkPipelineLayout layout_          = nullptr;
     VkDescriptorSetLayout set_layout_ = nullptr;
 };
 

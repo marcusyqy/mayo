@@ -13,18 +13,16 @@ Query::Query(Parameters parameters) noexcept : parameters_{ parameters } {}
 info Query::get_info() const noexcept {
     info info{};
     info.extensions_ = get_extensions();
-    info.layers_ = get_layers();
+    info.layers_     = get_layers();
     return info;
 }
 
 std::vector<const char*> Query::get_extensions() const noexcept {
     std::vector<const char*> extensions{};
     uint32_t glfw_extensions_count;
-    const char** glfw_extensions =
-        glfwGetRequiredInstanceExtensions(&glfw_extensions_count);
+    const char** glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extensions_count);
 
-    std::copy(glfw_extensions, glfw_extensions + glfw_extensions_count,
-        std::back_inserter(extensions));
+    std::copy(glfw_extensions, glfw_extensions + glfw_extensions_count, std::back_inserter(extensions));
 
     if (parameters_.validation_) {
         extensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
@@ -38,10 +36,8 @@ std::vector<const char*> Query::get_layers() const noexcept {
         const char* validation_layer{ "VK_LAYER_KHRONOS_validation" };
         uint32_t layer_count;
         vkEnumerateInstanceLayerProperties(&layer_count, nullptr);
-        std::vector<VkLayerProperties> available_layers(
-            static_cast<size_t>(layer_count));
-        vkEnumerateInstanceLayerProperties(
-            &layer_count, available_layers.data());
+        std::vector<VkLayerProperties> available_layers(static_cast<size_t>(layer_count));
+        vkEnumerateInstanceLayerProperties(&layer_count, available_layers.data());
 
         for (const auto& available_layer : available_layers) {
             if (strcmp(validation_layer, available_layer.layerName)) {

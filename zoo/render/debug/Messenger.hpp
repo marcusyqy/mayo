@@ -10,7 +10,7 @@ public:
     Messenger(VkInstance instance) noexcept;
     ~Messenger() noexcept;
 
-    Messenger(const Messenger&) noexcept = delete;
+    Messenger(const Messenger&) noexcept            = delete;
     Messenger& operator=(const Messenger&) noexcept = delete;
 
     Messenger(Messenger&& other) noexcept;

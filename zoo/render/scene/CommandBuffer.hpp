@@ -13,13 +13,11 @@ namespace zoo::render::scene {
 
 struct PipelineBindContext {
 public:
-    PipelineBindContext& push_constants(
-        const PushConstant& constant, void* data) noexcept;
+    PipelineBindContext& push_constants(const PushConstant& constant, void* data) noexcept;
 
     PipelineBindContext& bindings(const ResourceBindings& binding) noexcept;
 
-    PipelineBindContext(VkCommandBuffer cmd_buffer, VkPipeline pipeline,
-        VkPipelineLayout pipeline_layout) noexcept;
+    PipelineBindContext(VkCommandBuffer cmd_buffer, VkPipeline pipeline, VkPipelineLayout pipeline_layout) noexcept;
 
 private:
     VkCommandBuffer cmd_buffer_;
@@ -44,29 +42,31 @@ public:
     void set_scissor(const VkRect2D& scissor) noexcept;
 
     // bindings
-    PipelineBindContext bind_pipeline(
-        const render::Pipeline& pipeline) noexcept;
+    PipelineBindContext bind_pipeline(const render::Pipeline& pipeline) noexcept;
 
-    void bind_vertex_buffers(
-        stdx::span<const render::resources::Buffer> buffers) noexcept;
+    void bind_vertex_buffers(stdx::span<const render::resources::Buffer> buffers) noexcept;
     void bind_index_buffer(const render::resources::Buffer& ib) noexcept;
     void bind_mesh(const render::resources::Mesh& mesh) noexcept;
 
-    void draw(uint32_t instance_count, uint32_t first_vertex = 0,
+    void draw(uint32_t instance_count, uint32_t first_vertex = 0, uint32_t first_instance = 0) noexcept;
+
+    void draw_indexed(
+        uint32_t instance_count,
+        uint32_t first_index    = 0,
+        uint32_t first_vertex   = 0,
         uint32_t first_instance = 0) noexcept;
 
-    void draw_indexed(uint32_t instance_count, uint32_t first_index = 0,
-        uint32_t first_vertex = 0, uint32_t first_instance = 0) noexcept;
-
-    void exec(const VkRenderPassBeginInfo& begin_info,
-        stdx::function_ref<void()> c) noexcept;
+    void exec(const VkRenderPassBeginInfo& begin_info, stdx::function_ref<void()> c) noexcept;
 
     void record(stdx::function_ref<void()> c) noexcept;
 
     // TODO: find a better way to do this.
-    void submit(Operation op_type, stdx::span<VkSemaphore> wait_semaphores,
+    void submit(
+        Operation op_type,
+        stdx::span<VkSemaphore> wait_semaphores,
         stdx::span<VkPipelineStageFlags> wait_for_pipeline_stages,
-        stdx::span<VkSemaphore> signal_semaphores, VkFence fence) noexcept;
+        stdx::span<VkSemaphore> signal_semaphores,
+        VkFence fence) noexcept;
 
 private:
     void start_record() noexcept;

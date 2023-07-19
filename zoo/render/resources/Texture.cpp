@@ -4,24 +4,19 @@ namespace zoo::render::resources {
 
 namespace {
 
-VkImageViewType vk_image_type_to_image_view_type(
-    VkImageType image_type) noexcept {
+VkImageViewType vk_image_type_to_image_view_type(VkImageType image_type) noexcept {
     switch (image_type) {
-    case VK_IMAGE_TYPE_1D:
-        return VK_IMAGE_VIEW_TYPE_1D;
-    case VK_IMAGE_TYPE_2D:
-        return VK_IMAGE_VIEW_TYPE_2D;
-    case VK_IMAGE_TYPE_3D:
-        return VK_IMAGE_VIEW_TYPE_3D;
-    default:
-        ZOO_LOG_ERROR(
-            "Something went wrong with converting image to image view type!");
-        return VK_IMAGE_VIEW_TYPE_MAX_ENUM;
+        case VK_IMAGE_TYPE_1D: return VK_IMAGE_VIEW_TYPE_1D;
+        case VK_IMAGE_TYPE_2D: return VK_IMAGE_VIEW_TYPE_2D;
+        case VK_IMAGE_TYPE_3D: return VK_IMAGE_VIEW_TYPE_3D;
+        default:
+            ZOO_LOG_ERROR("Something went wrong with converting image to image "
+                          "view type!");
+            return VK_IMAGE_VIEW_TYPE_MAX_ENUM;
     }
 }
 
-VkImageAspectFlags vk_image_usage_to_aspect_mask(
-    VkImageUsageFlags usage_flags) noexcept {
+VkImageAspectFlags vk_image_usage_to_aspect_mask(VkImageUsageFlags usage_flags) noexcept {
     VkImageAspectFlags aspect_mask = VK_IMAGE_ASPECT_NONE;
     if (usage_flags & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
         aspect_mask |= VK_IMAGE_ASPECT_COLOR_BIT;
@@ -43,8 +38,7 @@ Builder& Builder::allocation_type(VmaMemoryUsage usage) noexcept {
     return *this;
 }
 
-Builder& Builder::allocation_required_flags(
-    VkMemoryPropertyFlags flags) noexcept {
+Builder& Builder::allocation_required_flags(VkMemoryPropertyFlags flags) noexcept {
     memory_properties_flags_ = flags;
     return *this;
 }
@@ -90,68 +84,67 @@ Builder& Builder::extent(VkExtent3D extent) noexcept {
 
 Texture Builder::build(const Allocator& allocator) noexcept {
     VkImageCreateInfo info{};
-    info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    info.pNext = nullptr;
+    info.sType     = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    info.pNext     = nullptr;
     info.imageType = image_type_;
 
     if (format_ == VK_FORMAT_UNDEFINED) {
         ZOO_LOG_ERROR("Format created for texture is undefined, {}", name_);
     }
 
-    info.format = format_;
-    info.extent = extent_;
-    info.mipLevels = mip_level_;
+    info.format      = format_;
+    info.extent      = extent_;
+    info.mipLevels   = mip_level_;
     info.arrayLayers = arr_level_;
-    info.usage = usage_flags_;
+    info.usage       = usage_flags_;
 
     // TODO: set this as some variable as well.
     info.samples = samples_;
-    info.tiling = tiling_;
+    info.tiling  = tiling_;
 
     VmaAllocationCreateInfo alloc_info{};
-    alloc_info.usage = memory_usage_;
+    alloc_info.usage         = memory_usage_;
     alloc_info.requiredFlags = memory_properties_flags_;
 
-    VkImage image = {};
+    VkImage image            = {};
     VmaAllocation allocation = {};
-    VK_EXPECT_SUCCESS(vmaCreateImage(
-        allocator, &info, &alloc_info, &image, &allocation, &allocation_info_));
+    VK_EXPECT_SUCCESS(vmaCreateImage(allocator, &info, &alloc_info, &image, &allocation, &allocation_info_));
 
-    return Texture{ name_, image, info, allocator.device(), allocator,
-        allocation, allocation_info_ };
+    return Texture{ name_, image, info, allocator.device(), allocator, allocation, allocation_info_ };
 }
 
 } // namespace texture
 
-Texture::Texture(std::string name, VkImage image, VkImageCreateInfo create_info,
-    VkDevice device, VmaAllocator allocator, VmaAllocation allocation,
-    VmaAllocationInfo allocation_info) noexcept
-    : name_(name), image_(image), create_info_(create_info), device_(device),
-      allocator_(allocator), allocation_(allocation),
-      allocation_info_(allocation_info),
-      view_(*this, create_image_view_info()) {}
+Texture::Texture(
+    std::string name,
+    VkImage image,
+    VkImageCreateInfo create_info,
+    VkDevice device,
+    VmaAllocator allocator,
+    VmaAllocation allocation,
+    VmaAllocationInfo allocation_info) noexcept :
+    name_(name),
+    image_(image), create_info_(create_info), device_(device), allocator_(allocator), allocation_(allocation),
+    allocation_info_(allocation_info), view_(*this, create_image_view_info()) {}
 
-Texture::Texture(Texture&& other) noexcept
-    : name_(std::move(other.name_)), image_(std::move(other.image_)),
-      create_info_(std::move(other.create_info_)),
-      device_(std::move(other.device_)),
-      allocator_(std::move(other.allocator_)),
-      allocation_(std::move(other.allocation_)),
-      allocation_info_(std::move(other.allocation_info_)),
-      view_(std::move(other.view_)) {
+Texture::Texture(Texture&& other) noexcept :
+    name_(std::move(other.name_)), image_(std::move(other.image_)), create_info_(std::move(other.create_info_)),
+    device_(std::move(other.device_)), allocator_(std::move(other.allocator_)),
+    allocation_(std::move(other.allocation_)), allocation_info_(std::move(other.allocation_info_)),
+    view_(std::move(other.view_)) {
     other.invalidate();
 }
 
 Texture& Texture::operator=(Texture&& other) noexcept {
     destroy();
-    name_ = std::move(other.name_);
-    image_ = std::move(other.image_);
-    create_info_ = std::move(other.create_info_);
-    device_ = std::move(other.device_);
-    allocator_ = std::move(other.allocator_);
-    allocation_ = std::move(other.allocation_);
+    name_            = std::move(other.name_);
+    image_           = std::move(other.image_);
+    create_info_     = std::move(other.create_info_);
+    device_          = std::move(other.device_);
+    allocator_       = std::move(other.allocator_);
+    allocation_      = std::move(other.allocation_);
     allocation_info_ = std::move(other.allocation_info_);
-    view_ = std::move(other.view_);
+    view_            = std::move(other.view_);
     other.invalidate();
     return *this;
 }
@@ -168,26 +161,23 @@ void Texture::destroy() noexcept {
 
 VkImageViewCreateInfo Texture::create_image_view_info() const noexcept {
     VkImageViewCreateInfo info{};
-    info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    info.pNext = nullptr;
-    info.viewType = vk_image_type_to_image_view_type(create_info_.imageType);
-    info.image = image_;
-    info.format = create_info_.format;
-    info.subresourceRange.baseMipLevel = 0;
-    info.subresourceRange.levelCount = create_info_.mipLevels;
+    info.sType                           = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    info.pNext                           = nullptr;
+    info.viewType                        = vk_image_type_to_image_view_type(create_info_.imageType);
+    info.image                           = image_;
+    info.format                          = create_info_.format;
+    info.subresourceRange.baseMipLevel   = 0;
+    info.subresourceRange.levelCount     = create_info_.mipLevels;
     info.subresourceRange.baseArrayLayer = 0;
-    info.subresourceRange.layerCount = create_info_.arrayLayers;
+    info.subresourceRange.layerCount     = create_info_.arrayLayers;
 
     // TODO: determine if we should have a seperate aspect mask field when
     // creating.
-    info.subresourceRange.aspectMask =
-        vk_image_usage_to_aspect_mask(create_info_.usage);
+    info.subresourceRange.aspectMask = vk_image_usage_to_aspect_mask(create_info_.usage);
 
     return info;
 }
-Texture::builder_type Texture::start_build(std::string_view name) noexcept {
-    return { name };
-}
+Texture::builder_type Texture::start_build(std::string_view name) noexcept { return { name }; }
 
 TextureView& Texture::view() noexcept { return view_; }
 const TextureView& Texture::view() const noexcept { return view_; }
@@ -195,12 +185,9 @@ const TextureView& Texture::view() const noexcept { return view_; }
 bool Texture::valid() const noexcept { return image_ != nullptr; }
 void Texture::invalidate() noexcept { image_ = nullptr; }
 
-TextureView::TextureView(
-    const Texture& reference, VkImageViewCreateInfo create_info) noexcept
-    : name_(reference.name()), device_(reference.device()),
-      create_info_(create_info), view_(nullptr) {
-    VK_EXPECT_SUCCESS(
-        vkCreateImageView(reference.device(), &create_info_, nullptr, &view_));
+TextureView::TextureView(const Texture& reference, VkImageViewCreateInfo create_info) noexcept :
+    name_(reference.name()), device_(reference.device()), create_info_(create_info), view_(nullptr) {
+    VK_EXPECT_SUCCESS(vkCreateImageView(reference.device(), &create_info_, nullptr, &view_));
 }
 
 void TextureView::destroy() noexcept {
@@ -212,10 +199,9 @@ void TextureView::destroy() noexcept {
 
 TextureView::~TextureView() noexcept { destroy(); }
 
-TextureView::TextureView(TextureView&& other) noexcept
-    : name_(std::move(other.name_)), device_(std::move(other.device_)),
-      create_info_(std::move(other.create_info_)),
-      view_(std::move(other.view_)) {
+TextureView::TextureView(TextureView&& other) noexcept :
+    name_(std::move(other.name_)), device_(std::move(other.device_)), create_info_(std::move(other.create_info_)),
+    view_(std::move(other.view_)) {
     other.invalidate();
 }
 
@@ -225,9 +211,9 @@ TextureView& TextureView::operator=(TextureView&& other) noexcept {
     name_ = std::move(other.name_);
 
     // TODO: will this break if another device comes to play?
-    device_ = std::move(other.device_);
+    device_      = std::move(other.device_);
     create_info_ = std::move(other.create_info_);
-    view_ = std::move(other.view_);
+    view_        = std::move(other.view_);
     other.invalidate();
     return *this;
 }

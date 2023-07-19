@@ -17,8 +17,7 @@ public:
     operator underlying_type() const noexcept { return get(); }
 
     RenderPass() noexcept;
-    RenderPass(
-        DeviceContext& context, VkFormat format, VkFormat depth) noexcept;
+    RenderPass(DeviceContext& context, VkFormat format, VkFormat depth) noexcept;
 
     ~RenderPass() noexcept;
 
@@ -26,7 +25,7 @@ public:
     RenderPass(RenderPass&& renderpass) noexcept;
 
     RenderPass& operator=(const RenderPass& renderpass) noexcept = delete;
-    RenderPass(const RenderPass& renderpass) noexcept = delete;
+    RenderPass(const RenderPass& renderpass) noexcept            = delete;
 
 private:
     DeviceContext* context_;

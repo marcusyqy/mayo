@@ -7,17 +7,15 @@ namespace zoo::render::resources {
 Allocator::Allocator() noexcept : underlying_{ nullptr } {}
 
 Allocator::~Allocator() noexcept {
-    if (underlying_ != nullptr)
-        reset();
+    if (underlying_ != nullptr) reset();
 }
 
-void Allocator::emplace(
-    VkInstance instance, VkDevice device, VkPhysicalDevice pd) noexcept {
-    create_info_ = VmaAllocatorCreateInfo{};
+void Allocator::emplace(VkInstance instance, VkDevice device, VkPhysicalDevice pd) noexcept {
+    create_info_                  = VmaAllocatorCreateInfo{};
     create_info_.vulkanApiVersion = Defines::vk_version;
-    create_info_.physicalDevice = pd;
-    create_info_.device = device;
-    create_info_.instance = instance;
+    create_info_.physicalDevice   = pd;
+    create_info_.device           = device;
+    create_info_.instance         = instance;
     VK_EXPECT_SUCCESS(vmaCreateAllocator(&create_info_, &underlying_));
 }
 

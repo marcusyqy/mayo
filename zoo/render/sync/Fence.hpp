@@ -18,7 +18,7 @@ public:
     Fence(DeviceContext& context) noexcept;
     ~Fence() noexcept;
 
-    Fence(const Fence& other) = delete;
+    Fence(const Fence& other)            = delete;
     Fence& operator=(const Fence& other) = delete;
 
     Fence(Fence&& other) noexcept;
@@ -28,7 +28,7 @@ public:
     Status is_signaled() const noexcept;
 
 private:
-    DeviceContext* context_ = nullptr;
+    DeviceContext* context_     = nullptr;
     underlying_type underlying_ = VK_NULL_HANDLE;
 };
 

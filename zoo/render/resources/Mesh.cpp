@@ -23,8 +23,7 @@ MeshData load_mesh_data(std::string_view file_name) {
     std::string err;
 
     // load the OBJ file
-    tinyobj::LoadObj(
-        &attrib, &shapes, &materials, &warn, &err, file_name.data(), nullptr);
+    tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, file_name.data(), nullptr);
 
     if (!warn.empty()) {
         ZOO_LOG_WARN("[load_mesh] : {}", warn);
@@ -87,17 +86,17 @@ MeshData load_mesh_data(std::string_view file_name) {
         for (const auto& index : shape.mesh.indices) {
             Vertex vertex{};
             vertex.pos = { attrib.vertices[3 * index.vertex_index + 0],
-                attrib.vertices[3 * index.vertex_index + 1],
-                attrib.vertices[3 * index.vertex_index + 2] };
+                           attrib.vertices[3 * index.vertex_index + 1],
+                           attrib.vertices[3 * index.vertex_index + 2] };
 
             vertex.normal = { attrib.normals[3 * index.normal_index + 0],
-                attrib.normals[3 * index.normal_index + 1],
-                attrib.normals[3 * index.normal_index + 2] };
+                              attrib.normals[3 * index.normal_index + 1],
+                              attrib.normals[3 * index.normal_index + 2] };
 
             // TODO: change this part to white again
             vertex.color = vertex.normal; //  { 1.0, 1.0, 1.0 };
-            vertex.uv = { attrib.texcoords[2 * index.texcoord_index + 0],
-                1.0f - attrib.texcoords[2 * index.texcoord_index + 1] };
+            vertex.uv    = { attrib.texcoords[2 * index.texcoord_index + 0],
+                             1.0f - attrib.texcoords[2 * index.texcoord_index + 1] };
 
             vertices.push_back(vertex);
             indices.push_back(uint32_t(indices.size()));
@@ -111,40 +110,33 @@ MeshData load_mesh_data(std::string_view file_name) {
 
 // out of the lack of anywhere else to put this.
 std::array<VertexBufferDescription, 4> Vertex::describe() noexcept {
-    return std::array{ VertexBufferDescription{
-                           0, render::ShaderType::vec3, offsetof(Vertex, pos) },
-        VertexBufferDescription{
-            1, render::ShaderType::vec3, offsetof(Vertex, normal) },
-        VertexBufferDescription{
-            2, render::ShaderType::vec3, offsetof(Vertex, color) },
-        VertexBufferDescription{
-            3, render::ShaderType::vec2, offsetof(Vertex, uv) } };
+    return std::array{ VertexBufferDescription{ 0, render::ShaderType::vec3, offsetof(Vertex, pos) },
+                       VertexBufferDescription{ 1, render::ShaderType::vec3, offsetof(Vertex, normal) },
+                       VertexBufferDescription{ 2, render::ShaderType::vec3, offsetof(Vertex, color) },
+                       VertexBufferDescription{ 3, render::ShaderType::vec2, offsetof(Vertex, uv) } };
 }
 
-Mesh::Mesh(
-    Allocator& allocator, MeshData mesh_data, std::string_view name) noexcept
-    : buffer_(Buffer::start_build<Vertex>(name)
-                  .usage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
-                  .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
-                  .count(mesh_data.vertices.size())
-                  .build(allocator)),
-      index_buffer_(Buffer::start_build<uint32_t>(name)
-                        .usage(VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
-                        .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
-                        .count(mesh_data.indices.size())
-                        .build(allocator)),
-      data_(std::move(mesh_data)) {
+Mesh::Mesh(Allocator& allocator, MeshData mesh_data, std::string_view name) noexcept :
+    buffer_(Buffer::start_build<Vertex>(name)
+                .usage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
+                .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
+                .count(mesh_data.vertices.size())
+                .build(allocator)),
+    index_buffer_(Buffer::start_build<uint32_t>(name)
+                      .usage(VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
+                      .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
+                      .count(mesh_data.indices.size())
+                      .build(allocator)),
+    data_(std::move(mesh_data)) {
 
-    buffer_.map<Vertex>([this](Vertex* data) {
-        std::copy(std::begin(data_.vertices), std::end(data_.vertices), data);
-    });
+    buffer_.map<Vertex>(
+        [this](Vertex* data) { std::copy(std::begin(data_.vertices), std::end(data_.vertices), data); });
 
-    index_buffer_.map<uint32_t>([this](uint32_t* data) {
-        std::copy(std::begin(data_.indices), std::end(data_.indices), data);
-    });
+    index_buffer_.map<uint32_t>(
+        [this](uint32_t* data) { std::copy(std::begin(data_.indices), std::end(data_.indices), data); });
 }
 
-Mesh::Mesh(Allocator& allocator, std::string_view file_name) noexcept
-    : Mesh(allocator, load_mesh_data(file_name), file_name) {}
+Mesh::Mesh(Allocator& allocator, std::string_view file_name) noexcept :
+    Mesh(allocator, load_mesh_data(file_name), file_name) {}
 
 } // namespace zoo::render::resources

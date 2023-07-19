@@ -6,7 +6,7 @@
 
 namespace stdx {
 
-template<typename Error>
+template <typename Error>
 class unexpected {
 public:
     using error_type = Error;
@@ -14,9 +14,7 @@ public:
     // accessors
     constexpr const error_type& error() const& noexcept { return error_; }
     constexpr error_type& error() & noexcept { return error_; }
-    constexpr const error_type&& error() const&& noexcept {
-        return std::move(error_);
-    }
+    constexpr const error_type&& error() const&& noexcept { return std::move(error_); }
     constexpr error_type&& error() && noexcept { return std::move(error_); }
 
     unexpected(const error_type& error) noexcept : error_(error) {}
@@ -37,14 +35,14 @@ private:
     error_type error_;
 };
 
-template<typename Error>
+template <typename Error>
 unexpected(Error e) -> unexpected<std::decay_t<Error>>;
 
-template<typename ValueType, typename Error = std::exception>
+template <typename ValueType, typename Error = std::exception>
 class expected {
 public:
-    using value_type = ValueType;
-    using error_type = Error;
+    using value_type      = ValueType;
+    using error_type      = Error;
     using unexpected_type = unexpected<error_type>;
 
     // constructors
@@ -54,52 +52,30 @@ public:
     // constexpr expected(unexpected_type&& ut) : value_{std::move(ut.error())}
     // {}
 
-    template<typename OtherError>
-    constexpr expected(const unexpected<OtherError>& ut)
-        : value_{ ut.error() } {}
+    template <typename OtherError>
+    constexpr expected(const unexpected<OtherError>& ut) : value_{ ut.error() } {}
 
-    template<typename OtherError>
-    constexpr expected(unexpected<OtherError>&& ut)
-        : value_{ std::move(ut.error()) } {}
+    template <typename OtherError>
+    constexpr expected(unexpected<OtherError>&& ut) : value_{ std::move(ut.error()) } {}
 
     constexpr expected(const expected& other) : value_(other.value_) {}
     constexpr expected(expected&& other) : value_(std::move(other.value_)) {}
 
     // observers
-    bool has_value() const noexcept {
-        return std::holds_alternative<value_type>(value_);
-    }
+    bool has_value() const noexcept { return std::holds_alternative<value_type>(value_); }
 
-    bool has_error() const noexcept {
-        return std::holds_alternative<error_type>(value_);
-    }
+    bool has_error() const noexcept { return std::holds_alternative<error_type>(value_); }
 
     // accessors
-    value_type& value() & noexcept {
-        return const_cast<value_type&>(std::as_const(*this).value());
-    }
-    value_type&& value() && noexcept {
-        return const_cast<value_type&&>(std::as_const(*this).value());
-    }
-    const value_type& value() const& noexcept {
-        return std::get<value_type>(value_);
-    }
-    const value_type&& value() const&& noexcept {
-        return std::move(std::get<value_type>(value_));
-    }
+    value_type& value() & noexcept { return const_cast<value_type&>(std::as_const(*this).value()); }
+    value_type&& value() && noexcept { return const_cast<value_type&&>(std::as_const(*this).value()); }
+    const value_type& value() const& noexcept { return std::get<value_type>(value_); }
+    const value_type&& value() const&& noexcept { return std::move(std::get<value_type>(value_)); }
 
-    error_type& error() & noexcept {
-        return const_cast<error_type&>(std::as_const(*this).error());
-    }
-    error_type&& error() && noexcept {
-        return const_cast<error_type&&>(std::as_const(*this).error());
-    }
-    const error_type&& error() const&& noexcept {
-        return std::move(std::get<error_type>(value_));
-    }
-    const error_type& error() const& noexcept {
-        return std::get<error_type>(value_);
-    }
+    error_type& error() & noexcept { return const_cast<error_type&>(std::as_const(*this).error()); }
+    error_type&& error() && noexcept { return const_cast<error_type&&>(std::as_const(*this).error()); }
+    const error_type&& error() const&& noexcept { return std::move(std::get<error_type>(value_)); }
+    const error_type& error() const& noexcept { return std::get<error_type>(value_); }
 
     unexpected_type as_unexpected() const noexcept { return error(); }
 
@@ -113,32 +89,27 @@ public:
     operator unexpected_type() const noexcept { return error(); }
     operator bool() const noexcept { return has_value(); }
 
-    expected& operator=(const expected& other) noexcept {
-        value_ = other.value_;
-    }
-    expected& operator=(expected&& other) noexcept {
-        value_ = std::move(other.value_);
-    }
+    expected& operator=(const expected& other) noexcept { value_ = other.value_; }
+    expected& operator=(expected&& other) noexcept { value_ = std::move(other.value_); }
 
-    template<typename OtherError>
+    template <typename OtherError>
     expected& operator=(const unexpected<OtherError>& other) noexcept {
         value_ = other.value_;
         return *this;
     }
 
-    template<typename OtherError>
+    template <typename OtherError>
     expected& operator=(unexpected<OtherError>&& other) noexcept {
-        return (*this ? (void)*this = other : std::swap(value_, other.error())),
-               *this;
+        return (*this ? (void)*this = other : std::swap(value_, other.error())), *this;
     }
 
-    template<typename OtherType, typename OtherError>
+    template <typename OtherType, typename OtherError>
     expected& operator=(const expected<OtherType, OtherError>& other) noexcept {
         other ? value_ = other.value() : value_ = other.error();
         return *this;
     }
 
-    template<typename OtherType>
+    template <typename OtherType>
     expected& operator=(const OtherType& other) noexcept {
         value_ = other;
         return *this;

@@ -18,15 +18,14 @@ namespace zoo {
 
 class Window {
 public:
-    explicit Window(render::Engine& engine, const window::Traits& traits,
-        window::InputCallback callback) noexcept;
+    explicit Window(render::Engine& engine, const window::Traits& traits, window::InputCallback callback) noexcept;
 
     ~Window() noexcept;
 
-    Window(Window&& other) noexcept = delete;
+    Window(Window&& other) noexcept            = delete;
     Window& operator=(Window&& other) noexcept = delete;
 
-    Window(const Window& other) noexcept = delete;
+    Window(const Window& other) noexcept            = delete;
     Window& operator=(const Window& other) noexcept = delete;
 
     [[nodiscard]] bool is_open() const noexcept;

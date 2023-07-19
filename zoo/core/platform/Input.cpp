@@ -7,31 +7,31 @@
 namespace zoo::input::glfw_layer {
 
 namespace {
-template<Key key>
+template <Key key>
 struct zoo_to_glfw {
     static constexpr int value = GLFW_KEY_UNKNOWN;
 };
 
-template<Key key>
+template <Key key>
 static constexpr auto zoo_to_glfw_v = zoo_to_glfw<key>::value;
 
-template<int key>
+template <int key>
 struct glfw_to_zoo {
     static constexpr Key value = Key::none;
 };
 
-template<int key>
+template <int key>
 static constexpr auto glfw_to_zoo_v = glfw_to_zoo<key>::value;
 
-#define INPUT_PAIR(key, glfw_key)                                              \
-    template<>                                                                 \
-    struct zoo_to_glfw<key> {                                                  \
-        static constexpr int value = glfw_key;                                 \
-    };                                                                         \
-                                                                               \
-    template<>                                                                 \
-    struct glfw_to_zoo<glfw_key> {                                             \
-        static constexpr Key value = key;                                      \
+#define INPUT_PAIR(key, glfw_key)                                                                                      \
+    template <>                                                                                                        \
+    struct zoo_to_glfw<key> {                                                                                          \
+        static constexpr int value = glfw_key;                                                                         \
+    };                                                                                                                 \
+                                                                                                                       \
+    template <>                                                                                                        \
+    struct glfw_to_zoo<glfw_key> {                                                                                     \
+        static constexpr Key value = key;                                                                              \
     };
 
 INPUT_PAIR(Key::space, GLFW_KEY_SPACE)
@@ -167,15 +167,13 @@ KeyCode convert(input::KeyCode) noexcept {
 }
 
 input::KeyCode convert(KeyCode value) noexcept {
-    Key key = Key::none;
+    Key key       = Key::none;
     Action action = Action::none;
-    Mod mod = Mod::none;
+    Mod mod       = Mod::none;
 
     switch (value.key_) {
-#define SWITCH_KEY(xkey)                                                       \
-    case xkey:                                                                 \
-        key = glfw_to_zoo_v<xkey>;                                             \
-        break;
+#define SWITCH_KEY(xkey)                                                                                               \
+    case xkey: key = glfw_to_zoo_v<xkey>; break;
         SWITCH_KEY(GLFW_KEY_UNKNOWN)
         SWITCH_KEY(GLFW_KEY_SPACE)
         SWITCH_KEY(GLFW_KEY_APOSTROPHE)
@@ -301,18 +299,10 @@ input::KeyCode convert(KeyCode value) noexcept {
     }
 
     switch (value.action_) {
-    case GLFW_PRESS:
-        action = Action::pressed;
-        break;
-    case GLFW_RELEASE:
-        action = Action::released;
-        break;
-    case GLFW_REPEAT:
-        action = Action::repeat;
-        break;
-    default:
-        action = Action::none;
-        break;
+        case GLFW_PRESS: action = Action::pressed; break;
+        case GLFW_RELEASE: action = Action::released; break;
+        case GLFW_REPEAT: action = Action::repeat; break;
+        default: action = Action::none; break;
     }
 
     return input::KeyCode{ key, action, mod };

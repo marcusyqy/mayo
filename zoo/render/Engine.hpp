@@ -25,22 +25,18 @@ struct Info {
 // all other rendering logic should be in `DeviceContext`
 class Engine {
 public:
-    using Info = engine::Info;
-    using physical_device_iterator =
-        typename std::vector<utils::PhysicalDevice>::const_iterator;
+    using Info                     = engine::Info;
+    using physical_device_iterator = typename std::vector<utils::PhysicalDevice>::const_iterator;
 
     Engine(const Info& info) noexcept;
     ~Engine() noexcept;
 
-    Engine(const Engine&) noexcept = delete;
+    Engine(const Engine&) noexcept            = delete;
     Engine& operator=(const Engine&) noexcept = delete;
-    Engine(Engine&&) noexcept = delete;
-    Engine& operator=(Engine&&) noexcept = delete;
+    Engine(Engine&&) noexcept                 = delete;
+    Engine& operator=(Engine&&) noexcept      = delete;
 
-    const std::vector<utils::PhysicalDevice>&
-    physical_devices() const noexcept {
-        return physical_devices_;
-    }
+    const std::vector<utils::PhysicalDevice>& physical_devices() const noexcept { return physical_devices_; }
 
     VkInstance vk_instance() const noexcept { return instance_; }
 

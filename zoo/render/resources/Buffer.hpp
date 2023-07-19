@@ -21,13 +21,13 @@ public:
     Builder& allocation_flag(VmaAllocationCreateFlags flags) noexcept;
 
 private:
-    VkBuffer buffer_ = {};
-    VkBufferUsageFlags usage_ = {};
-    size_t obj_size_ = {};
-    size_t count_ = {};
+    VkBuffer buffer_                   = {};
+    VkBufferUsageFlags usage_          = {};
+    size_t obj_size_                   = {};
+    size_t count_                      = {};
     VmaAllocationInfo allocation_info_ = {};
-    VmaMemoryUsage memory_usage_ = VMA_MEMORY_USAGE_AUTO;
-    std::string name_ = {};
+    VmaMemoryUsage memory_usage_       = VMA_MEMORY_USAGE_AUTO;
+    std::string name_                  = {};
 };
 
 } // namespace buffer
@@ -44,19 +44,24 @@ class Buffer {
 public:
     using builder_type = buffer::Builder;
 
-    template<typename Type>
+    template <typename Type>
     static builder_type start_build(std::string_view name) noexcept {
         return start_build(name, sizeof(Type));
     }
 
-    static builder_type start_build(
-        std::string_view name, size_t size) noexcept;
+    static builder_type start_build(std::string_view name, size_t size) noexcept;
 
-    explicit Buffer(std::string name, VkBuffer buffer, VkBufferUsageFlags usage,
-        size_t obj_size, size_t count, VmaAllocator allocator,
-        VmaAllocation allocation, VmaAllocationInfo allocation_info) noexcept;
+    explicit Buffer(
+        std::string name,
+        VkBuffer buffer,
+        VkBufferUsageFlags usage,
+        size_t obj_size,
+        size_t count,
+        VmaAllocator allocator,
+        VmaAllocation allocation,
+        VmaAllocationInfo allocation_info) noexcept;
 
-    Buffer(const Buffer&) = delete;
+    Buffer(const Buffer&)            = delete;
     Buffer& operator=(const Buffer&) = delete;
 
     Buffer(Buffer&&) noexcept;
@@ -70,13 +75,13 @@ public:
 
     void map(stdx::function_ref<void(void*)> fn) noexcept;
 
-    template<typename Type>
+    template <typename Type>
     void map(stdx::function_ref<void(Type*)> fn) noexcept {
         fn(map<Type>());
         unmap();
     }
 
-    template<typename Type>
+    template <typename Type>
     Type* map() noexcept {
         return reinterpret_cast<Type*>(map());
     }
@@ -99,14 +104,14 @@ private:
     // simply for debugging.
     std::string name_ = "BUFFER_NOT_INITIALIZED";
 
-    VkBuffer buffer_ = nullptr;
+    VkBuffer buffer_          = nullptr;
     VkBufferUsageFlags usage_ = {};
 
     size_t obj_size_ = 0;
-    size_t count_ = 0;
+    size_t count_    = 0;
 
-    VmaAllocator allocator_ = nullptr;
-    VmaAllocation allocation_ = nullptr;
+    VmaAllocator allocator_            = nullptr;
+    VmaAllocation allocation_          = nullptr;
     VmaAllocationInfo allocation_info_ = {};
 };
 

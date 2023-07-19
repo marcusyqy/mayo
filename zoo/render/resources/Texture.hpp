@@ -11,15 +11,14 @@ class Texture;
 /// This may break if another device appears.
 class TextureView {
 public:
-    TextureView(
-        const Texture& reference, VkImageViewCreateInfo create_info) noexcept;
+    TextureView(const Texture& reference, VkImageViewCreateInfo create_info) noexcept;
 
     TextureView() = default;
     ~TextureView() noexcept;
 
     void destroy() noexcept;
 
-    TextureView(const TextureView&) = delete;
+    TextureView(const TextureView&)            = delete;
     TextureView& operator=(const TextureView&) = delete;
 
     TextureView(TextureView&& other) noexcept;
@@ -32,10 +31,10 @@ public:
 
 private:
     std::string_view name_ = "ZOO_UNINITIALIZED_TEXTURE_VIEW";
-    VkDevice device_ = VK_NULL_HANDLE;
+    VkDevice device_       = VK_NULL_HANDLE;
 
     VkImageViewCreateInfo create_info_ = {};
-    VkImageView view_ = VK_NULL_HANDLE;
+    VkImageView view_                  = VK_NULL_HANDLE;
 };
 
 namespace texture {
@@ -63,20 +62,20 @@ private:
     std::string name_;
 
     VmaAllocationInfo allocation_info_ = {};
-    VmaMemoryUsage memory_usage_ = VMA_MEMORY_USAGE_AUTO;
+    VmaMemoryUsage memory_usage_       = VMA_MEMORY_USAGE_AUTO;
 
     VkImageType image_type_ = VK_IMAGE_TYPE_2D;
-    VkFormat format_ = VK_FORMAT_UNDEFINED; // Needs to be set.
-    VkExtent3D extent_ = {};
+    VkFormat format_        = VK_FORMAT_UNDEFINED; // Needs to be set.
+    VkExtent3D extent_      = {};
 
     VkSampleCountFlagBits samples_ = VK_SAMPLE_COUNT_1_BIT;
-    VkImageTiling tiling_ = VK_IMAGE_TILING_OPTIMAL;
+    VkImageTiling tiling_          = VK_IMAGE_TILING_OPTIMAL;
 
     uint32_t mip_level_ = 1;
     uint32_t arr_level_ = 1;
 
     VkMemoryPropertyFlags memory_properties_flags_ = {};
-    VkImageUsageFlags usage_flags_ = {};
+    VkImageUsageFlags usage_flags_                 = {};
 };
 
 } // namespace texture
@@ -87,15 +86,20 @@ public:
 
     static builder_type start_build(std::string_view name) noexcept;
 
-    explicit Texture(std::string name, VkImage image,
-        VkImageCreateInfo create_info, VkDevice device, VmaAllocator allocator,
-        VmaAllocation allocation, VmaAllocationInfo allocation_info) noexcept;
+    explicit Texture(
+        std::string name,
+        VkImage image,
+        VkImageCreateInfo create_info,
+        VkDevice device,
+        VmaAllocator allocator,
+        VmaAllocation allocation,
+        VmaAllocationInfo allocation_info) noexcept;
 
     Texture() noexcept = default;
 
     ~Texture() noexcept;
 
-    Texture(const Texture& other) noexcept = delete;
+    Texture(const Texture& other) noexcept            = delete;
     Texture& operator=(const Texture& other) noexcept = delete;
 
     Texture(Texture&& other) noexcept;
@@ -122,12 +126,12 @@ private:
 private:
     std::string name_ = "ZOO_UNINITIALIZED_TEXTURE";
 
-    VkImage image_ = VK_NULL_HANDLE;
+    VkImage image_                 = VK_NULL_HANDLE;
     VkImageCreateInfo create_info_ = {};
 
-    VkDevice device_ = VK_NULL_HANDLE;
-    VmaAllocator allocator_ = VK_NULL_HANDLE;
-    VmaAllocation allocation_ = VK_NULL_HANDLE;
+    VkDevice device_                   = VK_NULL_HANDLE;
+    VmaAllocator allocator_            = VK_NULL_HANDLE;
+    VmaAllocation allocation_          = VK_NULL_HANDLE;
     VmaAllocationInfo allocation_info_ = {};
 
     TextureView view_;

@@ -20,34 +20,27 @@ struct erase_info {
 
 enum class function_type { constructor, destructor, member, op };
 
-template<typename Type>
+template <typename Type>
 struct static_info {
     static constexpr size_t alignment = alignof(Type);
-    static constexpr size_t size = sizeof(Type);
+    static constexpr size_t size      = sizeof(Type);
 
     static constexpr auto default_constructor = [](void* ptr) -> void* {
         return new (std::launder(reinterpret_cast<Type*>(ptr))) Type{};
     };
 
-    static constexpr auto copy_constructor = [](void* ptr,
-                                                 void* other) -> void* {
-        return new (std::launder(reinterpret_cast<Type*>(ptr)))
-            Type{ *(static_cast<Type*>(other)) };
+    static constexpr auto copy_constructor = [](void* ptr, void* other) -> void* {
+        return new (std::launder(reinterpret_cast<Type*>(ptr))) Type{ *(static_cast<Type*>(other)) };
     };
 
-    static constexpr auto move_constructor = [](void* ptr,
-                                                 void* other) -> void* {
-        return new (std::launder(reinterpret_cast<Type*>(ptr)))
-            Type{ std::move(*(static_cast<Type*>(other))) };
+    static constexpr auto move_constructor = [](void* ptr, void* other) -> void* {
+        return new (std::launder(reinterpret_cast<Type*>(ptr))) Type{ std::move(*(static_cast<Type*>(other))) };
     };
 
-    static constexpr auto destructor = [](void* ptr) {
-        std::destroy_at(std::launder(reinterpret_cast<Type*>(ptr)));
-    };
+    static constexpr auto destructor = [](void* ptr) { std::destroy_at(std::launder(reinterpret_cast<Type*>(ptr))); };
 
     static erase_info to_erase_info() noexcept {
-        return { alignment, size, default_constructor, copy_constructor,
-            move_constructor, destructor };
+        return { alignment, size, default_constructor, copy_constructor, move_constructor, destructor };
     }
 
     operator erase_info() const noexcept { return to_erase_info(); }
