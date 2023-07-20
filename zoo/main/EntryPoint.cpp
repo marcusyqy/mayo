@@ -199,10 +199,10 @@ application::ExitStatus main(application::Settings args) noexcept {
         const auto current_idx = swapchain.current_image();
         auto& frame_data       = frame_datas[current_idx];
 
-        glm::vec3 cam_pos = { 0.6f, -6.f, -10.f };
+        glm::vec3 cam_pos = { 0.0f, 0.0f, 7.0f };
 
-        glm::mat4 view = glm::translate(glm::mat4(1.f), cam_pos);
-        // glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        glm::mat4 view = 
+             glm::lookAt(cam_pos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         glm::mat4 projection = glm::perspective(glm::radians(70.f), 1700.f / 900.f, 0.1f, 200.0f);
         projection[1][1] *= -1;
 
@@ -216,17 +216,17 @@ application::ExitStatus main(application::Settings args) noexcept {
 
         auto current_time = std::chrono::high_resolution_clock::now();
         f32 time          = std::chrono::duration<f32, std::chrono::seconds::period>(current_time - start_time).count();
-        f32 var           = time * glm::radians(720.0f);
+        f32 var           = time * glm::radians(360.0f);
 
         u32 offset = current_idx * pad_uniform_buffer_size(context, sizeof(SceneData));
         render::resources::BufferView buffer_view{ scene_data_buffer, offset, offset + sizeof(SceneData) };
         buffer_view.map<SceneData>([&](SceneData* data) {
-            if (data) {
+            if (data) 
                 data->ambient_color = { sin(var), 0, cos(var), 1 };
-            }
         });
 
-        glm::mat4 model = glm::rotate(glm::mat4{ 1.0f }, time * glm::radians(90.0f), glm::vec3(0, 1, 0));
+        glm::mat4 model = glm::mat4{ 1.0f };
+            //glm::rotate(glm::mat4{ 1.0f }, time * glm::radians(90.0f), glm::vec3(0, 1, 0));
         push_constant_data.render_matrix = model;
 
         auto populate_command_ctx = [&](render::scene::CommandBuffer& command_context,
