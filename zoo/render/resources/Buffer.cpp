@@ -12,6 +12,7 @@ Buffer Builder::build(const Allocator& allocator) noexcept {
 
     VmaAllocationCreateInfo alloc_info{};
     alloc_info.usage = memory_usage_;
+    alloc_info.flags = memory_create_flags_;
 
     VmaAllocation allocation{};
     VK_EXPECT_SUCCESS(vmaCreateBuffer(allocator, &buffer_info, &alloc_info, &buffer_, &allocation, &allocation_info_));
@@ -31,6 +32,11 @@ Builder& Builder::usage(VkBufferUsageFlags usage) noexcept {
 
 Builder& Builder::allocation_type(VmaMemoryUsage usage) noexcept {
     memory_usage_ = usage;
+    return *this;
+}
+
+Builder& Builder::allocation_flag(VmaAllocationCreateFlags flags) noexcept {
+    memory_create_flags_ = flags;
     return *this;
 }
 

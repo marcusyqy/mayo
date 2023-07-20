@@ -21,13 +21,14 @@ public:
     Builder& allocation_flag(VmaAllocationCreateFlags flags) noexcept;
 
 private:
-    VkBuffer buffer_                   = {};
-    VkBufferUsageFlags usage_          = {};
-    size_t obj_size_                   = {};
-    size_t count_                      = {};
-    VmaAllocationInfo allocation_info_ = {};
-    VmaMemoryUsage memory_usage_       = VMA_MEMORY_USAGE_AUTO;
-    std::string name_                  = {};
+    VkBuffer buffer_                              = {};
+    VkBufferUsageFlags usage_                     = {};
+    size_t obj_size_                              = {};
+    size_t count_                                 = {};
+    VmaAllocationInfo allocation_info_            = {};
+    VmaMemoryUsage memory_usage_                  = VMA_MEMORY_USAGE_AUTO;
+    VmaAllocationCreateFlags memory_create_flags_ = {};
+    std::string name_                             = {};
 };
 
 } // namespace buffer

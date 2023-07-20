@@ -176,7 +176,9 @@ application::ExitStatus main(application::Settings args) noexcept {
                                                       "SceneDataBuffer",
                                                       MAX_FRAMES * pad_uniform_buffer_size(context, sizeof(SceneData)))
                                                       .usage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
-                                                      .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
+                                                      //.allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
+                                                      .allocation_type(VMA_MEMORY_USAGE_AUTO)
+                                                      .allocation_flag(VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT)
                                                       .count(1)
                                                       .build(context.allocator());
 
