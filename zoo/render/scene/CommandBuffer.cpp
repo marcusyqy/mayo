@@ -49,7 +49,8 @@ PipelineBindContext::PipelineBindContext(
     pipeline_(pipeline), pipeline_layout_(pipeline_layout) {}
 
 CommandBuffer::CommandBuffer(DeviceContext& context, Operation op_type) noexcept :
-    context_{ std::addressof(context) }, underlying_{ context_->vk_command_buffer_from_pool(op_type) }, op_type_(op_type) {}
+    context_{ std::addressof(context) }, underlying_{ context_->vk_command_buffer_from_pool(op_type) },
+    op_type_(op_type) {}
 
 CommandBuffer::CommandBuffer(CommandBuffer&& other) noexcept :
     context_{ std::move(other.context_) }, underlying_{ std::move(other.underlying_) }, op_type_(other.op_type_) {
@@ -59,7 +60,7 @@ CommandBuffer::CommandBuffer(CommandBuffer&& other) noexcept :
 CommandBuffer& CommandBuffer::operator=(CommandBuffer&& other) noexcept {
     context_    = std::move(other.context_);
     underlying_ = std::move(other.underlying_);
-    op_type_ = std::move(other.op_type_);
+    op_type_    = std::move(other.op_type_);
     other.reset();
     return *this;
 }
@@ -69,7 +70,7 @@ CommandBuffer::~CommandBuffer() noexcept { reset(); }
 void CommandBuffer::reset() noexcept {
     context_    = nullptr;
     underlying_ = nullptr;
-    op_type_ = Operation::unknown;
+    op_type_    = Operation::unknown;
 }
 
 void CommandBuffer::clear() noexcept { vkResetCommandBuffer(underlying_, 0); }

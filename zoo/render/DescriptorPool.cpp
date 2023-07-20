@@ -54,7 +54,7 @@ BindingBatch& BindingBatch::bind(u32 set, u32 binding, resources::Buffer& buffer
 BindingBatch&
     BindingBatch::bind(u32 set, u32 binding, resources::BufferView& buffer, VkDescriptorType bind_type) noexcept {
     auto [start, end] = buffer.span();
-    bind(set, binding, buffer.handle(), static_cast<u32> (start), static_cast<u32>(end - start), bind_type);
+    bind(set, binding, buffer.handle(), static_cast<u32>(start), static_cast<u32>(end - start), bind_type);
     return *this;
 }
 

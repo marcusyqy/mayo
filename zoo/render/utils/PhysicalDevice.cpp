@@ -29,7 +29,7 @@ void PhysicalDevice::query_properties_and_features() noexcept {
     vkGetPhysicalDeviceFeatures2(underlying_, &features);
 
     shader_draw_parameters_enabled_ = shader_draw_parameters_feature.shaderDrawParameters == VK_TRUE;
-    features_ = features.features;
+    features_                       = features.features;
     {
         uint32_t queue_family_count = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(underlying_, &queue_family_count, nullptr);
