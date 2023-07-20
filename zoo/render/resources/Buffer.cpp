@@ -119,7 +119,7 @@ void Buffer::reset_members() noexcept {
 void* BufferView::map() noexcept {
     void* data = nullptr;
     VK_EXPECT_SUCCESS(vmaMapMemory(allocator_, allocation_, &data));
-    return data;
+    return reinterpret_cast<void*>(reinterpret_cast<char*>(data) + start_);
 }
 
 void BufferView::unmap() noexcept { vmaUnmapMemory(allocator_, allocation_); }
