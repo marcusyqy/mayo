@@ -42,6 +42,7 @@ public:
     [[nodiscard]] bool has_present(const QueueFamilyProperties& family_props, VkInstance instance) const noexcept;
 
     bool has_required_extension(std::string_view extension_name) const noexcept;
+    bool shader_draw_parameters_enabled() const noexcept { return shader_draw_parameters_enabled_; }
 
 private:
     void query_properties_and_features() noexcept;
@@ -52,7 +53,9 @@ private:
     VkPhysicalDeviceProperties properties_{};
     VkPhysicalDeviceFeatures features_{};
     std::vector<QueueFamilyProperties> queue_family_properties_{};
-    std::unordered_set<std::string_view> device_extensions_{};
+    std::unordered_set<std::string> device_extensions_{};
+
+    bool shader_draw_parameters_enabled_;
 };
 
 } // namespace zoo::render::utils

@@ -2,7 +2,8 @@
 
 namespace zoo::render {
 
-ResourceBindings::BindingBatch& ResourceBindings::BindingBatch::bind(
+BindingBatch& BindingBatch::bind(
+    u32 set,
     u32 binding,
     VkBuffer buffer,
     u32 offset,
@@ -25,7 +26,7 @@ ResourceBindings::BindingBatch& ResourceBindings::BindingBatch::bind(
     set_write.pNext = nullptr;
 
     set_write.dstBinding = binding;
-    set_write.dstSet     = target_.set();
+    set_write.dstSet     = target_.set(set);
 
     set_write.descriptorCount = 1;
     set_write.descriptorType  = bind_type;
@@ -35,22 +36,30 @@ ResourceBindings::BindingBatch& ResourceBindings::BindingBatch::bind(
     return *this;
 }
 
-ResourceBindings::BindingBatch&
-    ResourceBindings::BindingBatch::bind(u32 binding, resources::Buffer& buffer, VkDescriptorType bind_type) noexcept {
-    bind(binding, buffer.handle(), 0, buffer.allocated_size(), bind_type);
+BindingBatch& BindingBatch::bind(u32 binding, resources::Buffer& buffer, VkDescriptorType bind_type) noexcept {
+    bind(0, binding, buffer.handle(), 0, buffer.allocated_size(), bind_type);
     return *this;
 }
 
-ResourceBindings::BindingBatch& ResourceBindings::BindingBatch::bind(
-    u32 binding,
-    resources::BufferView& buffer,
-    VkDescriptorType bind_type) noexcept {
+BindingBatch& BindingBatch::bind(u32 binding, resources::BufferView& buffer, VkDescriptorType bind_type) noexcept {
     auto [start, end] = buffer.span();
-    bind(binding, buffer.handle(), start, end - start, bind_type);
+    bind(0, binding, buffer.handle(), start, end - start, bind_type);
     return *this;
 }
 
-void ResourceBindings::BindingBatch::end_batch() noexcept { target_.write(*this); }
+BindingBatch& BindingBatch::bind(u32 set, u32 binding, resources::Buffer& buffer, VkDescriptorType bind_type) noexcept {
+    bind(set, binding, buffer.handle(), 0, buffer.allocated_size(), bind_type);
+    return *this;
+}
+
+BindingBatch&
+    BindingBatch::bind(u32 set, u32 binding, resources::BufferView& buffer, VkDescriptorType bind_type) noexcept {
+    auto [start, end] = buffer.span();
+    bind(set, binding, buffer.handle(), start, end - start, bind_type);
+    return *this;
+}
+
+void BindingBatch::end_batch() noexcept { target_.write(*this); }
 
 void ResourceBindings::write(const BindingBatch& batch) noexcept {
     if (context_ != nullptr) {
@@ -58,10 +67,18 @@ void ResourceBindings::write(const BindingBatch& batch) noexcept {
     }
 }
 
-ResourceBindings::BindingBatch ResourceBindings::start_batch() noexcept { return { *this }; }
+BindingBatch ResourceBindings::start_batch() noexcept { return { *this }; }
 
-ResourceBindings::ResourceBindings(DeviceContext& context, VkDescriptorPool pool, VkDescriptorSet set) noexcept :
-    context_(&context), pool_(pool), set_(set) {}
+ResourceBindings::ResourceBindings(
+    DeviceContext& context,
+    VkDescriptorPool pool,
+    stdx::span<VkDescriptorSet> set) noexcept :
+    context_(&context),
+    pool_(pool), set_count_(static_cast<u32>(set.size())) {
+
+    ZOO_ASSERT(set_count_ < MAX_RESOURCE_SIZE, "Must be within the specified size expected");
+    std::copy(set.begin(), set.end(), std::begin(set_));
+}
 
 ResourceBindings::~ResourceBindings() noexcept { release(); }
 
@@ -74,7 +91,11 @@ void ResourceBindings::release() noexcept {
 void ResourceBindings::reset_members() noexcept {
     context_ = nullptr;
     pool_    = nullptr;
-    set_     = nullptr;
+
+    for (u32 i = 0; i < set_count_; ++i) {
+        set_[i] = nullptr;
+    }
+    set_count_ = 0;
 }
 
 void ResourceBindings::release_allocation() noexcept {
@@ -82,17 +103,22 @@ void ResourceBindings::release_allocation() noexcept {
     // BUG: Since we don't call
     // `VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT` we cannot free. For
     // now we will simply take this overhead but it is very unnecessary.
-    if (context_ != nullptr && pool_ != nullptr && set_ != nullptr) vkFreeDescriptorSets(*context_, pool_, 1, &set_);
+    if (context_ != nullptr && pool_ != nullptr) {
+        for (u32 i = 0; i < set_count_; ++i) {
+            vkFreeDescriptorSets(*context_, pool_, 1, &set_[i]);
+        }
+    }
 }
 
 ResourceBindings::ResourceBindings(ResourceBindings&& o) noexcept { *this = std::move(o); }
+
 ResourceBindings& ResourceBindings::operator=(ResourceBindings&& o) noexcept {
     release_allocation();
 
     context_ = o.context_;
     pool_    = o.pool_;
-    set_     = o.set_;
-
+    std::copy(o.set_, o.set_ + o.set_count_, set_);
+    set_count_ = o.set_count_;
     o.reset_members();
 
     return *this;
@@ -109,14 +135,14 @@ DescriptorPool::DescriptorPool(DeviceContext& context) noexcept : context_(conte
     // clang-format off
     VkDescriptorPoolSize sizes[] {
         { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, MAX_POOL_SIZE },
-        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, MAX_POOL_SIZE }
+        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, MAX_POOL_SIZE },
+        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, MAX_POOL_SIZE }
     };
     // clang-format on
 
     VkDescriptorPoolCreateInfo pool_info = {
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-        // TODO: we can remove this if needed. This is needed for solving the
-        // bug above ^^
+        // TODO: we can remove this if needed. This is needed for solving the bug above.
         .flags         = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
         .maxSets       = MAX_POOL_SIZE,
         .poolSizeCount = (u32)std::size(sizes),
@@ -127,19 +153,26 @@ DescriptorPool::DescriptorPool(DeviceContext& context) noexcept : context_(conte
 }
 
 ResourceBindings DescriptorPool::allocate(render::Pipeline& pipeline) noexcept {
+    static_assert(
+        ResourceBindings::MAX_RESOURCE_SIZE == render::Pipeline::MAX_DESCRIPTORS,
+        "Must match the descriptors for the arrays");
 
-    VkDescriptorSetAllocateInfo alloc_info = {
-        .sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-        .pNext              = nullptr,
-        .descriptorPool     = pool_,
-        .descriptorSetCount = 1,
-        .pSetLayouts        = &pipeline.set_layout_,
-    };
+    VkDescriptorSet descriptor[ResourceBindings::MAX_RESOURCE_SIZE] = {};
+    u32 count                                                       = 0;
 
-    VkDescriptorSet descriptor = nullptr;
-    VK_EXPECT_SUCCESS(vkAllocateDescriptorSets(context_, &alloc_info, &descriptor));
+    for (; count < pipeline.set_layout_count_; ++count) {
 
-    return { context_, pool_, descriptor };
-} // namespace zoo::render
+        VkDescriptorSetAllocateInfo alloc_info = {
+            .sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+            .pNext              = nullptr,
+            .descriptorPool     = pool_,
+            .descriptorSetCount = 1,
+            .pSetLayouts        = &pipeline.set_layout_[count],
+        };
+        VK_EXPECT_SUCCESS(vkAllocateDescriptorSets(context_, &alloc_info, &descriptor[count]));
+    }
+
+    return { context_, pool_, { descriptor, count } };
+}
 
 } // namespace zoo::render

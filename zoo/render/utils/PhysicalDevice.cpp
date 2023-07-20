@@ -16,7 +16,20 @@ PhysicalDevice::PhysicalDevice(underlying_type underlying) noexcept : underlying
 
 void PhysicalDevice::query_properties_and_features() noexcept {
     vkGetPhysicalDeviceProperties(underlying_, &properties_);
-    vkGetPhysicalDeviceFeatures(underlying_, &features_);
+
+    VkPhysicalDeviceShaderDrawParametersFeatures shader_draw_parameters_feature = {};
+    shader_draw_parameters_feature.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES;
+    shader_draw_parameters_feature.pNext = nullptr;
+    shader_draw_parameters_feature.shaderDrawParameters = VK_TRUE;
+
+    VkPhysicalDeviceFeatures2 features;
+    features.pNext = &shader_draw_parameters_feature;
+    features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+
+    vkGetPhysicalDeviceFeatures2(underlying_, &features);
+
+    shader_draw_parameters_enabled_ = shader_draw_parameters_feature.shaderDrawParameters == VK_TRUE;
+    features_ = features.features;
     {
         uint32_t queue_family_count = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(underlying_, &queue_family_count, nullptr);
@@ -44,7 +57,7 @@ void PhysicalDevice::query_properties_and_features() noexcept {
             std::begin(available_extensions),
             std::end(available_extensions),
             std::inserter(device_extensions_, std::end(device_extensions_)),
-            [](const VkExtensionProperties& props) -> std::string_view { return props.extensionName; });
+            [](const VkExtensionProperties& props) -> std::string { return props.extensionName; });
     }
 }
 
@@ -84,6 +97,6 @@ bool PhysicalDevice::has_present(const QueueFamilyProperties& family_props, VkIn
 }
 
 bool PhysicalDevice::has_required_extension(std::string_view extension_name) const noexcept {
-    return device_extensions_.count(extension_name) > 0;
+    return device_extensions_.count(extension_name.data()) > 0;
 }
 } // namespace zoo::render::utils

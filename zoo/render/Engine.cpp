@@ -19,9 +19,12 @@ platform::render::Query query{ params };
 std::optional<size_t> get_queue_index_if_physical_device_is_chosen(
     const render::utils::PhysicalDevice& physical_device,
     VkInstance instance) noexcept {
-    if (!physical_device.has_geometry_shader() &&
-        physical_device.has_required_extension(VK_KHR_SWAPCHAIN_EXTENSION_NAME))
+
+    if (!physical_device.has_geometry_shader() ||
+        !physical_device.has_required_extension(VK_KHR_SWAPCHAIN_EXTENSION_NAME) ||
+        !physical_device.shader_draw_parameters_enabled()) {
         return std::nullopt;
+    }
 
     size_t index{};
     for (const auto& queue_properties : physical_device.queue_properties()) {

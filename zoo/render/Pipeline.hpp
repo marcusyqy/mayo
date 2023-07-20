@@ -77,6 +77,8 @@ struct BindingDescriptor {
     VkDescriptorType type;
     u32 count;
     VkShaderStageFlags stage;
+
+    u32 set = 0;
 };
 
 class Pipeline {
@@ -104,8 +106,11 @@ private:
     DeviceContext& context_;
     underlying_type underlying_ = nullptr;
 
-    VkPipelineLayout layout_          = nullptr;
-    VkDescriptorSetLayout set_layout_ = nullptr;
+    VkPipelineLayout layout_ = nullptr;
+
+    constexpr static u32 MAX_DESCRIPTORS = 5;
+    VkDescriptorSetLayout set_layout_[MAX_DESCRIPTORS]{ nullptr };
+    u32 set_layout_count_{};
 };
 
 } // namespace zoo::render

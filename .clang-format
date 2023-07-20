@@ -1,12 +1,12 @@
 ---
 AccessModifierOffset: '-4'
 AlignAfterOpenBracket: AlwaysBreak
-AlignConsecutiveMacros: true
+AlignConsecutiveMacros: 'true'
 AlignConsecutiveAssignments: 'true'
 AlignConsecutiveDeclarations: 'false'
 AlignEscapedNewlines: Right
 AlignOperands: 'false'
-AlignTrailingComments: 'true'
+AlignTrailingComments: true
 AllowAllArgumentsOnNextLine: 'false'
 AllowAllConstructorInitializersOnNextLine: 'false'
 AllowAllParametersOfDeclarationOnNextLine: 'false'

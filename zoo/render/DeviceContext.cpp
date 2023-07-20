@@ -32,8 +32,20 @@ DeviceContext::DeviceContext(
     float queue_priority               = 1.0f;
     queue_create_info.pQueuePriorities = std::addressof(queue_priority);
 
+    /**
+     * If the VkPhysicalDeviceShaderDrawParametersFeatures structure is included in the pNext chain of the
+     * VkPhysicalDeviceFeatures2 structure passed to vkGetPhysicalDeviceFeatures2, it is filled in to indicate whether
+     * each corresponding feature is supported. VkPhysicalDeviceShaderDrawParametersFeatures can also be used in the
+     * pNext chain of VkDeviceCreateInfo to selectively enable these features.
+     */
+    VkPhysicalDeviceShaderDrawParametersFeatures shader_draw_parameters_feature = {};
+    shader_draw_parameters_feature.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES;
+    shader_draw_parameters_feature.pNext = nullptr;
+    shader_draw_parameters_feature.shaderDrawParameters = VK_TRUE;
+
     // create logical device here.
     VkDeviceCreateInfo create_info{};
+    create_info.pNext                = &shader_draw_parameters_feature;
     create_info.sType                = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     create_info.queueCreateInfoCount = 1;
     create_info.pQueueCreateInfos    = std::addressof(queue_create_info);

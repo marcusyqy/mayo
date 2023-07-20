@@ -39,6 +39,8 @@ struct SceneData {
 struct FrameData {
     render::resources::Buffer uniform_buffer;
     render::ResourceBindings bindings;
+
+    render::resources::Buffer object_storage_buffer;
 };
 
 struct UniformBufferData {
@@ -47,9 +49,14 @@ struct UniformBufferData {
     glm::mat4 viewproj;
 };
 
-constexpr s32 MAX_FRAMES = 3;
+constexpr s32 MAX_FRAMES  = 3;
+constexpr s32 MAX_OBJECTS = 10'000;
 
 using FrameDatas = FrameData[MAX_FRAMES];
+
+struct ObjectData {
+    glm::mat4 model_mat;
+};
 
 struct PushConstantData {
     glm::vec4 data;
@@ -87,6 +94,7 @@ Shaders read_shaders() noexcept {
     return { .vertex = std::move(*vertex_spirv), .fragment = std::move(*fragment_spirv) };
 }
 
+// TODO: move this to a utils :: namespace or something.
 size_t pad_uniform_buffer_size(const render::DeviceContext& context, size_t original_size) {
     size_t min_ubo_alignment = context.physical().limits().minUniformBufferOffsetAlignment;
     size_t aligned_size      = original_size;
@@ -143,7 +151,8 @@ application::ExitStatus main(application::Settings args) noexcept {
         { .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .count = 1, .stage = VK_SHADER_STAGE_VERTEX_BIT },
         { .type  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
           .count = 1,
-          .stage = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT }
+          .stage = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
+        { .type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, .count = 1, .stage = VK_SHADER_STAGE_VERTEX_BIT, .set = 1 }
     };
 
     render::Pipeline pipeline{ context,
@@ -172,23 +181,35 @@ application::ExitStatus main(application::Settings args) noexcept {
                                                       .build(context.allocator());
 
     render::resources::BufferView buffer_view{ scene_data_buffer, 0, sizeof(SceneData) };
+
     // initialize datas.
     for (s32 i = 0; i < MAX_FRAMES; ++i) {
         auto& frame_data = frame_datas[i];
 
-        const auto name           = fmt::format("Uniform buffer : {}", i);
-        frame_data.uniform_buffer = render::resources::Buffer::start_build<UniformBufferData>(name)
+        const auto uniform_buffer_name = fmt::format("Uniform buffer : {}", i);
+        const auto object_buffer_name  = fmt::format("Object buffer : {}", i);
+        frame_data.uniform_buffer      = render::resources::Buffer::start_build<UniformBufferData>(uniform_buffer_name)
                                         .count(1)
                                         .usage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
                                         .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
                                         .build(context.allocator());
+
+        frame_data.object_storage_buffer = render::resources::Buffer::start_build<ObjectData>(object_buffer_name)
+                                               .count(MAX_OBJECTS)
+                                               .usage(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
+                                               .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
+                                               .build(context.allocator());
+
         frame_data.bindings = descriptor_pool.allocate(pipeline);
 
         // clang-format off
         frame_data.bindings.start_batch()
-            .bind(0, frame_data.uniform_buffer)
+            .bind(0, frame_data.uniform_buffer,VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
             .bind(1, buffer_view, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC)
+            // @EVALUATE : check if this good enough? { 1, 0 } maybe better.
+            .bind(1, 0 , frame_data.object_storage_buffer, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
             .end_batch();
+
         // clang-format on
     }
 
@@ -201,8 +222,7 @@ application::ExitStatus main(application::Settings args) noexcept {
 
         glm::vec3 cam_pos = { 0.0f, 0.0f, 7.0f };
 
-        glm::mat4 view = 
-             glm::lookAt(cam_pos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::mat4 view       = glm::lookAt(cam_pos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         glm::mat4 projection = glm::perspective(glm::radians(70.f), 1700.f / 900.f, 0.1f, 200.0f);
         projection[1][1] *= -1;
 
@@ -221,18 +241,23 @@ application::ExitStatus main(application::Settings args) noexcept {
         u32 offset = current_idx * pad_uniform_buffer_size(context, sizeof(SceneData));
         render::resources::BufferView buffer_view{ scene_data_buffer, offset, offset + sizeof(SceneData) };
         buffer_view.map<SceneData>([&](SceneData* data) {
-            if (data) 
-                data->ambient_color = { sin(var), 0, cos(var), 1 };
+            if (data) data->ambient_color = { sin(var), 0, cos(var), 1 };
         });
 
-        glm::mat4 model = glm::mat4{ 1.0f };
-            //glm::rotate(glm::mat4{ 1.0f }, time * glm::radians(90.0f), glm::vec3(0, 1, 0));
+        glm::mat4 model = // glm::mat4{ 1.0f };
+            glm::rotate(glm::mat4{ 1.0f }, time * glm::radians(90.0f), glm::vec3(0, 1, 0));
         push_constant_data.render_matrix = model;
+        frame_data.object_storage_buffer.map<ObjectData>([&](ObjectData* data) {
+            if (data != nullptr) {
+                data[0].model_mat = model;
+            }
+        });
 
         auto populate_command_ctx = [&](render::scene::CommandBuffer& command_context,
                                         VkRenderPassBeginInfo renderpass_info) {
             VkClearValue depth_clear{};
-            depth_clear.depthStencil.depth   = 1.f;
+            depth_clear.depthStencil.depth = 1.f;
+
             f32 flash                        = abs(sin(var));
             const VkClearValue clear_color[] = { { { { 0.1f, 0.1f, flash, 1.0f } } }, depth_clear };
             renderpass_info.clearValueCount  = 2;

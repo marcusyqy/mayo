@@ -25,15 +25,17 @@ PipelineBindContext& PipelineBindContext::push_constants(const PushConstant& con
 }
 
 PipelineBindContext& PipelineBindContext::bindings(const ResourceBindings& binding, stdx::span<u32> offset) noexcept {
-    auto set = binding.set();
+    auto set = binding.sets();
+    auto count = binding.count();
+
     // TODO: change this when compute exists bind point
     vkCmdBindDescriptorSets(
         cmd_buffer_,
         VK_PIPELINE_BIND_POINT_GRAPHICS,
         pipeline_layout_,
         0,
-        1,
-        &set,
+        count,
+        set,
         static_cast<u32>(offset.size()),
         offset.data());
     return *this;

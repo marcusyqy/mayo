@@ -127,32 +127,43 @@ Pipeline::Pipeline(
         fragment_create_info.pName  = specifications.fragment.entry_point().data();
     }
 
+    // for reusing
     {
-        u32 i = 0;
         VkDescriptorSetLayoutBinding* descriptor_set_layouts =
             new VkDescriptorSetLayoutBinding[binding_descriptors.size()];
         STDX_DEFER({ delete[] descriptor_set_layouts; });
+        for (set_layout_count_ = 0; set_layout_count_ < MAX_DESCRIPTORS; ++set_layout_count_) {
+            // reset.
+            auto idx         = set_layout_count_;
+            set_layout_[idx] = nullptr;
 
-        for (const auto& bd : binding_descriptors) {
-            descriptor_set_layouts[i] = VkDescriptorSetLayoutBinding{
-                .binding         = i,
-                .descriptorType  = bd.type,
-                .descriptorCount = bd.count,
-                .stageFlags      = bd.stage,
-            };
-            ++i;
+            u32 i = 0;
+            for (const auto& bd : binding_descriptors) {
+                if (bd.set == idx) {
+                    descriptor_set_layouts[i] = VkDescriptorSetLayoutBinding{
+                        .binding         = i,
+                        .descriptorType  = bd.type,
+                        .descriptorCount = bd.count,
+                        .stageFlags      = bd.stage,
+                    };
+                    ++i;
+                }
+            }
+
+            if (i == 0) {
+                break;
+            }
+
+            const auto descriptor_set_count                 = i;
+            VkDescriptorSetLayoutCreateInfo set_create_info = { .sType =
+                                                                    VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+                                                                .pNext        = nullptr,
+                                                                .flags        = 0,
+                                                                .bindingCount = descriptor_set_count,
+                                                                .pBindings    = descriptor_set_layouts };
+
+            VK_EXPECT_SUCCESS(vkCreateDescriptorSetLayout(context, &set_create_info, nullptr, set_layout_ + idx));
         }
-
-        const auto descriptor_set_count = i;
-
-        VkDescriptorSetLayoutCreateInfo set_create_info = { .sType =
-                                                                VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-                                                            .pNext        = nullptr,
-                                                            .flags        = 0,
-                                                            .bindingCount = descriptor_set_count,
-                                                            .pBindings    = descriptor_set_layouts };
-
-        VK_EXPECT_SUCCESS(vkCreateDescriptorSetLayout(context, &set_create_info, nullptr, &set_layout_));
     }
 
     VkDynamicState dynamic_states_array[]{ VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
@@ -258,8 +269,8 @@ Pipeline::Pipeline(
                                                             //
     VkPipelineLayoutCreateInfo pipeline_layout_create_info{};
     pipeline_layout_create_info.sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipeline_layout_create_info.setLayoutCount         = set_layout_ == nullptr ? 0 : 1;
-    pipeline_layout_create_info.pSetLayouts            = &set_layout_;
+    pipeline_layout_create_info.setLayoutCount         = set_layout_count_;
+    pipeline_layout_create_info.pSetLayouts            = +set_layout_;
     pipeline_layout_create_info.pushConstantRangeCount = static_cast<u32>(push_constants.size());
     pipeline_layout_create_info.pPushConstantRanges    = push_constants.data();
 
@@ -305,7 +316,11 @@ Pipeline::Pipeline(
 Pipeline::~Pipeline() noexcept {
     if (context_) {
         vkDestroyPipelineLayout(context_, layout_, nullptr);
-        vkDestroyDescriptorSetLayout(context_, set_layout_, nullptr);
+
+        for (u32 i = 0; i < set_layout_count_; ++i) {
+            vkDestroyDescriptorSetLayout(context_, set_layout_[i], nullptr);
+        }
+
         vkDestroyPipeline(context_, underlying_, nullptr);
     }
 }
