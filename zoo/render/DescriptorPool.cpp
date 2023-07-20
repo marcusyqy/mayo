@@ -15,7 +15,6 @@ BindingBatch& BindingBatch::bind(
     buffer_info.buffer                  = buffer;
     buffer_info.offset                  = offset;
     buffer_info.range                   = size;
-
     ZOO_ASSERT(
         write_descriptors_count_ < MAX_RESOURCE_SIZE,
         "Need to increase number of max resource size or we have a bug");
@@ -37,25 +36,25 @@ BindingBatch& BindingBatch::bind(
 }
 
 BindingBatch& BindingBatch::bind(u32 binding, resources::Buffer& buffer, VkDescriptorType bind_type) noexcept {
-    bind(0, binding, buffer.handle(), 0, buffer.allocated_size(), bind_type);
+    bind(0, binding, buffer.handle(), 0, static_cast<u32>(buffer.allocated_size()), bind_type);
     return *this;
 }
 
 BindingBatch& BindingBatch::bind(u32 binding, resources::BufferView& buffer, VkDescriptorType bind_type) noexcept {
     auto [start, end] = buffer.span();
-    bind(0, binding, buffer.handle(), start, end - start, bind_type);
+    bind(0, binding, buffer.handle(), static_cast<u32>(start), static_cast<u32>(end - start), bind_type);
     return *this;
 }
 
 BindingBatch& BindingBatch::bind(u32 set, u32 binding, resources::Buffer& buffer, VkDescriptorType bind_type) noexcept {
-    bind(set, binding, buffer.handle(), 0, buffer.allocated_size(), bind_type);
+    bind(set, binding, buffer.handle(), 0, static_cast<u32>(buffer.allocated_size()), bind_type);
     return *this;
 }
 
 BindingBatch&
     BindingBatch::bind(u32 set, u32 binding, resources::BufferView& buffer, VkDescriptorType bind_type) noexcept {
     auto [start, end] = buffer.span();
-    bind(set, binding, buffer.handle(), start, end - start, bind_type);
+    bind(set, binding, buffer.handle(), static_cast<u32> (start), static_cast<u32>(end - start), bind_type);
     return *this;
 }
 

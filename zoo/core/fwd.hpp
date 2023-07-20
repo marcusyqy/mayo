@@ -3,7 +3,12 @@
 #include <cstdint>
 #include <string_view>
 
-#define ZOO_ASSERT(condition, message) assert((condition) && message)
+#define ZOO_ASSERT_COND(condition) assert(condition)
+#define ZOO_ASSERT_COND_MESSAGE(condition, message) assert((condition) && message)
+
+#define __GET_3RD_ARG(arg1, arg2, arg3, ...) arg3
+#define ZOO_ASSERT(...) __GET_3RD_ARG(__VA_ARGS__, ZOO_ASSERT_COND_MESSAGE, ZOO_ASSERT_COND)(__VA_ARGS__)
+
 
 // should this be in constants?
 namespace zoo {

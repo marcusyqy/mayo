@@ -240,9 +240,9 @@ application::ExitStatus main(application::Settings args) noexcept {
         f32 time          = std::chrono::duration<f32, std::chrono::seconds::period>(current_time - start_time).count();
         f32 var           = time * glm::radians(360.0f);
 
-        u32 offset = current_idx * pad_uniform_buffer_size(context, sizeof(SceneData));
-        render::resources::BufferView buffer_view{ scene_data_buffer, offset, offset + sizeof(SceneData) };
-        buffer_view.map<SceneData>([&](SceneData* data) {
+        u32 offset = static_cast<u32>(current_idx * pad_uniform_buffer_size(context, sizeof(SceneData)));
+        render::resources::BufferView scene_data_buffer_view{ scene_data_buffer, offset, offset + sizeof(SceneData) };
+        scene_data_buffer_view.map<SceneData>([&](SceneData* data) {
             if (data) data->ambient_color = { sin(var), 0, cos(var), 1 };
         });
 

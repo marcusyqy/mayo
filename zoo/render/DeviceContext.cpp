@@ -103,7 +103,8 @@ void DeviceContext::reset() noexcept {
 
 DeviceContext::~DeviceContext() noexcept { reset(); }
 
-VkCommandBuffer DeviceContext::vk_command_buffer_from_pool() const noexcept {
+VkCommandBuffer DeviceContext::vk_command_buffer_from_pool(Operation op) const noexcept {
+    ZOO_ASSERT(op == Operation::graphics);
     VkCommandBufferAllocateInfo alloc_info{};
     alloc_info.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     alloc_info.commandPool        = command_pool_;

@@ -25,7 +25,7 @@ PipelineBindContext& PipelineBindContext::push_constants(const PushConstant& con
 }
 
 PipelineBindContext& PipelineBindContext::bindings(const ResourceBindings& binding, stdx::span<u32> offset) noexcept {
-    auto set = binding.sets();
+    auto set   = binding.sets();
     auto count = binding.count();
 
     // TODO: change this when compute exists bind point
@@ -48,17 +48,18 @@ PipelineBindContext::PipelineBindContext(
     cmd_buffer_(cmd_buffer),
     pipeline_(pipeline), pipeline_layout_(pipeline_layout) {}
 
-CommandBuffer::CommandBuffer(DeviceContext& context) noexcept :
-    context_{ std::addressof(context) }, underlying_{ context_->vk_command_buffer_from_pool() } {}
+CommandBuffer::CommandBuffer(DeviceContext& context, Operation op_type) noexcept :
+    context_{ std::addressof(context) }, underlying_{ context_->vk_command_buffer_from_pool(op_type) }, op_type_(op_type) {}
 
 CommandBuffer::CommandBuffer(CommandBuffer&& other) noexcept :
-    context_{ std::move(other.context_) }, underlying_{ std::move(other.underlying_) } {
+    context_{ std::move(other.context_) }, underlying_{ std::move(other.underlying_) }, op_type_(other.op_type_) {
     other.reset();
 }
 
 CommandBuffer& CommandBuffer::operator=(CommandBuffer&& other) noexcept {
     context_    = std::move(other.context_);
     underlying_ = std::move(other.underlying_);
+    op_type_ = std::move(other.op_type_);
     other.reset();
     return *this;
 }
@@ -68,6 +69,7 @@ CommandBuffer::~CommandBuffer() noexcept { reset(); }
 void CommandBuffer::reset() noexcept {
     context_    = nullptr;
     underlying_ = nullptr;
+    op_type_ = Operation::unknown;
 }
 
 void CommandBuffer::clear() noexcept { vkResetCommandBuffer(underlying_, 0); }
@@ -212,7 +214,6 @@ void CommandBuffer::clear_context() noexcept {
 }
 
 void CommandBuffer::submit(
-    Operation op_type,
     stdx::span<VkSemaphore> wait_semaphores,
     stdx::span<VkPipelineStageFlags> wait_for_pipeline_stages,
     stdx::span<VkSemaphore> signal_semaphores,
@@ -223,15 +224,15 @@ void CommandBuffer::submit(
         "Wait semaphores must contain the same amount of elements as wait for "
         "pipelines stages flags!");
 
-    auto queue = context_->retrieve(op_type);
+    auto queue = context_->retrieve(op_type_);
     VkSubmitInfo submit_info{};
     submit_info.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submit_info.waitSemaphoreCount   = static_cast<uint32_t>(wait_semaphores.size());
+    submit_info.waitSemaphoreCount   = static_cast<u32>(wait_semaphores.size());
     submit_info.pWaitSemaphores      = wait_semaphores.data();
     submit_info.pWaitDstStageMask    = wait_for_pipeline_stages.data();
     submit_info.commandBufferCount   = 1;
     submit_info.pCommandBuffers      = &underlying_;
-    submit_info.signalSemaphoreCount = static_cast<uint32_t>(signal_semaphores.size());
+    submit_info.signalSemaphoreCount = static_cast<u32>(signal_semaphores.size());
     submit_info.pSignalSemaphores    = signal_semaphores.data();
 
     // TODO: determine if we really need a fence here

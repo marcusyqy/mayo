@@ -235,7 +235,8 @@ bool Swapchain::create_swapchain_and_resources() noexcept {
     }
 
     while (command_buffers_.size() < image_count) {
-        command_buffers_.emplace_back(context_);
+        // TODO: extend command buffer type.
+        command_buffers_.emplace_back(context_, Operation::graphics);
     }
 
     // reset
@@ -346,7 +347,6 @@ void Swapchain::render(
     VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
     VkSemaphore signal_semaphores[]    = { sync_objects_[current_sync_objects_index_].render_done };
     command_buffers_[current_frame_].submit(
-        Operation::graphics,
         wait_semaphores,
         wait_stages,
         signal_semaphores,

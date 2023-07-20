@@ -33,7 +33,7 @@ public:
     void reset() noexcept;
     void clear() noexcept;
 
-    CommandBuffer(DeviceContext& context) noexcept;
+    CommandBuffer(DeviceContext& context, Operation op_type) noexcept;
     CommandBuffer(CommandBuffer&& other) noexcept;
     CommandBuffer& operator=(CommandBuffer&& other) noexcept;
     ~CommandBuffer() noexcept;
@@ -62,7 +62,6 @@ public:
 
     // TODO: find a better way to do this.
     void submit(
-        Operation op_type,
         stdx::span<VkSemaphore> wait_semaphores,
         stdx::span<VkPipelineStageFlags> wait_for_pipeline_stages,
         stdx::span<VkSemaphore> signal_semaphores,
@@ -93,5 +92,7 @@ private:
         VkIndexType index_type_;
         size_t count_;
     } index_buffer_bind_context_;
+
+    Operation op_type_;
 };
 } // namespace zoo::render::scene
