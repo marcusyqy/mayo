@@ -39,6 +39,7 @@ MeshData load_mesh_data(std::string_view file_name) {
     std::vector<Vertex> vertices{};
     std::vector<uint32_t> indices{};
 
+    // TODO: optimize this part out.
     for (const auto& shape : shapes) {
         for (const auto& index : shape.mesh.indices) {
             Vertex vertex{};

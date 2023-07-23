@@ -150,6 +150,7 @@ application::ExitStatus main(application::Settings args) noexcept {
 
     render::scene::UploadContext upload_cmd_buffer{ context };
 
+    //upload gpu memory
     render::resources::Mesh mesh{ context.allocator(), upload_cmd_buffer, "static/assets/monkey_flat.obj" };
 
     render::sync::Fence fence{ context };
@@ -237,9 +238,9 @@ application::ExitStatus main(application::Settings args) noexcept {
 
     upload_cmd_buffer.clear_cache();
     fence.wait();
+
     auto counter = 0;
     while (main_window.is_open()) {
-
         // TODO: add frame data in.
         const auto current_idx = swapchain.current_image();
         auto& frame_data       = frame_datas[current_idx];
