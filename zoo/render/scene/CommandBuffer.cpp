@@ -89,10 +89,12 @@ void CommandBuffer::start_record() noexcept {
 
     clear();
     VK_EXPECT_SUCCESS(vkBeginCommandBuffer(underlying_, &begin_info), [](VkResult /* result */) {})
+    record_status_ = RecordStatus::begin;
 }
 
 void CommandBuffer::end_record() noexcept {
     VK_EXPECT_SUCCESS(vkEndCommandBuffer(underlying_), [](VkResult /* result */) {});
+    record_status_ = RecordStatus::end;
 }
 
 void CommandBuffer::draw(uint32_t instance_count, uint32_t first_vertex, uint32_t first_instance) noexcept {
@@ -191,6 +193,16 @@ void CommandBuffer::set_scissor(const VkRect2D& scissor) noexcept {
     vkCmdSetScissor(underlying_, 0, 1, std::addressof(scissor));
 }
 
+void CommandBuffer::assure_status(RecordStatus status) {
+    if (status == record_status_) return;
+
+    switch (status) {
+        case RecordStatus::begin: start_record(); break;
+        case RecordStatus::end: end_record(); break;
+    }
+    record_status_ = status;
+}
+
 void CommandBuffer::record(stdx::function_ref<void()> c) noexcept {
     start_record();
     c();
@@ -219,6 +231,7 @@ void CommandBuffer::submit(
     stdx::span<VkPipelineStageFlags> wait_for_pipeline_stages,
     stdx::span<VkSemaphore> signal_semaphores,
     VkFence fence) noexcept {
+    assure_status(RecordStatus::end);
 
     ZOO_ASSERT(
         wait_semaphores.size() == wait_for_pipeline_stages.size(),
@@ -238,6 +251,14 @@ void CommandBuffer::submit(
 
     // TODO: determine if we really need a fence here
     VK_EXPECT_SUCCESS(vkQueueSubmit(queue, 1, &submit_info, fence));
+}
+
+void CommandBuffer::copy(const render::resources::Buffer& from, render::resources::Buffer& to) noexcept {
+    assure_status(RecordStatus::begin);
+    ZOO_ASSERT(from.allocated_size() <= to.allocated_size(), "must be the same size or more for the buffer copying to");
+    // TODO: if this should be safe then we should find the min of both?
+    VkBufferCopy copy{ .srcOffset = 0, .dstOffset = 0, .size = from.allocated_size() };
+    vkCmdCopyBuffer(underlying_, from.handle(), to.handle(), 1, &copy);
 }
 
 } // namespace zoo::render::scene

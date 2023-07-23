@@ -95,16 +95,30 @@ Shaders read_shaders() noexcept {
 }
 
 // TODO: move this to a utils :: namespace or something.
+template <typename T, std::enable_if_t<std::is_integral_v<T>, bool> = true>
+T is_power_of_two(T v) noexcept {
+    return (((v) != 0) && (((v) & ((v)-1)) == 0));
+}
+
+void* ptr_round_up_align(void* ptr, uintptr_t align) {
+    ZOO_ASSERT(is_power_of_two(align), "align must be a power of two!");
+    return (void*)(((uintptr_t)ptr + (align - 1)) & ~(align - 1));
+}
+
+void* ptr_round_down_align(void* ptr, uintptr_t align) {
+    ZOO_ASSERT(is_power_of_two(align), "align must be a power of two!");
+    return (void*)((uintptr_t)ptr & ~(align - 1));
+}
+
 size_t pad_uniform_buffer_size(const render::DeviceContext& context, size_t original_size) {
     size_t min_ubo_alignment = context.physical().limits().minUniformBufferOffsetAlignment;
     size_t aligned_size      = original_size;
 
-    if (min_ubo_alignment > 0) {
-        aligned_size = (aligned_size + min_ubo_alignment - 1) & ~(min_ubo_alignment - 1);
-    }
+    if (min_ubo_alignment > 0) aligned_size = (aligned_size + min_ubo_alignment - 1) & ~(min_ubo_alignment - 1);
 
     return aligned_size;
 }
+
 
 } // namespace
 
@@ -130,10 +144,13 @@ application::ExitStatus main(application::Settings args) noexcept {
                         } };
 
     auto [vertex_bytes, fragment_bytes] = read_shaders();
+
     render::Shader vertex_shader{ context, vertex_bytes, "main" };
     render::Shader fragment_shader{ context, fragment_bytes, "main" };
 
-    render::resources::Mesh mesh{ context.allocator(), "static/assets/monkey_flat.obj" };
+    render::scene::CommandBuffer upload_cmd_buffer{ context, render::Operation::transfer };
+
+    render::resources::Mesh mesh{ context, upload_cmd_buffer, "static/assets/monkey_flat.obj" };
 
     auto& swapchain = main_window.swapchain();
 

@@ -67,6 +67,9 @@ public:
         stdx::span<VkSemaphore> signal_semaphores,
         VkFence fence) noexcept;
 
+    // TODO: add range.
+    void copy(const render::resources::Buffer& from, render::resources::Buffer& to) noexcept;
+
 private:
     void start_record() noexcept;
     void end_record() noexcept;
@@ -75,6 +78,10 @@ private:
     void end_renderpass() noexcept;
 
     void clear_context() noexcept;
+
+private:
+    enum class RecordStatus { begin, end };
+    void assure_status(RecordStatus status);
 
 private:
     DeviceContext* context_;
@@ -94,5 +101,6 @@ private:
     } index_buffer_bind_context_;
 
     Operation op_type_;
+    RecordStatus record_status_;
 };
 } // namespace zoo::render::scene

@@ -245,7 +245,7 @@ bool Swapchain::create_swapchain_and_resources() noexcept {
 
     // TODO : change sizes to s32.
     for (s32 i = 0, size = static_cast<s32>(std::size(images_)); i < size; ++i) {
-        sync_objects_.push_back(SyncObjects{ context_, context_, context_ });
+        sync_objects_.push_back(SyncObjects{ context_, context_, { context_, true } });
     }
 
     // reset sync object index so that we don't have to care about size of the

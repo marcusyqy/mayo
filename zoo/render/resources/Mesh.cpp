@@ -3,6 +3,9 @@
 #include "render/fwd.hpp"
 #include <tiny_obj_loader.h>
 
+#include "render/scene/CommandBuffer.hpp"
+#include "render/sync/Fence.hpp"
+
 namespace zoo::render::resources {
 
 namespace {
@@ -35,53 +38,7 @@ MeshData load_mesh_data(std::string_view file_name) {
 
     std::vector<Vertex> vertices{};
     std::vector<uint32_t> indices{};
-    // Loop over shapes
-    // for (size_t s = 0; s < shapes.size(); s++) {
-    //     // Loop over faces(polygon)
-    //     size_t index_offset = 0;
-    //     for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++)
-    //     {
-    //
-    //         // hardcode loading to triangles
-    //         size_t fv = 3;
-    //
-    //         // Loop over vertices in the face.
-    //         for (size_t v = 0; v < fv; v++) {
-    //             // access to vertex
-    //             tinyobj::index_t idx = shapes[s].mesh.indices[index_offset +
-    //             v];
-    //
-    //             // vertex position
-    //             tinyobj::real_t vx = attrib.vertices[3 * idx.vertex_index +
-    //             0]; tinyobj::real_t vy = attrib.vertices[3 * idx.vertex_index
-    //             + 1]; tinyobj::real_t vz = attrib.vertices[3 *
-    //             idx.vertex_index + 2];
-    //             // vertex normal
-    //             tinyobj::real_t nx = attrib.normals[3 * idx.normal_index +
-    //             0]; tinyobj::real_t ny = attrib.normals[3 * idx.normal_index
-    //             + 1]; tinyobj::real_t nz = attrib.normals[3 *
-    //             idx.normal_index + 2];
-    //
-    //             // copy it into our vertex
-    //             Vertex new_vert;
-    //             new_vert.pos.x = vx;
-    //             new_vert.pos.y = vy;
-    //             new_vert.pos.z = vz;
-    //
-    //             new_vert.normal.x = nx;
-    //             new_vert.normal.y = ny;
-    //             new_vert.normal.z = nz;
-    //
-    //             // we are setting the vertex color as the vertex normal. This
-    //             is
-    //             // just for display purposes
-    //             new_vert.color = new_vert.normal;
-    //
-    //             vertices.push_back(new_vert);
-    //         }
-    //         index_offset += fv;
-    //     }
-    // }
+
     for (const auto& shape : shapes) {
         for (const auto& index : shape.mesh.indices) {
             Vertex vertex{};
@@ -116,27 +73,56 @@ std::array<VertexBufferDescription, 4> Vertex::describe() noexcept {
                        VertexBufferDescription{ 3, render::ShaderType::vec2, offsetof(Vertex, uv) } };
 }
 
-Mesh::Mesh(Allocator& allocator, MeshData mesh_data, std::string_view name) noexcept :
-    buffer_(Buffer::start_build<Vertex>(name)
-                .usage(VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
-                .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
-                .count(mesh_data.vertices.size())
-                .build(allocator)),
-    index_buffer_(Buffer::start_build<uint32_t>(name)
-                      .usage(VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
-                      .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
-                      .count(mesh_data.indices.size())
-                      .build(allocator)),
-    data_(std::move(mesh_data)) {
+template <typename T>
+render::resources::Buffer create_gpu_native_buffer(
+    std::string_view name,
+    render::scene::CommandBuffer& cmd_buffer,
+    stdx::span<T> variable,
+    render::DeviceContext& context,
+    VkBufferUsageFlags usage) {
 
-    buffer_.map<Vertex>(
-        [this](Vertex* data) { std::copy(std::begin(data_.vertices), std::end(data_.vertices), data); });
+    // TODO: add optional range.
+    auto scratch_buffer = render::resources::Buffer::start_build<T>(fmt::format("ScratchBuffer : {}", name))
+                              .count(static_cast<u32>(variable.size()))
+                              .usage(VK_BUFFER_USAGE_TRANSFER_SRC_BIT)
+                              .allocation_type(VMA_MEMORY_USAGE_AUTO_PREFER_HOST)
+                              .allocation_flag(VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT)
+                              .build(context.allocator());
 
-    index_buffer_.map<uint32_t>(
-        [this](uint32_t* data) { std::copy(std::begin(data_.indices), std::end(data_.indices), data); });
+    scratch_buffer.template map<T>([&variable](T* data) { std::copy(std::begin(variable), std::end(variable), data); });
+
+    auto gpu_native_buffer = render::resources::Buffer::start_build<T>(name)
+                                 .count(static_cast<u32>(variable.size()))
+                                 .usage(VK_BUFFER_USAGE_TRANSFER_DST_BIT | usage)
+                                 .allocation_type(VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE)
+                                 .build(context.allocator());
+
+    cmd_buffer.copy(scratch_buffer, gpu_native_buffer);
+
+    render::sync::Fence fence{ context };
+    cmd_buffer.submit(nullptr, nullptr, nullptr, fence);
+    fence.wait();
+
+    return gpu_native_buffer;
 }
 
-Mesh::Mesh(Allocator& allocator, std::string_view file_name) noexcept :
-    Mesh(allocator, load_mesh_data(file_name), file_name) {}
+Mesh::Mesh(DeviceContext& context, scene::CommandBuffer& cmd_buffer, MeshData mesh_data, std::string_view name) noexcept
+    :
+    buffer_(create_gpu_native_buffer<Vertex>(
+        name,
+        cmd_buffer,
+        mesh_data.vertices,
+        context,
+        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)),
+    index_buffer_(create_gpu_native_buffer<uint32_t>(
+        name,
+        cmd_buffer,
+        mesh_data.indices,
+        context,
+        VK_BUFFER_USAGE_INDEX_BUFFER_BIT)),
+    data_(std::move(mesh_data)) {}
+
+Mesh::Mesh(DeviceContext& context, scene::CommandBuffer& cmd_buffer, std::string_view file_name) noexcept :
+    Mesh(context, cmd_buffer, load_mesh_data(file_name), file_name) {}
 
 } // namespace zoo::render::resources

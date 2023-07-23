@@ -3,12 +3,12 @@
 
 namespace zoo::render::sync {
 
-VkFence create_fence(VkDevice device) noexcept {
+VkFence create_fence(VkDevice device, bool signaled) noexcept {
     VkFenceCreateInfo fence_info{};
     VkFence fence_obj{};
     fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     // TODO: figure out if we really need to signal at the start.
-    fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+    if (signaled) fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
     VK_EXPECT_SUCCESS(vkCreateFence(device, &fence_info, nullptr, std::addressof(fence_obj)));
     return fence_obj;
 }
@@ -27,7 +27,8 @@ Fence::Status Fence::is_signaled() const noexcept {
     }
 }
 
-Fence::Fence(DeviceContext& context) noexcept : context_(std::addressof(context)), underlying_(create_fence(context)) {}
+Fence::Fence(DeviceContext& context, bool signaled) noexcept :
+    context_(std::addressof(context)), underlying_(create_fence(context, signaled)) {}
 
 Fence::~Fence() noexcept {
     if (underlying_ != nullptr) {

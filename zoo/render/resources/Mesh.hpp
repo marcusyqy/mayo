@@ -8,6 +8,10 @@
 #include "render/resources/Allocator.hpp"
 #include "render/resources/Buffer.hpp"
 
+namespace zoo::render::scene {
+class CommandBuffer;
+}
+
 namespace zoo::render::resources {
 
 struct Vertex {
@@ -27,9 +31,10 @@ struct MeshData {
 
 class Mesh {
 public:
-    Mesh(Allocator& allocator, MeshData mesh_data, std::string_view name) noexcept;
-    Mesh(Allocator& allocator, std::string_view file_name) noexcept;
-    Mesh(Allocator& allocator, const char* file_name) noexcept : Mesh(allocator, std::string_view(file_name)){};
+    Mesh(DeviceContext& context, scene::CommandBuffer& cmd_buffer, MeshData mesh_data, std::string_view name) noexcept;
+    Mesh(DeviceContext& context, scene::CommandBuffer& cmd_buffer, std::string_view file_name) noexcept;
+    Mesh(DeviceContext& context, scene::CommandBuffer& cmd_buffer, const char* file_name) noexcept :
+        Mesh(context, cmd_buffer, std::string_view(file_name)){};
 
     Mesh(const Mesh& other)            = delete;
     Mesh& operator=(const Mesh& other) = delete;
