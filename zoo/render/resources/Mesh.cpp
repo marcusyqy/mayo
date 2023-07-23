@@ -3,7 +3,7 @@
 #include "render/fwd.hpp"
 #include <tiny_obj_loader.h>
 
-#include "render/scene/CommandBuffer.hpp"
+#include "render/scene/UploadContext.hpp"
 #include "render/sync/Fence.hpp"
 
 namespace zoo::render::resources {
@@ -76,9 +76,9 @@ std::array<VertexBufferDescription, 4> Vertex::describe() noexcept {
 template <typename T>
 render::resources::Buffer create_gpu_native_buffer(
     std::string_view name,
-    render::scene::CommandBuffer& cmd_buffer,
+    render::scene::UploadContext& upload_context,
     stdx::span<T> variable,
-    render::DeviceContext& context,
+    Allocator& allocator,
     VkBufferUsageFlags usage) {
 
     // TODO: add optional range.
@@ -87,7 +87,7 @@ render::resources::Buffer create_gpu_native_buffer(
                               .usage(VK_BUFFER_USAGE_TRANSFER_SRC_BIT)
                               .allocation_type(VMA_MEMORY_USAGE_AUTO_PREFER_HOST)
                               .allocation_flag(VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT)
-                              .build(context.allocator());
+                              .build(allocator);
 
     scratch_buffer.template map<T>([&variable](T* data) { std::copy(std::begin(variable), std::end(variable), data); });
 
@@ -95,34 +95,35 @@ render::resources::Buffer create_gpu_native_buffer(
                                  .count(static_cast<u32>(variable.size()))
                                  .usage(VK_BUFFER_USAGE_TRANSFER_DST_BIT | usage)
                                  .allocation_type(VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE)
-                                 .build(context.allocator());
+                                 .build(allocator);
 
-    cmd_buffer.copy(scratch_buffer, gpu_native_buffer);
-
-    render::sync::Fence fence{ context };
-    cmd_buffer.submit(nullptr, nullptr, nullptr, fence);
-    fence.wait();
+    upload_context.copy(scratch_buffer, gpu_native_buffer);
+    // TODO: maybe implicit cache
+    upload_context.cache(std::move(scratch_buffer));
 
     return gpu_native_buffer;
 }
 
-Mesh::Mesh(DeviceContext& context, scene::CommandBuffer& cmd_buffer, MeshData mesh_data, std::string_view name) noexcept
-    :
+Mesh::Mesh(
+    Allocator& allocator,
+    scene::UploadContext& upload_context,
+    MeshData mesh_data,
+    std::string_view name) noexcept :
     buffer_(create_gpu_native_buffer<Vertex>(
         name,
-        cmd_buffer,
+        upload_context,
         mesh_data.vertices,
-        context,
+        allocator,
         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)),
     index_buffer_(create_gpu_native_buffer<uint32_t>(
         name,
-        cmd_buffer,
+        upload_context,
         mesh_data.indices,
-        context,
+        allocator,
         VK_BUFFER_USAGE_INDEX_BUFFER_BIT)),
     data_(std::move(mesh_data)) {}
 
-Mesh::Mesh(DeviceContext& context, scene::CommandBuffer& cmd_buffer, std::string_view file_name) noexcept :
-    Mesh(context, cmd_buffer, load_mesh_data(file_name), file_name) {}
+Mesh::Mesh(Allocator& allocator, scene::UploadContext& upload_context, std::string_view file_name) noexcept :
+    Mesh(allocator, upload_context, load_mesh_data(file_name), file_name) {}
 
 } // namespace zoo::render::resources

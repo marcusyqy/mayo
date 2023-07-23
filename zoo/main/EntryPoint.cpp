@@ -13,6 +13,7 @@
 #include "render/resources/Buffer.hpp"
 #include "render/resources/Mesh.hpp"
 #include "render/scene/CommandBuffer.hpp"
+#include "render/scene/UploadContext.hpp"
 
 #include "stdx/expected.hpp"
 
@@ -119,7 +120,6 @@ size_t pad_uniform_buffer_size(const render::DeviceContext& context, size_t orig
     return aligned_size;
 }
 
-
 } // namespace
 
 application::ExitStatus main(application::Settings args) noexcept {
@@ -148,9 +148,12 @@ application::ExitStatus main(application::Settings args) noexcept {
     render::Shader vertex_shader{ context, vertex_bytes, "main" };
     render::Shader fragment_shader{ context, fragment_bytes, "main" };
 
-    render::scene::CommandBuffer upload_cmd_buffer{ context, render::Operation::transfer };
+    render::scene::UploadContext upload_cmd_buffer{ context };
 
-    render::resources::Mesh mesh{ context, upload_cmd_buffer, "static/assets/monkey_flat.obj" };
+    render::resources::Mesh mesh{ context.allocator(), upload_cmd_buffer, "static/assets/monkey_flat.obj" };
+
+    render::sync::Fence fence{ context };
+    upload_cmd_buffer.submit(nullptr, nullptr, nullptr, fence);
 
     auto& swapchain = main_window.swapchain();
 
@@ -232,6 +235,8 @@ application::ExitStatus main(application::Settings args) noexcept {
         // clang-format on
     }
 
+    upload_cmd_buffer.clear_cache();
+    fence.wait();
     auto counter = 0;
     while (main_window.is_open()) {
 

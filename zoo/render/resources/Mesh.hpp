@@ -9,7 +9,7 @@
 #include "render/resources/Buffer.hpp"
 
 namespace zoo::render::scene {
-class CommandBuffer;
+class UploadContext;
 }
 
 namespace zoo::render::resources {
@@ -31,10 +31,15 @@ struct MeshData {
 
 class Mesh {
 public:
-    Mesh(DeviceContext& context, scene::CommandBuffer& cmd_buffer, MeshData mesh_data, std::string_view name) noexcept;
-    Mesh(DeviceContext& context, scene::CommandBuffer& cmd_buffer, std::string_view file_name) noexcept;
-    Mesh(DeviceContext& context, scene::CommandBuffer& cmd_buffer, const char* file_name) noexcept :
-        Mesh(context, cmd_buffer, std::string_view(file_name)){};
+    Mesh(
+        Allocator& allocator,
+        scene::UploadContext& upload_context,
+        MeshData mesh_data,
+        std::string_view name) noexcept;
+
+    Mesh(Allocator& allocator, scene::UploadContext& upload_context, std::string_view file_name) noexcept;
+    Mesh(Allocator& allocator, scene::UploadContext& upload_context, const char* file_name) noexcept :
+        Mesh(allocator, upload_context, std::string_view(file_name)){};
 
     Mesh(const Mesh& other)            = delete;
     Mesh& operator=(const Mesh& other) = delete;
