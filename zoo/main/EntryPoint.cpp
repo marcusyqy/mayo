@@ -150,7 +150,7 @@ application::ExitStatus main(application::Settings args) noexcept {
 
     render::scene::UploadContext upload_cmd_buffer{ context };
 
-    //upload gpu memory
+    // upload gpu memory
     render::resources::Mesh mesh{ context.allocator(), upload_cmd_buffer, "static/assets/monkey_flat.obj" };
 
     render::sync::Fence fence{ context };
