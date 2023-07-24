@@ -28,6 +28,7 @@
 #include <string_view>
 
 #include <stb_image.h>
+#include "imgui.h"
 
 namespace zoo {
 
@@ -215,9 +216,7 @@ application::ExitStatus main(application::Settings args) noexcept {
                                                                 .mag_filter(VK_FILTER_NEAREST)
                                                                 .min_filter(VK_FILTER_NEAREST)
                                                                 .build(context);
-
-    render::sync::Fence fence{ context };
-    upload_cmd_buffer.submit(nullptr, nullptr, nullptr, fence);
+    upload_cmd_buffer.submit();
 
     auto& swapchain = main_window.swapchain();
 
@@ -302,8 +301,7 @@ application::ExitStatus main(application::Settings args) noexcept {
         // clang-format on
     }
 
-    fence.wait();
-    upload_cmd_buffer.clear_cache();
+    upload_cmd_buffer.wait();
 
     auto counter = 0;
     while (main_window.is_open()) {
