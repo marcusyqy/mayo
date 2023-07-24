@@ -25,6 +25,7 @@ warnings "Off"
     include "deps/tinyobj"
     include "deps/stb"
     include "xtr"
+    include "deps"
 
 
 group ""

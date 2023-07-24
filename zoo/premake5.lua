@@ -15,6 +15,7 @@ project "zoo"
 
     includedirs {
         "%{include_dir.GLFW}",
+        "%{include_dir.imgui}",
         "%{include_dir.spdlog}",
         "%{include_dir.vma}",
         "%{include_dir.tinyobj}",
@@ -30,6 +31,7 @@ project "zoo"
         "vma",
         "tinyobj",
         "stb",
+        "imgui",
         "%{library_dir.vulkan}"
     }
 
