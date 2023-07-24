@@ -2,7 +2,7 @@
 
 #include "core/fwd.hpp"
 
-namespace zoo::render::imgui {
+namespace zoo::adapters::imgui {
 //-----------------------------------------------------------------------------
 // SHADERS
 //-----------------------------------------------------------------------------
@@ -102,4 +102,4 @@ static u32 frag_shader[] = {
     0x0000001c, 0x00000017, 0x0000001b, 0x00050085, 0x00000007, 0x0000001d, 0x00000012, 0x0000001c, 0x0003003e,
     0x00000009, 0x0000001d, 0x000100fd, 0x00010038
 };
-} // namespace zoo::render::imgui
+} // namespace zoo::adapters::imgui
