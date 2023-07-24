@@ -18,6 +18,7 @@ project "zoo"
         "%{include_dir.spdlog}",
         "%{include_dir.vma}",
         "%{include_dir.tinyobj}",
+        "%{include_dir.stb}",
         "%{include_dir.xtr}",
         "%{include_dir.vulkan}",
         "%{include_dir.glm}",
@@ -28,6 +29,7 @@ project "zoo"
         "GLFW",
         "vma",
         "tinyobj",
+        "stb",
         "%{library_dir.vulkan}"
     }
 

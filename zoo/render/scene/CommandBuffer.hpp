@@ -6,6 +6,7 @@
 #include "render/fwd.hpp"
 #include "render/resources/Buffer.hpp"
 #include "render/resources/Mesh.hpp"
+#include "render/resources/Texture.hpp"
 #include "stdx/function_ref.hpp"
 #include "zoo.hpp"
 
@@ -69,8 +70,25 @@ public:
 
     // TODO: add range.
     void copy(const render::resources::Buffer& from, render::resources::Buffer& to) noexcept;
+    void copy(const render::resources::Buffer& from, render::resources::Texture& to) noexcept;
+
+    void assure_transitioned_image_for_copy(render::resources::Texture& texture) noexcept;
 
 private:
+    void transition_impl(
+        render::resources::Texture& texture,
+        VkImageLayout old_layout                  = VK_IMAGE_LAYOUT_UNDEFINED,
+        VkImageLayout new_layout                  = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        VkAccessFlags src_access                  = 0,
+        VkAccessFlags dst_access                  = VK_ACCESS_TRANSFER_WRITE_BIT,
+        VkPipelineStageFlags start_pipeline_stage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+        VkPipelineStageFlags end_pipeline_stage   = VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VkImageSubresourceRange range             = { .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                                                      .baseMipLevel   = 0,
+                                                      .levelCount     = 1,
+                                                      .baseArrayLayer = 0,
+                                                      .layerCount     = 1 }) noexcept;
+
     void start_record() noexcept;
     void end_record() noexcept;
 

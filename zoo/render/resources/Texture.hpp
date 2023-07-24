@@ -1,4 +1,5 @@
 #pragma once
+#include "core/fwd.hpp"
 #include "render/fwd.hpp"
 
 #include "Allocator.hpp"
@@ -119,6 +120,17 @@ public:
     bool valid() const noexcept;
 
     void destroy() noexcept;
+
+    VkImageLayout layout() const noexcept;
+    void layout(VkImageLayout layout) noexcept;
+
+    size_t allocated_size() const noexcept;
+
+    u32 mip_level() const noexcept;
+    u32 array_count() const noexcept;
+    VkExtent3D extent() const noexcept;
+
+    VkImage handle() const noexcept;
 
 private:
     VkImageViewCreateInfo create_image_view_info() const noexcept;

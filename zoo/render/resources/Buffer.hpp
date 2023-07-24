@@ -24,7 +24,7 @@ private:
     VkBuffer buffer_                              = {};
     VkBufferUsageFlags usage_                     = {};
     size_t obj_size_                              = {};
-    size_t count_                                 = {};
+    size_t count_                                 = 1;
     VmaAllocationInfo allocation_info_            = {};
     VmaMemoryUsage memory_usage_                  = VMA_MEMORY_USAGE_AUTO;
     VmaAllocationCreateFlags memory_create_flags_ = {};

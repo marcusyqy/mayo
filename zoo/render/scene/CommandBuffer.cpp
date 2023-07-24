@@ -255,10 +255,86 @@ void CommandBuffer::submit(
 
 void CommandBuffer::copy(const render::resources::Buffer& from, render::resources::Buffer& to) noexcept {
     assure_status(RecordStatus::begin);
-    ZOO_ASSERT(from.allocated_size() <= to.allocated_size(), "must be the same size or more for the buffer copying to");
+    ZOO_ASSERT(from.allocated_size() <= to.allocated_size(), "Must be the same size or more for the buffer copying to");
     // TODO: if this should be safe then we should find the min of both?
     VkBufferCopy copy{ .srcOffset = 0, .dstOffset = 0, .size = from.allocated_size() };
     vkCmdCopyBuffer(underlying_, from.handle(), to.handle(), 1, &copy);
+}
+
+void CommandBuffer::assure_transitioned_image_for_copy(render::resources::Texture& texture) noexcept {
+    VkImageLayout image_layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    if (texture.layout() != image_layout)
+        transition_impl(
+            texture,
+            texture.layout(),
+            image_layout,
+            0,
+            VK_ACCESS_TRANSFER_WRITE_BIT,
+            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+            VK_PIPELINE_STAGE_TRANSFER_BIT,
+            { .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+              .baseMipLevel   = 0,
+              .levelCount     = texture.mip_level(),
+              .baseArrayLayer = 0,
+              .layerCount     = texture.array_count() });
+}
+
+void CommandBuffer::copy(const render::resources::Buffer& from, render::resources::Texture& to) noexcept {
+    assure_status(RecordStatus::begin);
+    ZOO_ASSERT(
+        from.allocated_size() <= to.allocated_size(),
+        "Must be the same size or more for the texture copying to");
+
+    auto image_layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    assure_transitioned_image_for_copy(to);
+    VkBufferImageCopy copy{ .bufferOffset      = 0,
+                            .bufferRowLength   = 0,
+                            .bufferImageHeight = 0,
+                            .imageSubresource  = {
+                                // TODO : change based on format
+                                                   .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                                                   .mipLevel       = 0, // to.mip_level(),
+                                                   .baseArrayLayer = 0,
+                                                   .layerCount = to.array_count(),
+                                                },
+                            .imageExtent    = to.extent()
+    };
+    vkCmdCopyBufferToImage(underlying_, from.handle(), to.handle(), image_layout, 1, &copy);
+}
+
+void CommandBuffer::transition_impl(
+    render::resources::Texture& texture,
+    VkImageLayout old_layout,
+    VkImageLayout new_layout,
+    VkAccessFlags src_access,
+    VkAccessFlags dst_access,
+    VkPipelineStageFlags start_pipeline_stage,
+    VkPipelineStageFlags end_pipeline_stage,
+    VkImageSubresourceRange range) noexcept {
+
+    VkImageMemoryBarrier image_barrier = {
+        .sType            = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+        .srcAccessMask    = src_access,
+        .dstAccessMask    = dst_access,
+        .oldLayout        = old_layout,
+        .newLayout        = new_layout,
+        .image            = texture.handle(),
+        .subresourceRange = range,
+    };
+
+    // TODO: maybe batch this.
+    // barrier the image into the transfer-receive layout
+    vkCmdPipelineBarrier(
+        underlying_,
+        start_pipeline_stage,
+        end_pipeline_stage,
+        0,
+        0,
+        nullptr,
+        0,
+        nullptr,
+        1,
+        &image_barrier);
 }
 
 } // namespace zoo::render::scene

@@ -1,4 +1,5 @@
 #include "Texture.hpp"
+#include "core/fwd.hpp"
 
 namespace zoo::render::resources {
 
@@ -18,15 +19,23 @@ VkImageViewType vk_image_type_to_image_view_type(VkImageType image_type) noexcep
 
 VkImageAspectFlags vk_image_usage_to_aspect_mask(VkImageUsageFlags usage_flags) noexcept {
     VkImageAspectFlags aspect_mask = VK_IMAGE_ASPECT_NONE;
-    if (usage_flags & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) {
+    if (usage_flags & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT || usage_flags & VK_IMAGE_USAGE_SAMPLED_BIT) {
         aspect_mask |= VK_IMAGE_ASPECT_COLOR_BIT;
     }
     if (usage_flags & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT) {
         // TODO: add stencil
         aspect_mask |= VK_IMAGE_ASPECT_DEPTH_BIT;
     }
+
+    ZOO_ASSERT(aspect_mask != VK_IMAGE_ASPECT_NONE);
     return aspect_mask;
 }
+
+size_t get_format_size(VkFormat format) noexcept {
+    ZOO_ASSERT(format == VK_FORMAT_R8G8B8A8_SRGB);
+    return 4;
+}
+
 } // namespace
 
 namespace texture {
@@ -179,6 +188,20 @@ VkImageViewCreateInfo Texture::create_image_view_info() const noexcept {
 }
 Texture::builder_type Texture::start_build(std::string_view name) noexcept { return { name }; }
 
+VkImageLayout Texture::layout() const noexcept { return create_info_.initialLayout; }
+void Texture::layout(VkImageLayout layout) noexcept { create_info_.initialLayout = layout; }
+VkImage Texture::handle() const noexcept { return image_; }
+
+u32 Texture::mip_level() const noexcept { return create_info_.mipLevels; }
+u32 Texture::array_count() const noexcept { return create_info_.arrayLayers; }
+
+VkExtent3D Texture::extent() const noexcept { return create_info_.extent; }
+
+size_t Texture::allocated_size() const noexcept {
+    return create_info_.extent.width * create_info_.extent.height * create_info_.extent.depth *
+        get_format_size(create_info_.format);
+}
+
 TextureView& Texture::view() noexcept { return view_; }
 const TextureView& Texture::view() const noexcept { return view_; }
 
@@ -220,5 +243,4 @@ TextureView& TextureView::operator=(TextureView&& other) noexcept {
 
 void TextureView::invalidate() noexcept { view_ = nullptr; }
 bool TextureView::valid() const noexcept { return view_ != nullptr; }
-
 } // namespace zoo::render::resources

@@ -23,7 +23,10 @@
 
 #include <array>
 #include <fstream>
+#include <memory>
 #include <string_view>
+
+#include <stb_image.h>
 
 namespace zoo {
 
@@ -95,6 +98,58 @@ Shaders read_shaders() noexcept {
     return { .vertex = std::move(*vertex_spirv), .fragment = std::move(*fragment_spirv) };
 }
 
+render::resources::Texture load_image_from_file(
+    render::DeviceContext& context,
+    render::scene::UploadContext& upload_context,
+    std::string_view file_name) {
+    struct TextureLoadDetails {
+        s32 width;
+        s32 height;
+        s32 channels;
+    } tex_details;
+
+    struct StbiImageFree {
+        void operator()(stbi_uc* data) const noexcept { stbi_image_free(data); }
+    };
+
+    std::unique_ptr<stbi_uc, StbiImageFree> pixels{
+        stbi_load(file_name.data(), &tex_details.width, &tex_details.height, &tex_details.channels, STBI_rgb_alpha)
+    };
+
+    if (pixels == nullptr) return {};
+
+    void* pixel_ptr   = reinterpret_cast<void*>(pixels.get());
+    size_t image_size = tex_details.width * tex_details.height * 4;
+
+    VkFormat image_format = VK_FORMAT_R8G8B8A8_SRGB;
+
+    render::resources::Buffer scratch_buffer =
+        render::resources::Buffer::start_build(fmt::format("ScratchBuffer for texture : {}", file_name), image_size)
+            .usage(VK_BUFFER_USAGE_TRANSFER_SRC_BIT)
+            .allocation_type(VMA_MEMORY_USAGE_AUTO_PREFER_HOST)
+            .allocation_flag(VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT)
+            .build(context.allocator());
+
+    scratch_buffer.map(
+        [&pixel_ptr, image_size](void* data) noexcept { memcpy(data, pixel_ptr, static_cast<size_t>(image_size)); });
+
+    auto texture = render::resources::Texture::start_build(file_name)
+                       .format(image_format)
+                       .extent(VkExtent3D{
+                           .width  = static_cast<u32>(tex_details.width),
+                           .height = static_cast<u32>(tex_details.height),
+                           .depth  = 1,
+                       })
+                       .usage(VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT)
+                       .allocation_type(VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE)
+                       .allocation_required_flags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+                       .build(context.allocator());
+
+    upload_context.copy(scratch_buffer, texture);
+    upload_context.cache(std::move(scratch_buffer));
+    return texture;
+}
+
 // TODO: move this to a utils :: namespace or something.
 template <typename T, std::enable_if_t<std::is_integral_v<T>, bool> = true>
 T is_power_of_two(T v) noexcept {
@@ -152,6 +207,8 @@ application::ExitStatus main(application::Settings args) noexcept {
 
     // upload gpu memory
     render::resources::Mesh mesh{ context.allocator(), upload_cmd_buffer, "static/assets/monkey_flat.obj" };
+    render::resources::Texture lost_empire =
+        load_image_from_file(context, upload_cmd_buffer, "static/assets/lost_empire-RGBA.png");
 
     render::sync::Fence fence{ context };
     upload_cmd_buffer.submit(nullptr, nullptr, nullptr, fence);
@@ -200,7 +257,6 @@ application::ExitStatus main(application::Settings args) noexcept {
                                                       //.allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
                                                       .allocation_type(VMA_MEMORY_USAGE_AUTO)
                                                       .allocation_flag(VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT)
-                                                      .count(1)
                                                       .build(context.allocator());
 
     render::resources::BufferView buffer_view{ scene_data_buffer, 0, sizeof(SceneData) };
@@ -212,7 +268,6 @@ application::ExitStatus main(application::Settings args) noexcept {
         const auto uniform_buffer_name = fmt::format("Uniform buffer : {}", i);
         const auto object_buffer_name  = fmt::format("Object buffer : {}", i);
         frame_data.uniform_buffer      = render::resources::Buffer::start_build<UniformBufferData>(uniform_buffer_name)
-                                        .count(1)
                                         .usage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
                                         .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
                                         .build(context.allocator());
@@ -236,8 +291,8 @@ application::ExitStatus main(application::Settings args) noexcept {
         // clang-format on
     }
 
-    upload_cmd_buffer.clear_cache();
     fence.wait();
+    upload_cmd_buffer.clear_cache();
 
     auto counter = 0;
     while (main_window.is_open()) {
