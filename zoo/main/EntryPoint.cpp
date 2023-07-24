@@ -18,6 +18,7 @@
 #include "stdx/expected.hpp"
 
 #include "render/tools/ShaderCompiler.hpp"
+
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
 
@@ -146,6 +147,7 @@ render::resources::Texture load_image_from_file(
                        .build(context.allocator());
 
     upload_context.copy(scratch_buffer, texture);
+    upload_context.transition_to_shader_read(texture);
     upload_context.cache(std::move(scratch_buffer));
     return texture;
 }
@@ -206,9 +208,13 @@ application::ExitStatus main(application::Settings args) noexcept {
     render::scene::UploadContext upload_cmd_buffer{ context };
 
     // upload gpu memory
-    render::resources::Mesh mesh{ context.allocator(), upload_cmd_buffer, "static/assets/monkey_flat.obj" };
+    render::resources::Mesh mesh{ context.allocator(), upload_cmd_buffer, "static/assets", "lost_empire.obj" };
     render::resources::Texture lost_empire =
         load_image_from_file(context, upload_cmd_buffer, "static/assets/lost_empire-RGBA.png");
+    render::resources::TextureSampler lost_empire_sampler = render::resources::TextureSampler::start_build()
+                                                                .mag_filter(VK_FILTER_NEAREST)
+                                                                .min_filter(VK_FILTER_NEAREST)
+                                                                .build(context);
 
     render::sync::Fence fence{ context };
     upload_cmd_buffer.submit(nullptr, nullptr, nullptr, fence);
@@ -230,7 +236,11 @@ application::ExitStatus main(application::Settings args) noexcept {
         { .type  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
           .count = 1,
           .stage = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
-        { .type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, .count = 1, .stage = VK_SHADER_STAGE_VERTEX_BIT, .set = 1 }
+        { .type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, .count = 1, .stage = VK_SHADER_STAGE_VERTEX_BIT, .set = 1 },
+        { .type  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+          .count = 1,
+          .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
+          .set   = 2 }
     };
 
     render::Pipeline pipeline{ context,
@@ -286,6 +296,7 @@ application::ExitStatus main(application::Settings args) noexcept {
             .bind(1, buffer_view, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC)
             // @EVALUATE : check if this good enough? { 1, 0 } maybe better.
             .bind(1, 0 , frame_data.object_storage_buffer, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+            .bind(2, 0, lost_empire, lost_empire_sampler)
             .end_batch();
 
         // clang-format on
@@ -300,9 +311,14 @@ application::ExitStatus main(application::Settings args) noexcept {
         const auto current_idx = swapchain.current_image();
         auto& frame_data       = frame_datas[current_idx];
 
-        glm::vec3 cam_pos = { 0.0f, 0.0f, 7.0f };
+        // glm::vec3 cam_pos = { 0.0f, 0.0f, 7.0f };
+        // glm::mat4 view       = glm::lookAt(cam_pos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        // glm::mat4 projection = glm::perspective(glm::radians(70.f), 1700.f / 900.f, 0.1f, 200.0f);
+        // projection[1][1] *= -1;
 
-        glm::mat4 view       = glm::lookAt(cam_pos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::vec3 cam_pos = { 0.f, -6.f, -10.f };
+        glm::mat4 view    = glm::translate(glm::mat4(1.f), cam_pos);
+        // camera projection
         glm::mat4 projection = glm::perspective(glm::radians(70.f), 1700.f / 900.f, 0.1f, 200.0f);
         projection[1][1] *= -1;
 
@@ -325,7 +341,8 @@ application::ExitStatus main(application::Settings args) noexcept {
         });
 
         glm::mat4 model = // glm::mat4{ 1.0f };
-            glm::rotate(glm::mat4{ 1.0f }, time * glm::radians(90.0f), glm::vec3(0, 1, 0));
+            glm::translate(glm::vec3{ 5, -10, 0 });
+        // glm::rotate(glm::mat4{ 1.0f }, time * glm::radians(90.0f), glm::vec3(0, 1, 0));
         push_constant_data.render_matrix = model;
         frame_data.object_storage_buffer.map<ObjectData>([&](ObjectData* data) {
             if (data != nullptr) {
@@ -338,8 +355,8 @@ application::ExitStatus main(application::Settings args) noexcept {
             VkClearValue depth_clear{};
             depth_clear.depthStencil.depth = 1.f;
 
-            f32 flash                        = abs(sin(var));
-            const VkClearValue clear_color[] = { { { { 0.1f, 0.1f, flash, 1.0f } } }, depth_clear };
+            // f32 flash                        = abs(sin(var));
+            const VkClearValue clear_color[] = { { { { 0.1f, 0.1f, 0.1f, 1.0f } } }, depth_clear };
             renderpass_info.clearValueCount  = 2;
             renderpass_info.pClearValues     = clear_color;
 

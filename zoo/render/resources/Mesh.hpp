@@ -1,6 +1,7 @@
 #pragma once
 
 #include <glm/glm.hpp>
+#include <glm/vec2.hpp> //now needed for the Vertex struct
 #include <stdx/span.hpp>
 #include <string_view>
 
@@ -37,9 +38,17 @@ public:
         MeshData mesh_data,
         std::string_view name) noexcept;
 
-    Mesh(Allocator& allocator, scene::UploadContext& upload_context, std::string_view file_name) noexcept;
-    Mesh(Allocator& allocator, scene::UploadContext& upload_context, const char* file_name) noexcept :
-        Mesh(allocator, upload_context, std::string_view(file_name)){};
+    Mesh(
+        Allocator& allocator,
+        scene::UploadContext& upload_context,
+        std::string_view dir_name,
+        std::string_view file_name) noexcept;
+    Mesh(
+        Allocator& allocator,
+        scene::UploadContext& upload_context,
+        const char* dir_name,
+        const char* file_name) noexcept :
+        Mesh(allocator, upload_context, std::string_view(dir_name), std::string_view(file_name)){};
 
     Mesh(const Mesh& other)            = delete;
     Mesh& operator=(const Mesh& other) = delete;

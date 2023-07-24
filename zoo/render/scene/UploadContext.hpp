@@ -12,6 +12,9 @@ public:
 
     using CommandBuffer::copy;
     using CommandBuffer::submit;
+    using CommandBuffer::transition;
+    using CommandBuffer::transition_to_copy;
+    using CommandBuffer::transition_to_shader_read;
 
     UploadContext(DeviceContext& context) noexcept;
 

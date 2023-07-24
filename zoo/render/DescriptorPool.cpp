@@ -58,6 +58,39 @@ BindingBatch&
     return *this;
 }
 
+BindingBatch& BindingBatch::bind(
+    u32 set,
+    u32 binding,
+    resources::Texture& texture,
+    resources::TextureSampler& sampler,
+    VkDescriptorType bind_type /*= VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER */) noexcept {
+    ZOO_ASSERT(texture_count_ < MAX_RESOURCE_SIZE, "Need to increase number of max resource size or we have a bug");
+
+    VkDescriptorImageInfo& image_info = texture_infos_[texture_count_++];
+    image_info.sampler                = sampler;
+    image_info.imageView              = texture.view();
+    image_info.imageLayout            = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    ZOO_ASSERT(
+        write_descriptors_count_ < MAX_RESOURCE_SIZE,
+        "Need to increase number of max resource size or we have a bug");
+
+    VkWriteDescriptorSet& set_write = write_descriptors_[write_descriptors_count_++];
+
+    set_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    set_write.pNext = nullptr;
+
+    set_write.dstBinding = binding;
+    set_write.dstSet     = target_.set(set);
+
+    set_write.descriptorCount = 1;
+    set_write.descriptorType  = bind_type;
+
+    set_write.pImageInfo = &image_info;
+
+    return *this;
+}
+
 void BindingBatch::end_batch() noexcept { target_.write(*this); }
 
 void ResourceBindings::write(const BindingBatch& batch) noexcept {
@@ -135,7 +168,8 @@ DescriptorPool::DescriptorPool(DeviceContext& context) noexcept : context_(conte
     VkDescriptorPoolSize sizes[] {
         { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, MAX_POOL_SIZE },
         { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, MAX_POOL_SIZE },
-        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, MAX_POOL_SIZE }
+        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, MAX_POOL_SIZE },
+        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, MAX_POOL_SIZE }
     };
     // clang-format on
 

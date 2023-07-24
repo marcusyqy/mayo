@@ -72,10 +72,10 @@ public:
     void copy(const render::resources::Buffer& from, render::resources::Buffer& to) noexcept;
     void copy(const render::resources::Buffer& from, render::resources::Texture& to) noexcept;
 
-    void assure_transitioned_image_for_copy(render::resources::Texture& texture) noexcept;
+    void transition_to_copy(resources::Texture& texture) noexcept;
+    void transition_to_shader_read(resources::Texture& texture) noexcept;
 
-private:
-    void transition_impl(
+    void transition(
         render::resources::Texture& texture,
         VkImageLayout old_layout                  = VK_IMAGE_LAYOUT_UNDEFINED,
         VkImageLayout new_layout                  = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -89,6 +89,7 @@ private:
                                                       .baseArrayLayer = 0,
                                                       .layerCount     = 1 }) noexcept;
 
+private:
     void start_record() noexcept;
     void end_record() noexcept;
 

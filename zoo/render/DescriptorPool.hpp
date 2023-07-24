@@ -3,6 +3,7 @@
 #include "Pipeline.hpp"
 #include "fwd.hpp"
 #include "resources/Buffer.hpp"
+#include "resources/Texture.hpp"
 
 namespace zoo::render {
 
@@ -19,6 +20,13 @@ struct BindingBatch {
     BindingBatch&
         bind(u32 set, u32 binding, VkBuffer buffer, u32 offset, u32 size, VkDescriptorType bind_type) noexcept;
 
+    BindingBatch& bind(
+        u32 set,
+        u32 binding,
+        resources::Texture& texture,
+        resources::TextureSampler& sampler,
+        VkDescriptorType bind_type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) noexcept;
+
     void end_batch() noexcept;
 
     BindingBatch(ResourceBindings& target) noexcept : target_(target) {}
@@ -27,6 +35,9 @@ private:
     static constexpr u32 MAX_RESOURCE_SIZE                  = 5;
     VkDescriptorBufferInfo buffer_infos_[MAX_RESOURCE_SIZE] = {};
     u32 buffer_count_                                       = 0;
+
+    VkDescriptorImageInfo texture_infos_[MAX_RESOURCE_SIZE] = {};
+    u32 texture_count_                                      = 0;
 
     VkWriteDescriptorSet write_descriptors_[MAX_RESOURCE_SIZE] = {};
     u32 write_descriptors_count_                               = 0;

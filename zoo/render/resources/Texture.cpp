@@ -190,6 +190,9 @@ Texture::builder_type Texture::start_build(std::string_view name) noexcept { ret
 
 VkImageLayout Texture::layout() const noexcept { return create_info_.initialLayout; }
 void Texture::layout(VkImageLayout layout) noexcept { create_info_.initialLayout = layout; }
+VkAccessFlags Texture::access_flags() const noexcept { return access_flags_; }
+void Texture::access_flags(VkAccessFlags flags) noexcept { access_flags_ = flags; }
+
 VkImage Texture::handle() const noexcept { return image_; }
 
 u32 Texture::mip_level() const noexcept { return create_info_.mipLevels; }
@@ -243,4 +246,86 @@ TextureView& TextureView::operator=(TextureView&& other) noexcept {
 
 void TextureView::invalidate() noexcept { view_ = nullptr; }
 bool TextureView::valid() const noexcept { return view_ != nullptr; }
+
+namespace texture_sampler {
+
+TextureSampler Builder::build(DeviceContext& context) noexcept {
+    VkSamplerCreateInfo info = {
+        .sType        = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+        .pNext        = nullptr,
+        .magFilter    = mag_filter_,
+        .minFilter    = min_filter_,
+        .addressModeU = address_mode_.u,
+        .addressModeV = address_mode_.v,
+        .addressModeW = address_mode_.w,
+    };
+
+    VkSampler sampler;
+    vkCreateSampler(context, &info, nullptr, &sampler);
+
+    return {
+        context,
+        sampler,
+        info // FOR DEBUG
+    };
+}
+
+Builder& Builder::address_mode(VkSamplerAddressMode address) noexcept {
+    return address_mode_u(address).address_mode_v(address).address_mode_w(address);
+}
+
+// @Evaluate : looks very prone to error.
+Builder& Builder::address_mode_u(VkSamplerAddressMode address) noexcept {
+    address_mode_.u = address;
+    return *this;
+}
+
+Builder& Builder::address_mode_v(VkSamplerAddressMode address) noexcept {
+    address_mode_.v = address;
+    return *this;
+}
+Builder& Builder::address_mode_w(VkSamplerAddressMode address) noexcept {
+    address_mode_.w = address;
+    return *this;
+}
+
+Builder& Builder::min_filter(VkFilter filter) noexcept {
+    min_filter_ = filter;
+    return *this;
+}
+Builder& Builder::mag_filter(VkFilter filter) noexcept {
+    mag_filter_ = filter;
+    return *this;
+}
+
+}; // namespace texture_sampler
+
+TextureSampler::TextureSampler(VkDevice device, VkSampler sampler, VkSamplerCreateInfo create_info) noexcept :
+    device_(device), sampler_(sampler), create_info_(create_info) {}
+
+TextureSampler::TextureSampler(TextureSampler&& o) noexcept { *this = std::move(o); }
+
+TextureSampler& TextureSampler::operator=(TextureSampler&& o) noexcept {
+    if (device_ && sampler_) {
+        vkDestroySampler(device_, sampler_, nullptr);
+    }
+
+    device_      = o.device_;
+    sampler_     = o.sampler_;
+    create_info_ = o.create_info_;
+
+    o.device_      = nullptr;
+    o.sampler_     = nullptr;
+    o.create_info_ = {};
+
+    return *this;
+}
+TextureSampler::~TextureSampler() noexcept {
+    if (device_ && sampler_) {
+        vkDestroySampler(device_, sampler_, nullptr);
+    }
+}
+
+TextureSampler::builder_type TextureSampler::start_build() noexcept { return {}; }
+
 } // namespace zoo::render::resources

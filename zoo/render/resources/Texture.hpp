@@ -3,6 +3,7 @@
 #include "render/fwd.hpp"
 
 #include "Allocator.hpp"
+#include "render/DeviceContext.hpp"
 #include <stdx/function_ref.hpp>
 
 namespace zoo::render::resources {
@@ -123,6 +124,8 @@ public:
 
     VkImageLayout layout() const noexcept;
     void layout(VkImageLayout layout) noexcept;
+    VkAccessFlags access_flags() const noexcept;
+    void access_flags(VkAccessFlags flags) noexcept;
 
     size_t allocated_size() const noexcept;
 
@@ -140,6 +143,7 @@ private:
 
     VkImage image_                 = VK_NULL_HANDLE;
     VkImageCreateInfo create_info_ = {};
+    VkAccessFlags access_flags_    = {};
 
     VkDevice device_                   = VK_NULL_HANDLE;
     VmaAllocator allocator_            = VK_NULL_HANDLE;
@@ -147,6 +151,61 @@ private:
     VmaAllocationInfo allocation_info_ = {};
 
     TextureView view_;
+};
+
+class TextureSampler;
+
+namespace texture_sampler {
+
+struct Builder {
+
+    TextureSampler build(DeviceContext& context) noexcept;
+
+    Builder& address_mode(VkSamplerAddressMode address) noexcept;
+
+    // @Evaluate : looks very prone to error.
+    Builder& address_mode_u(VkSamplerAddressMode address) noexcept;
+    Builder& address_mode_v(VkSamplerAddressMode address) noexcept;
+    Builder& address_mode_w(VkSamplerAddressMode address) noexcept;
+
+    Builder& min_filter(VkFilter filter) noexcept;
+    Builder& mag_filter(VkFilter filter) noexcept;
+
+private:
+    VkFilter min_filter_ = VK_FILTER_NEAREST;
+    VkFilter mag_filter_ = VK_FILTER_NEAREST;
+    struct {
+        VkSamplerAddressMode u = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        VkSamplerAddressMode v = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        VkSamplerAddressMode w = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    } address_mode_;
+};
+
+} // namespace texture_sampler
+
+class TextureSampler {
+public:
+    using builder_type = texture_sampler::Builder;
+
+    static builder_type start_build() noexcept;
+
+    TextureSampler() noexcept = default;
+    TextureSampler(VkDevice device, VkSampler sampler, VkSamplerCreateInfo create_info) noexcept;
+
+    TextureSampler(const TextureSampler&) noexcept            = delete;
+    TextureSampler& operator=(const TextureSampler&) noexcept = delete;
+
+    TextureSampler(TextureSampler&&) noexcept;
+    TextureSampler& operator=(TextureSampler&&) noexcept;
+    ~TextureSampler() noexcept;
+
+    operator VkSampler() const noexcept { return get(); }
+    VkSampler get() const noexcept { return sampler_; }
+
+private:
+    VkDevice device_                 = nullptr;
+    VkSampler sampler_               = nullptr;
+    VkSamplerCreateInfo create_info_ = {};
 };
 
 } // namespace zoo::render::resources

@@ -11,7 +11,7 @@ namespace zoo::render::resources {
 namespace {
 
 // lifted from vkguide.dev
-MeshData load_mesh_data(std::string_view file_name) {
+MeshData load_mesh_data(std::string_view dir_name, std::string_view file_name) {
 
     // attrib will contain the vertex arrays of the file
     tinyobj::attrib_t attrib;
@@ -25,8 +25,12 @@ MeshData load_mesh_data(std::string_view file_name) {
     std::string warn;
     std::string err;
 
+    std::string full_path{ dir_name };
+    full_path += "/";
+    full_path += file_name;
+
     // load the OBJ file
-    tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, file_name.data(), nullptr);
+    tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, full_path.c_str(), dir_name.data());
 
     if (!warn.empty()) {
         ZOO_LOG_WARN("[load_mesh] : {}", warn);
@@ -124,7 +128,11 @@ Mesh::Mesh(
         VK_BUFFER_USAGE_INDEX_BUFFER_BIT)),
     data_(std::move(mesh_data)) {}
 
-Mesh::Mesh(Allocator& allocator, scene::UploadContext& upload_context, std::string_view file_name) noexcept :
-    Mesh(allocator, upload_context, load_mesh_data(file_name), file_name) {}
+Mesh::Mesh(
+    Allocator& allocator,
+    scene::UploadContext& upload_context,
+    std::string_view dir_name,
+    std::string_view file_name) noexcept :
+    Mesh(allocator, upload_context, load_mesh_data(dir_name, file_name), file_name) {}
 
 } // namespace zoo::render::resources

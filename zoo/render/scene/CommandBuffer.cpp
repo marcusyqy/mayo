@@ -261,22 +261,36 @@ void CommandBuffer::copy(const render::resources::Buffer& from, render::resource
     vkCmdCopyBuffer(underlying_, from.handle(), to.handle(), 1, &copy);
 }
 
-void CommandBuffer::assure_transitioned_image_for_copy(render::resources::Texture& texture) noexcept {
-    VkImageLayout image_layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    if (texture.layout() != image_layout)
-        transition_impl(
-            texture,
-            texture.layout(),
-            image_layout,
-            0,
-            VK_ACCESS_TRANSFER_WRITE_BIT,
-            VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-            VK_PIPELINE_STAGE_TRANSFER_BIT,
-            { .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
-              .baseMipLevel   = 0,
-              .levelCount     = texture.mip_level(),
-              .baseArrayLayer = 0,
-              .layerCount     = texture.array_count() });
+void CommandBuffer::transition_to_copy(render::resources::Texture& texture) noexcept {
+    transition(
+        texture,
+        texture.layout(),
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        texture.access_flags(),
+        VK_ACCESS_TRANSFER_WRITE_BIT,
+        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+        VK_PIPELINE_STAGE_TRANSFER_BIT,
+        { .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+          .baseMipLevel   = 0,
+          .levelCount     = texture.mip_level(),
+          .baseArrayLayer = 0,
+          .layerCount     = texture.array_count() });
+}
+
+void CommandBuffer::transition_to_shader_read(resources::Texture& texture) noexcept {
+    transition(
+        texture,
+        texture.layout(),
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        texture.access_flags(),
+        VK_ACCESS_SHADER_READ_BIT,
+        VK_PIPELINE_STAGE_TRANSFER_BIT, // TODO: this needs to find out some shit.
+        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+        { .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+          .baseMipLevel   = 0,
+          .levelCount     = texture.mip_level(),
+          .baseArrayLayer = 0,
+          .layerCount     = texture.array_count() });
 }
 
 void CommandBuffer::copy(const render::resources::Buffer& from, render::resources::Texture& to) noexcept {
@@ -286,7 +300,8 @@ void CommandBuffer::copy(const render::resources::Buffer& from, render::resource
         "Must be the same size or more for the texture copying to");
 
     auto image_layout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    assure_transitioned_image_for_copy(to);
+    if (to.layout() != image_layout) transition_to_copy(to);
+
     VkBufferImageCopy copy{ .bufferOffset      = 0,
                             .bufferRowLength   = 0,
                             .bufferImageHeight = 0,
@@ -302,7 +317,7 @@ void CommandBuffer::copy(const render::resources::Buffer& from, render::resource
     vkCmdCopyBufferToImage(underlying_, from.handle(), to.handle(), image_layout, 1, &copy);
 }
 
-void CommandBuffer::transition_impl(
+void CommandBuffer::transition(
     render::resources::Texture& texture,
     VkImageLayout old_layout,
     VkImageLayout new_layout,
@@ -335,6 +350,9 @@ void CommandBuffer::transition_impl(
         nullptr,
         1,
         &image_barrier);
+
+    texture.layout(new_layout);
+    texture.access_flags(dst_access);
 }
 
 } // namespace zoo::render::scene
