@@ -39,6 +39,9 @@ public:
     render::Swapchain& swapchain() noexcept { return swapchain_; }
     const render::Swapchain& swapchain() const noexcept { return swapchain_; }
 
+    GLFWwindow* impl() noexcept { return impl_; }
+    const GLFWwindow* impl() const noexcept { return impl_; }
+
 private:
     window::Traits traits_;
     window::InputCallback callback_;

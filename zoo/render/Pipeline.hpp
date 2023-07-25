@@ -93,6 +93,13 @@ public:
         stdx::span<BindingDescriptor> binding_descriptors,
         stdx::span<PushConstant> push_constants) noexcept;
 
+    Pipeline() noexcept                  = default;
+    Pipeline(const Pipeline&)            = delete;
+    Pipeline& operator=(const Pipeline&) = delete;
+
+    Pipeline(Pipeline&&) noexcept;
+    Pipeline& operator=(Pipeline&&) noexcept;
+
     ~Pipeline() noexcept;
 
     operator underlying_type() const { return get(); }
@@ -103,7 +110,7 @@ public:
     friend class DescriptorPool;
 
 private:
-    DeviceContext& context_;
+    DeviceContext* context_     = nullptr;
     underlying_type underlying_ = nullptr;
 
     VkPipelineLayout layout_ = nullptr;

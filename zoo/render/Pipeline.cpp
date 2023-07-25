@@ -107,7 +107,7 @@ Pipeline::Pipeline(
     const RenderPass& renderpass,
     stdx::span<BindingDescriptor> binding_descriptors,
     stdx::span<PushConstant> push_constants) noexcept :
-    context_(context) {
+    context_(&context) {
 
     enum : uint32_t { vertex_stage = 0, fragment_stage = 1, shader_stages = 2 };
 
@@ -275,7 +275,7 @@ Pipeline::Pipeline(
     pipeline_layout_create_info.pPushConstantRanges    = push_constants.data();
 
     VK_EXPECT_SUCCESS(
-        vkCreatePipelineLayout(context_, &pipeline_layout_create_info, nullptr, &layout_),
+        vkCreatePipelineLayout(*context_, &pipeline_layout_create_info, nullptr, &layout_),
         [](VkResult /* result */) {
             ZOO_LOG_ERROR("Pipeline layout creation failed, maybe we should "
                           "assert here?");
@@ -310,18 +310,40 @@ Pipeline::Pipeline(
     graphics_pipeline_create_info.basePipelineIndex   = -1;             // Optional
 
     VK_EXPECT_SUCCESS(
-        vkCreateGraphicsPipelines(context_, nullptr, 1, &graphics_pipeline_create_info, nullptr, &underlying_));
+        vkCreateGraphicsPipelines(*context_, nullptr, 1, &graphics_pipeline_create_info, nullptr, &underlying_));
+}
+
+Pipeline::Pipeline(Pipeline&& o) noexcept { *this = std::move(o); }
+
+Pipeline& Pipeline::operator=(Pipeline&& o) noexcept {
+    this->~Pipeline();
+
+    o.context_        = o.context_;
+    o.underlying_     = o.underlying_;
+    layout_           = o.layout_;
+    set_layout_count_ = o.set_layout_count_;
+
+    memcpy(set_layout_, o.set_layout_, sizeof(o.set_layout_));
+
+    o.context_          = nullptr;
+    o.underlying_       = nullptr;
+    o.layout_           = nullptr;
+    o.set_layout_count_ = {};
+
+    memset(o.set_layout_, 0, sizeof(o.set_layout_));
+
+    return *this;
 }
 
 Pipeline::~Pipeline() noexcept {
     if (context_) {
-        vkDestroyPipelineLayout(context_, layout_, nullptr);
+        vkDestroyPipelineLayout(*context_, layout_, nullptr);
 
         for (u32 i = 0; i < set_layout_count_; ++i) {
-            vkDestroyDescriptorSetLayout(context_, set_layout_[i], nullptr);
+            vkDestroyDescriptorSetLayout(*context_, set_layout_[i], nullptr);
         }
 
-        vkDestroyPipeline(context_, underlying_, nullptr);
+        vkDestroyPipeline(*context_, underlying_, nullptr);
     }
 }
 
