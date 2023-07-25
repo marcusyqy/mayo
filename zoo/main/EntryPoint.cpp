@@ -17,7 +17,7 @@
 
 #include "stdx/expected.hpp"
 
-#include "adapters/tools/shader_compiler.hpp"
+#include "adapters/tools/Shader_Compiler.hpp"
 
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
