@@ -89,13 +89,13 @@ public:
                                                       .baseArrayLayer = 0,
                                                       .layerCount     = 1 }) noexcept;
 
-private:
+    // explicit calls
     void start_record() noexcept;
     void end_record() noexcept;
-
     void begin_renderpass(const VkRenderPassBeginInfo& begin_info) noexcept;
     void end_renderpass() noexcept;
 
+private:
     void clear_context() noexcept;
 
 private:

@@ -17,7 +17,7 @@
 
 #include "stdx/expected.hpp"
 
-#include "render/tools/ShaderCompiler.hpp"
+#include "adapters/tools/shader_compiler.hpp"
 
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
@@ -27,7 +27,6 @@
 #include <memory>
 #include <string_view>
 
-#include "imgui.h"
 #include <stb_image.h>
 
 namespace zoo {
@@ -69,22 +68,23 @@ struct PushConstantData {
     glm::mat4 render_matrix;
 };
 
-using ShaderBytes = std::vector<u32>;
+using Shader_Bytes = std::vector<u32>;
 
 struct Shaders {
-    ShaderBytes vertex;
-    ShaderBytes fragment;
+    Shader_Bytes vertex;
+    Shader_Bytes fragment;
 };
 
 Shaders read_shaders() noexcept {
-    render::tools::ShaderCompiler compiler;
+
+    adapters::tools::Shader_Compiler compiler;
     auto vertex_bytes = read_file("static/shaders/Test.vert");
     ZOO_ASSERT(vertex_bytes, "vertex shader must have value!");
     auto fragment_bytes = read_file("static/shaders/Test.frag");
     ZOO_ASSERT(fragment_bytes, "fragment shader must have value!");
 
-    render::tools::ShaderWork vertex_work{ shaderc_vertex_shader, "Test.vert", *vertex_bytes };
-    render::tools::ShaderWork fragment_work{ shaderc_fragment_shader, "Test.frag", *fragment_bytes };
+    adapters::tools::Shader_Work vertex_work{ shaderc_vertex_shader, "Test.vert", *vertex_bytes };
+    adapters::tools::Shader_Work fragment_work{ shaderc_fragment_shader, "Test.frag", *fragment_bytes };
 
     auto vertex_spirv   = compiler.compile(vertex_work);
     auto fragment_spirv = compiler.compile(fragment_work);
@@ -104,21 +104,22 @@ render::resources::Texture load_image_from_file(
     render::DeviceContext& context,
     render::scene::UploadContext& upload_context,
     std::string_view file_name) {
-    struct TextureLoadDetails {
+
+    struct Texture_Load_Details {
         s32 width;
         s32 height;
         s32 channels;
     } tex_details;
 
-    struct StbiImageFree {
+    struct Stbi_Image_Free {
         void operator()(stbi_uc* data) const noexcept { stbi_image_free(data); }
     };
 
-    std::unique_ptr<stbi_uc, StbiImageFree> pixels{
+    std::unique_ptr<stbi_uc, Stbi_Image_Free> pixels{
         stbi_load(file_name.data(), &tex_details.width, &tex_details.height, &tex_details.channels, STBI_rgb_alpha)
     };
 
-    if (pixels == nullptr) return {};
+    if (!pixels) return {};
 
     void* pixel_ptr   = reinterpret_cast<void*>(pixels.get());
     size_t image_size = tex_details.width * tex_details.height * 4;

@@ -85,19 +85,25 @@ public:
     // TODO: keep resource count.
     ResourceBindings allocate(render::Pipeline& pipeline) noexcept;
 
-    DescriptorPool(const DescriptorPool&)            = default;
-    DescriptorPool(DescriptorPool&&)                 = delete;
-    DescriptorPool& operator=(const DescriptorPool&) = delete;
-    DescriptorPool& operator=(DescriptorPool&&)      = delete;
+    DescriptorPool(const DescriptorPool&) noexcept            = delete;
+    DescriptorPool& operator=(const DescriptorPool&) noexcept = delete;
+
+    DescriptorPool(DescriptorPool&&) noexcept;
+    DescriptorPool& operator=(DescriptorPool&&) noexcept;
 
     // TODO: extend to have some sort of settings to contain all the possible
     // resource that we can have.
-    DescriptorPool(DeviceContext& context) noexcept;
+    static constexpr u32 DEFAULT_MAX_POOL_SIZE = 10;
+    DescriptorPool(DeviceContext& context, u32 pool_size = DEFAULT_MAX_POOL_SIZE) noexcept;
+    DescriptorPool() noexcept = default;
     ~DescriptorPool() noexcept;
 
+    inline operator bool() const noexcept { return valid(); }
+    inline bool valid() const noexcept { return pool_ != nullptr; }
+
 private:
-    DeviceContext& context_;
-    VkDescriptorPool pool_;
+    DeviceContext* context_ = nullptr;
+    VkDescriptorPool pool_  = nullptr;
 };
 
 } // namespace zoo::render

@@ -157,19 +157,39 @@ ResourceBindings& ResourceBindings::operator=(ResourceBindings&& o) noexcept {
 }
 
 DescriptorPool::~DescriptorPool() noexcept {
-    if (pool_ != nullptr) vkDestroyDescriptorPool(context_, pool_, nullptr);
+    if (pool_ != nullptr) vkDestroyDescriptorPool(*context_, pool_, nullptr);
+}
+
+DescriptorPool::DescriptorPool(DescriptorPool&& o) noexcept { *this = std::move(o); }
+
+DescriptorPool& DescriptorPool::operator=(DescriptorPool&& o) noexcept {
+    // destroy
+    this->~DescriptorPool();
+
+    context_ = o.context_;
+    pool_    = o.pool_;
+
+    o.context_ = nullptr;
+    o.pool_    = nullptr;
+    return *this;
 }
 
 // TODO: create a default use case for descriptor pool
-DescriptorPool::DescriptorPool(DeviceContext& context) noexcept : context_(context), pool_(nullptr) {
-    constexpr u32 MAX_POOL_SIZE = 10;
+DescriptorPool::DescriptorPool(DeviceContext& context, u32 pool_size) noexcept : context_(&context), pool_(nullptr) {
 
     // clang-format off
     VkDescriptorPoolSize sizes[] {
-        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, MAX_POOL_SIZE },
-        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, MAX_POOL_SIZE },
-        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, MAX_POOL_SIZE },
-        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, MAX_POOL_SIZE }
+        { VK_DESCRIPTOR_TYPE_SAMPLER, pool_size },
+        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, pool_size },
+        { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, pool_size },
+        { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, pool_size },
+        { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, pool_size },
+        { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, pool_size },
+        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, pool_size },
+        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, pool_size },
+        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, pool_size },
+        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, pool_size },
+        { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, pool_size }
     };
     // clang-format on
 
@@ -177,18 +197,20 @@ DescriptorPool::DescriptorPool(DeviceContext& context) noexcept : context_(conte
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
         // TODO: we can remove this if needed. This is needed for solving the bug above.
         .flags         = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-        .maxSets       = MAX_POOL_SIZE,
-        .poolSizeCount = (u32)std::size(sizes),
+        .maxSets       = pool_size * static_cast<u32>(std::size(sizes)),
+        .poolSizeCount = static_cast<u32>(std::size(sizes)),
         .pPoolSizes    = +sizes,
     };
 
-    VK_EXPECT_SUCCESS(vkCreateDescriptorPool(context_, &pool_info, nullptr, &pool_));
+    VK_EXPECT_SUCCESS(vkCreateDescriptorPool(*context_, &pool_info, nullptr, &pool_));
 }
 
 ResourceBindings DescriptorPool::allocate(render::Pipeline& pipeline) noexcept {
     static_assert(
         ResourceBindings::MAX_RESOURCE_SIZE == render::Pipeline::MAX_DESCRIPTORS,
         "Must match the descriptors for the arrays");
+
+    ZOO_ASSERT(valid(), "Must be well defined!");
 
     VkDescriptorSet descriptor[ResourceBindings::MAX_RESOURCE_SIZE] = {};
     u32 count                                                       = 0;
@@ -202,10 +224,10 @@ ResourceBindings DescriptorPool::allocate(render::Pipeline& pipeline) noexcept {
             .descriptorSetCount = 1,
             .pSetLayouts        = &pipeline.set_layout_[count],
         };
-        VK_EXPECT_SUCCESS(vkAllocateDescriptorSets(context_, &alloc_info, &descriptor[count]));
+        VK_EXPECT_SUCCESS(vkAllocateDescriptorSets(*context_, &alloc_info, &descriptor[count]));
     }
 
-    return { context_, pool_, { descriptor, count } };
+    return { *context_, pool_, { descriptor, count } };
 }
 
 } // namespace zoo::render
