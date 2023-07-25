@@ -1,10 +1,10 @@
-#include "Shader_Compiler.hpp"
+#include "ShaderCompiler.hpp"
 #include "core/fwd.hpp"
 #include "spdlog/spdlog.h"
 
 namespace zoo::adapters::tools {
 
-stdx::expected<std::vector<u32>, std::runtime_error> Shader_Compiler::compile(const Shader_Work& work) noexcept {
+stdx::expected<std::vector<u32>, std::runtime_error> ShaderCompiler::compile(const ShaderWork& work) noexcept {
     shaderc::CompileOptions options;
     for (const auto& defines : work.defines) {
         options.AddMacroDefinition(defines.name, defines.value);

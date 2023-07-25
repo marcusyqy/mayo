@@ -17,7 +17,7 @@
 
 #include "stdx/expected.hpp"
 
-#include "adapters/tools/Shader_Compiler.hpp"
+#include "adapters/tools/ShaderCompiler.hpp"
 
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
@@ -77,14 +77,14 @@ struct Shaders {
 
 Shaders read_shaders() noexcept {
 
-    adapters::tools::Shader_Compiler compiler;
+    adapters::tools::ShaderCompiler compiler;
     auto vertex_bytes = read_file("static/shaders/Test.vert");
     ZOO_ASSERT(vertex_bytes, "vertex shader must have value!");
     auto fragment_bytes = read_file("static/shaders/Test.frag");
     ZOO_ASSERT(fragment_bytes, "fragment shader must have value!");
 
-    adapters::tools::Shader_Work vertex_work{ shaderc_vertex_shader, "Test.vert", *vertex_bytes };
-    adapters::tools::Shader_Work fragment_work{ shaderc_fragment_shader, "Test.frag", *fragment_bytes };
+    adapters::tools::ShaderWork vertex_work{ shaderc_vertex_shader, "Test.vert", *vertex_bytes };
+    adapters::tools::ShaderWork fragment_work{ shaderc_fragment_shader, "Test.frag", *fragment_bytes };
 
     auto vertex_spirv   = compiler.compile(vertex_work);
     auto fragment_spirv = compiler.compile(fragment_work);
