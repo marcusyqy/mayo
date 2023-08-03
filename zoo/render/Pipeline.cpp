@@ -41,6 +41,20 @@ struct Converter<ShaderType::uvec4> {
 };
 
 template <>
+struct Converter<ShaderType::vec2_unorm> {
+    static constexpr VkFormat value = VK_FORMAT_R8G8_UNORM;
+};
+template <>
+struct Converter<ShaderType::vec3_unorm> {
+    static constexpr VkFormat value = VK_FORMAT_R8G8B8_UNORM;
+};
+
+template <>
+struct Converter<ShaderType::vec4_unorm> {
+    static constexpr VkFormat value = VK_FORMAT_R8G8B8A8_UNORM;
+};
+
+template <>
 struct Converter<ShaderType::f64> {
     static constexpr VkFormat value = VK_FORMAT_R64_SFLOAT;
 };
@@ -54,6 +68,10 @@ VkFormat convert_to_shader_stage(ShaderType t) {
         case ShaderType::ivec2: return Converter<ShaderType::ivec2>::value;
         case ShaderType::uvec4: return Converter<ShaderType::uvec4>::value;
         case ShaderType::f64: return Converter<ShaderType::f64>::value;
+        // unsigned normalized stuff here.
+        case ShaderType::vec2_unorm: return Converter<ShaderType::vec2_unorm>::value;
+        case ShaderType::vec3_unorm: return Converter<ShaderType::vec3_unorm>::value;
+        case ShaderType::vec4_unorm: return Converter<ShaderType::vec4_unorm>::value;
     }
 
     return VK_FORMAT_UNDEFINED;
@@ -106,7 +124,8 @@ Pipeline::Pipeline(
     const ViewportInfo& viewport_info,
     const RenderPass& renderpass,
     stdx::span<BindingDescriptor> binding_descriptors,
-    stdx::span<PushConstant> push_constants) noexcept :
+    stdx::span<PushConstant> push_constants,
+    const PipelineCreateInfo& create_info) noexcept :
     context_(&context) {
 
     enum : uint32_t { vertex_stage = 0, fragment_stage = 1, shader_stages = 2 };
@@ -170,7 +189,7 @@ Pipeline::Pipeline(
 
     VkPipelineDynamicStateCreateInfo dynamic_state{};
     dynamic_state.sType             = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-    dynamic_state.dynamicStateCount = static_cast<uint32_t>(std::size(dynamic_states_array));
+    dynamic_state.dynamicStateCount = static_cast<u32>(std::size(dynamic_states_array));
     dynamic_state.pDynamicStates    = +dynamic_states_array;
 
     const auto& viewport = viewport_info.viewport;
@@ -230,10 +249,10 @@ Pipeline::Pipeline(
     rasterizer_create_info.depthBiasConstantFactor = 0.0f; // Optional
     rasterizer_create_info.depthBiasClamp          = 0.0f; // Optional
     rasterizer_create_info.depthBiasSlopeFactor    = 0.0f; // Optional
-    rasterizer_create_info.cullMode                = VK_CULL_MODE_BACK_BIT;
-    rasterizer_create_info.frontFace               = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    rasterizer_create_info.lineWidth               = 1.0f;
-    rasterizer_create_info.polygonMode             = VK_POLYGON_MODE_FILL;
+    rasterizer_create_info.cullMode    = create_info.enable_cull ? VK_CULL_MODE_BACK_BIT : VK_CULL_MODE_NONE;
+    rasterizer_create_info.frontFace   = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    rasterizer_create_info.lineWidth   = 1.0f;
+    rasterizer_create_info.polygonMode = VK_POLYGON_MODE_FILL;
     rasterizer_create_info.rasterizerDiscardEnable = VK_FALSE;
 
     VkPipelineMultisampleStateCreateInfo multisampling_create_info{};
@@ -305,9 +324,10 @@ Pipeline::Pipeline(
     graphics_pipeline_create_info.pDynamicState       = &dynamic_state;
     graphics_pipeline_create_info.layout              = layout_;
     graphics_pipeline_create_info.renderPass          = renderpass;
-    graphics_pipeline_create_info.subpass             = 0;
-    graphics_pipeline_create_info.basePipelineHandle  = VK_NULL_HANDLE; // Optional
-    graphics_pipeline_create_info.basePipelineIndex   = -1;             // Optional
+    // @TODO: find out what makes this change?
+    graphics_pipeline_create_info.subpass            = 0;
+    graphics_pipeline_create_info.basePipelineHandle = VK_NULL_HANDLE; // Optional
+    graphics_pipeline_create_info.basePipelineIndex  = -1;             // Optional
 
     VK_EXPECT_SUCCESS(
         vkCreateGraphicsPipelines(*context_, nullptr, 1, &graphics_pipeline_create_info, nullptr, &underlying_));

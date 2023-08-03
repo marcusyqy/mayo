@@ -22,6 +22,7 @@ struct FrameData {
 
 class Layer {
 public:
+    constexpr static u32 MAX_FRAMES = 3;
     void init() noexcept;
     void exit() noexcept;
 
@@ -36,7 +37,16 @@ private:
     Window* window_;
 
     DrawData draw_data_;
-    FrameData frame_data_[3];
+    FrameData frame_data_[MAX_FRAMES];
+};
+
+struct Imgui_Editor {
+public:
+    Imgui_Editor() noexcept;
+    ~Imgui_Editor() noexcept;
+
+private:
+    ImmediateRenderer imm_;
 };
 
 } // namespace zoo::adapters::imgui

@@ -171,6 +171,10 @@ struct Builder {
     Builder& min_filter(VkFilter filter) noexcept;
     Builder& mag_filter(VkFilter filter) noexcept;
 
+    Builder& mipmap_mode(VkSamplerMipmapMode mipmap_mode) noexcept;
+    Builder& lod(std::pair<f32, f32> range) noexcept;
+    Builder& max_anistrophy(f32 value) noexcept;
+
 private:
     VkFilter min_filter_ = VK_FILTER_NEAREST;
     VkFilter mag_filter_ = VK_FILTER_NEAREST;
@@ -179,6 +183,9 @@ private:
         VkSamplerAddressMode v = VK_SAMPLER_ADDRESS_MODE_REPEAT;
         VkSamplerAddressMode w = VK_SAMPLER_ADDRESS_MODE_REPEAT;
     } address_mode_;
+    VkSamplerMipmapMode mipmap_mode_ = {};
+    std::pair<f32, f32> lod_range_   = {};
+    f32 max_anistrophy_              = {};
 };
 
 } // namespace texture_sampler

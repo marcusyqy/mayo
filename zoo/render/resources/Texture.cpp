@@ -251,16 +251,20 @@ namespace texture_sampler {
 
 TextureSampler Builder::build(DeviceContext& context) noexcept {
     VkSamplerCreateInfo info = {
-        .sType        = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-        .pNext        = nullptr,
-        .magFilter    = mag_filter_,
-        .minFilter    = min_filter_,
-        .addressModeU = address_mode_.u,
-        .addressModeV = address_mode_.v,
-        .addressModeW = address_mode_.w,
+        .sType         = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+        .pNext         = nullptr,
+        .magFilter     = mag_filter_,
+        .minFilter     = min_filter_,
+        .mipmapMode    = mipmap_mode_,
+        .addressModeU  = address_mode_.u,
+        .addressModeV  = address_mode_.v,
+        .addressModeW  = address_mode_.w,
+        .maxAnisotropy = max_anistrophy_,
+        .minLod        = lod_range_.first,
+        .maxLod        = lod_range_.second,
     };
 
-    VkSampler sampler;
+    VkSampler sampler = nullptr;
     vkCreateSampler(context, &info, nullptr, &sampler);
 
     return {
@@ -295,6 +299,21 @@ Builder& Builder::min_filter(VkFilter filter) noexcept {
 }
 Builder& Builder::mag_filter(VkFilter filter) noexcept {
     mag_filter_ = filter;
+    return *this;
+}
+
+Builder& Builder::mipmap_mode(VkSamplerMipmapMode mipmap_mode) noexcept {
+    mipmap_mode_ = mipmap_mode;
+    return *this;
+}
+
+Builder& Builder::lod(std::pair<f32, f32> range) noexcept {
+    lod_range_ = range;
+    return *this;
+}
+
+Builder& Builder::max_anistrophy(f32 value) noexcept {
+    max_anistrophy_ = value;
     return *this;
 }
 

@@ -5,6 +5,7 @@
 
 namespace zoo::render {
 
+// @TODO: add a builder for renderpass.
 class RenderPass {
 public:
     using underlying_type = VkRenderPass;

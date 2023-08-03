@@ -40,6 +40,9 @@ enum class ShaderType {
     vec2,
     vec3,
     vec4,
+    vec2_unorm,
+    vec3_unorm,
+    vec4_unorm,
     ivec2,
     uvec4,
     f64 // double
@@ -81,6 +84,10 @@ struct BindingDescriptor {
     u32 set = 0;
 };
 
+struct PipelineCreateInfo {
+    bool enable_cull = true; // should we allow choosing of front/back?
+};
+
 class Pipeline {
 public:
     using underlying_type = VkPipeline;
@@ -91,7 +98,8 @@ public:
         const ViewportInfo& viewport_info,
         const RenderPass& renderpass,
         stdx::span<BindingDescriptor> binding_descriptors,
-        stdx::span<PushConstant> push_constants) noexcept;
+        stdx::span<PushConstant> push_constants,
+        const PipelineCreateInfo& create_info = {}) noexcept;
 
     Pipeline() noexcept                  = default;
     Pipeline(const Pipeline&)            = delete;
