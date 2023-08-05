@@ -17,6 +17,7 @@
 
 namespace zoo::render {
 
+//@TODO: remove Renderpass from Swapchain.
 class Swapchain {
 public:
     using underlying_type        = VkSwapchainKHR;
@@ -37,7 +38,6 @@ public:
         return { static_cast<u32>(size_.x), static_cast<u32>(size_.y) };
     }
 
-    // renderpass& renderpass() noexcept { return renderpass_; }
     [[nodiscard]] const RenderPass& get_renderpass() const noexcept { return renderpass_; }
 
     [[nodiscard]] ViewportInfo get_viewport_info() const noexcept;

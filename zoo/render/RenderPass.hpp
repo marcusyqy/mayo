@@ -5,7 +5,82 @@
 
 namespace zoo::render {
 
-// @TODO: add a builder for renderpass.
+struct AttachmentDescription {
+    VkAttachmentDescription description{
+        .format         = VK_FORMAT_UNDEFINED,
+        .samples        = VK_SAMPLE_COUNT_1_BIT,
+        .loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
+        .storeOp        = VK_ATTACHMENT_STORE_OP_STORE,
+        .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+        .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        .initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
+        .finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+    };
+
+    VkSubpassDependency dependency{
+        .srcSubpass    = VK_SUBPASS_EXTERNAL,
+        .dstSubpass    = 0,
+        .srcStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        .dstStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        .srcAccessMask = 0,
+        .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+    };
+
+    VkImageLayout layout{ VK_IMAGE_LAYOUT_UNDEFINED };
+};
+
+// @FIXME: should this be a struct or just a typical function?
+// how would the api be used and what should be the correct representation of it?
+struct ColorAttachmentDescription : AttachmentDescription {
+    ColorAttachmentDescription(VkFormat format) :
+        AttachmentDescription{ VkAttachmentDescription{
+                                   .format         = format,
+                                   .samples        = VK_SAMPLE_COUNT_1_BIT,
+                                   .loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
+                                   .storeOp        = VK_ATTACHMENT_STORE_OP_STORE,
+                                   .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                                   .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+                                   .initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
+                                   .finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                               },
+                               VkSubpassDependency{
+                                   .srcSubpass    = VK_SUBPASS_EXTERNAL,
+                                   .dstSubpass    = 0,
+                                   .srcStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                   .dstStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                   .srcAccessMask = 0,
+                                   .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                               },
+                               VkImageLayout{ VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL } } {}
+};
+
+// @FIXME: read comment above about `ColorAttachmentDescription`
+struct DepthAttachmentDescription : AttachmentDescription {
+    DepthAttachmentDescription() :
+        AttachmentDescription{
+            VkAttachmentDescription{
+                .format         = VK_FORMAT_D32_SFLOAT,
+                .samples        = VK_SAMPLE_COUNT_1_BIT,
+                .loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
+                .storeOp        = VK_ATTACHMENT_STORE_OP_STORE,
+                .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_CLEAR,
+                .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+                .initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
+                .finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+            },
+            VkSubpassDependency{
+                .srcSubpass    = VK_SUBPASS_EXTERNAL,
+                .dstSubpass    = 0,
+                .srcStageMask  = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+                .dstStageMask  = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+                .srcAccessMask = 0,
+                .dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+            },
+            VkImageLayout{ VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL }
+        } {}
+};
+
+// @TODO: Make Renderpass reusable so that it doesn't need to live inside Swapchain.
 class RenderPass {
 public:
     using underlying_type = VkRenderPass;
