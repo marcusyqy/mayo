@@ -3,6 +3,7 @@
 namespace zoo::render {
 
 namespace {
+
 VkRenderPass create_vk_renderpass(DeviceContext& context, VkFormat format, VkFormat depth) noexcept {
     VkAttachmentDescription color_attachment{};
     color_attachment.format         = format;
@@ -75,12 +76,89 @@ VkRenderPass create_vk_renderpass(DeviceContext& context, VkFormat format, VkFor
     return renderpass;
 }
 
+VkRenderPass create_renderpass(DeviceContext& context, stdx::span<AttachmentDescription> descriptions) noexcept {
+    // initialize counts
+    u32 attachment_count{}, subpass_count{}, dependency_count{};
+    constexpr size_t ATTACHMENT_MAX_SIZE = 5;
+    VkAttachmentDescription attachments[ATTACHMENT_MAX_SIZE]{};
+    VkSubpassDescription subpasses[ATTACHMENT_MAX_SIZE]{};
+    VkSubpassDependency dependencies[ATTACHMENT_MAX_SIZE]{};
+    VkAttachmentReference references[ATTACHMENT_MAX_SIZE]{};
+
+    // initialize the data with descriptions
+    for (auto& description : descriptions) {
+    }
+
+    VkRenderPassCreateInfo renderpass_info{
+        .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+        .attachmentCount = attachment_count,
+        .pAttachments    = attachments,
+        .subpassCount    = subpass_count,
+        .pSubpasses      = +subpasses,
+        .dependencyCount = dependency_count,
+        .pDependencies   = +dependencies,
+    };
+
+    VkRenderPass renderpass{};
+    VK_EXPECT_SUCCESS(vkCreateRenderPass(context, &renderpass_info, nullptr, &renderpass));
+    return renderpass;
+}
+
 } // namespace
+
+ColorAttachmentDescription::ColorAttachmentDescription(VkFormat format) noexcept :
+    AttachmentDescription{ VkAttachmentDescription{
+                               .format         = format,
+                               .samples        = VK_SAMPLE_COUNT_1_BIT,
+                               .loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
+                               .storeOp        = VK_ATTACHMENT_STORE_OP_STORE,
+                               .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                               .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+                               .initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
+                               .finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                           },
+                           VkSubpassDependency{
+                               .srcSubpass    = VK_SUBPASS_EXTERNAL,
+                               .dstSubpass    = 0,
+                               .srcStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                               .dstStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                               .srcAccessMask = 0,
+                               .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                           },
+                           VkImageLayout{ VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL },
+                           Type::color } {}
+
+DepthAttachmentDescription::DepthAttachmentDescription() noexcept :
+    AttachmentDescription{
+        VkAttachmentDescription{
+            .format         = VK_FORMAT_D32_SFLOAT,
+            .samples        = VK_SAMPLE_COUNT_1_BIT,
+            .loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp        = VK_ATTACHMENT_STORE_OP_STORE,
+            .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
+            .finalLayout    = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+        },
+        VkSubpassDependency{
+            .srcSubpass    = VK_SUBPASS_EXTERNAL,
+            .dstSubpass    = 0,
+            .srcStageMask  = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+            .dstStageMask  = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+            .srcAccessMask = 0,
+            .dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+        },
+        VkImageLayout{ VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL },
+        Type::depth
+    } {}
 
 RenderPass::RenderPass() noexcept : context_(nullptr), underlying_(nullptr) {}
 
 RenderPass::RenderPass(DeviceContext& context, VkFormat format, VkFormat depth) noexcept :
-    context_(std::addressof(context)), underlying_(create_vk_renderpass(context, format, depth)) {}
+    context_(&context), underlying_(create_vk_renderpass(*context_, format, depth)) {}
+
+RenderPass::RenderPass(DeviceContext& context, stdx::span<AttachmentDescription> descriptions) noexcept :
+    context_(&context), underlying_(create_vk_renderpass(*context_, descriptions)) {}
 
 void RenderPass::reset() noexcept {
     if (context_ != nullptr) {
