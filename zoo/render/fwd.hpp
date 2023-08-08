@@ -3,6 +3,7 @@
 #include "vma/vk_mem_alloc.h"
 #include <vulkan/vk_enum_string_helper.h>
 #include <vulkan/vulkan.h>
+#include "core/fwd.hpp"
 
 namespace zoo::render::hidden::detail {
 
@@ -29,6 +30,18 @@ namespace zoo::render {
 struct ViewportInfo {
     VkViewport viewport;
     VkRect2D scissor;
+};
+
+// @TODO: find somewhere else to put this.
+template <typename T>
+struct v2 {
+    T x = {};
+    T y = {};
+};
+
+struct RenderArea {
+    v2<s32> offset;
+    v2<u32> extent;
 };
 
 /*

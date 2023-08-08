@@ -1,6 +1,7 @@
 #pragma once
 #include "render/DescriptorPool.hpp"
 #include "render/DeviceContext.hpp"
+#include "render/Framebuffer.hpp"
 #include "render/Pipeline.hpp"
 #include "render/RenderPass.hpp"
 #include "render/fwd.hpp"
@@ -26,6 +27,15 @@ private:
     VkPipelineLayout pipeline_layout_;
 };
 
+struct PresentContext {
+    friend class CommandBuffer;
+    PresentContext(VkSemaphore image_available, VkSemaphore render_done) noexcept;
+
+private:
+    VkSemaphore image_available_;
+    VkSemaphore render_done_;
+};
+
 class CommandBuffer {
 public:
     using underlying_type = VkCommandBuffer;
@@ -34,6 +44,7 @@ public:
     void reset() noexcept;
     void clear() noexcept;
 
+    CommandBuffer() noexcept = default;
     CommandBuffer(DeviceContext& context, Operation op_type) noexcept;
     CommandBuffer(CommandBuffer&& other) noexcept;
     CommandBuffer& operator=(CommandBuffer&& other) noexcept;
@@ -93,6 +104,7 @@ public:
     void start_record() noexcept;
     void end_record() noexcept;
     void begin_renderpass(const VkRenderPassBeginInfo& begin_info) noexcept;
+    void set_render_target(const Framebuffer& rt, RenderArea* render_area = nullptr) noexcept;
     void end_renderpass() noexcept;
 
 private:
@@ -103,8 +115,8 @@ private:
     void assure_status(RecordStatus status);
 
 private:
-    DeviceContext* context_;
-    underlying_type underlying_;
+    DeviceContext* context_     = nullptr;
+    underlying_type underlying_ = nullptr;
 
     struct VertexBufferBindContext {
         std::vector<VkBuffer> buffers_;
@@ -119,7 +131,7 @@ private:
         size_t count_;
     } index_buffer_bind_context_;
 
-    Operation op_type_;
-    RecordStatus record_status_;
+    Operation op_type_          = Operation::unknown;
+    RecordStatus record_status_ = RecordStatus::end;
 };
 } // namespace zoo::render::scene

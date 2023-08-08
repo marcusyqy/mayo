@@ -18,6 +18,7 @@ public:
     using CommandBuffer::transition_to_shader_read;
 
     UploadContext(DeviceContext& context) noexcept;
+    ~UploadContext() noexcept;
 
 private:
     std::vector<resources::Buffer> buffers_;

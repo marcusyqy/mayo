@@ -78,23 +78,57 @@ VkRenderPass create_vk_renderpass(DeviceContext& context, VkFormat format, VkFor
 
 VkRenderPass create_renderpass(DeviceContext& context, stdx::span<AttachmentDescription> descriptions) noexcept {
     // initialize counts
-    u32 attachment_count{}, subpass_count{}, dependency_count{};
-    constexpr size_t ATTACHMENT_MAX_SIZE = 5;
+    constexpr s32 ATTACHMENT_MAX_SIZE = 5;
+    u32 attachment_count{};
+    u32 dependency_count{};
+
     VkAttachmentDescription attachments[ATTACHMENT_MAX_SIZE]{};
-    VkSubpassDescription subpasses[ATTACHMENT_MAX_SIZE]{};
     VkSubpassDependency dependencies[ATTACHMENT_MAX_SIZE]{};
-    VkAttachmentReference references[ATTACHMENT_MAX_SIZE]{};
+
+    VkAttachmentReference color_references[ATTACHMENT_MAX_SIZE]{};
+    u32 color_references_count = {};
+    VkAttachmentReference depth_reference{};
+    bool depth_ref_set = {};
 
     // initialize the data with descriptions
+    u32 i = 0;
     for (auto& description : descriptions) {
+        // Add stuff.
+        attachments[attachment_count++]  = description.description;
+        dependencies[dependency_count++] = description.dependency;
+
+        switch (description.type) {
+            case AttachmentDescription::Type::color:
+                color_references[color_references_count++] = VkAttachmentReference{
+                    .attachment = i++,
+                    .layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                };
+                break;
+            case AttachmentDescription::Type::depth: {
+                ZOO_ASSERT(!depth_ref_set, "There can only be 1 depth attachment!");
+                depth_reference = VkAttachmentReference{
+                    .attachment = i++,
+                    .layout     = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                };
+                depth_ref_set = true;
+            } break;
+            default: ZOO_ASSERT(false, "Not supported attachment description type.");
+        }
     }
+
+    VkSubpassDescription subpass{
+        .pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS,
+        .colorAttachmentCount    = color_references_count,
+        .pColorAttachments       = +color_references,
+        .pDepthStencilAttachment = depth_ref_set ? &depth_reference : nullptr,
+    };
 
     VkRenderPassCreateInfo renderpass_info{
         .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
         .attachmentCount = attachment_count,
         .pAttachments    = attachments,
-        .subpassCount    = subpass_count,
-        .pSubpasses      = +subpasses,
+        .subpassCount    = 1,
+        .pSubpasses      = &subpass,
         .dependencyCount = dependency_count,
         .pDependencies   = +dependencies,
     };
@@ -125,7 +159,6 @@ ColorAttachmentDescription::ColorAttachmentDescription(VkFormat format) noexcept
                                .srcAccessMask = 0,
                                .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
                            },
-                           VkImageLayout{ VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL },
                            Type::color } {}
 
 DepthAttachmentDescription::DepthAttachmentDescription() noexcept :
@@ -148,7 +181,6 @@ DepthAttachmentDescription::DepthAttachmentDescription() noexcept :
             .srcAccessMask = 0,
             .dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
         },
-        VkImageLayout{ VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL },
         Type::depth
     } {}
 
@@ -158,7 +190,7 @@ RenderPass::RenderPass(DeviceContext& context, VkFormat format, VkFormat depth) 
     context_(&context), underlying_(create_vk_renderpass(*context_, format, depth)) {}
 
 RenderPass::RenderPass(DeviceContext& context, stdx::span<AttachmentDescription> descriptions) noexcept :
-    context_(&context), underlying_(create_vk_renderpass(*context_, descriptions)) {}
+    context_(&context), underlying_(create_renderpass(*context_, descriptions)) {}
 
 void RenderPass::reset() noexcept {
     if (context_ != nullptr) {

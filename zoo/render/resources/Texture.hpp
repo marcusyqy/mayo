@@ -14,6 +14,7 @@ class Texture;
 class TextureView {
 public:
     TextureView(const Texture& reference, VkImageViewCreateInfo create_info) noexcept;
+    TextureView(std::string name, VkDevice device, VkImageViewCreateInfo create_info) noexcept;
 
     TextureView() = default;
     ~TextureView() noexcept;

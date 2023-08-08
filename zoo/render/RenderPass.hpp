@@ -27,12 +27,8 @@ struct AttachmentDescription {
         .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
     };
 
-    VkImageLayout layout{ VK_IMAGE_LAYOUT_UNDEFINED };
-
     // @NOTE: This are based on what `VkSubpassDescription` has in their body
-    enum class Type {
-       color, input, depth, resolve
-    } type;
+    enum class Type { color, input, depth, resolve } type;
 };
 
 // These are helper functions to help with the creation of things that will be used often.

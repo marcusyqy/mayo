@@ -38,13 +38,7 @@ public:
         return { static_cast<u32>(size_.x), static_cast<u32>(size_.y) };
     }
 
-    [[nodiscard]] const RenderPass& get_renderpass() const noexcept { return renderpass_; }
-
     [[nodiscard]] ViewportInfo get_viewport_info() const noexcept;
-
-    void for_each(
-        std::function<void(render::scene::CommandBuffer& command_context, VkRenderPassBeginInfo renderpass_info)>
-            exec) noexcept;
 
     void present() noexcept;
 
@@ -63,6 +57,12 @@ public:
     s32 num_images() const noexcept;
     s32 current_image() const noexcept;
 
+    // @TODO-EVENT_SYSTEM : fix this to become some proper event system
+
+    void on_resize(std::function<void(Swapchain&, u32, u32)> resize) noexcept;
+
+    const resources::TextureView* get_image(s32 index) const noexcept;
+
 private:
     bool create_swapchain_and_resources() noexcept;
     void cleanup_swapchain_and_resources() noexcept;
@@ -73,14 +73,14 @@ private:
     void force_resize() noexcept;
     void assure(VkResult result) noexcept;
 
-    resources::Texture create_depth_buffer();
-
 private:
     VkInstance instance_        = nullptr;
     surface_type surface_       = nullptr;
     GLFWwindow* window_         = nullptr;
     underlying_type underlying_ = nullptr;
     DeviceContext& context_;
+
+    std::vector<std::function<void(Swapchain&, u32, u32)>> resize_cbs_;
 
     struct {
         s32 x;
@@ -101,17 +101,13 @@ private:
 
     // frame specific stuff
     std::vector<VkImage> images_;
-    std::vector<resources::Texture> depth_buffers_;
     std::vector<SyncObjects> sync_objects_;
     size_t current_sync_objects_index_ = {};
 
-    std::vector<VkImageView> views_;
-    std::vector<VkFramebuffer> framebuffers_;
+    std::vector<resources::TextureView> views_;
     std::vector<render::scene::CommandBuffer> command_buffers_;
-    RenderPass renderpass_; // has a default renderpass in swapchain
 
     u32 current_frame_                      = 0;
     bool should_resize_                     = false;
-    static constexpr VkFormat DEPTH_FORMAT_ = VK_FORMAT_D32_SFLOAT;
 };
 } // namespace zoo::render

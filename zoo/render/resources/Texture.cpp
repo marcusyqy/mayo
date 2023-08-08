@@ -216,6 +216,11 @@ TextureView::TextureView(const Texture& reference, VkImageViewCreateInfo create_
     VK_EXPECT_SUCCESS(vkCreateImageView(reference.device(), &create_info_, nullptr, &view_));
 }
 
+TextureView::TextureView(std::string name, VkDevice device, VkImageViewCreateInfo create_info) noexcept :
+    name_(std::move(name)), device_(device), create_info_(create_info), view_(nullptr) {
+    VK_EXPECT_SUCCESS(vkCreateImageView(device_, &create_info_, nullptr, &view_));
+}
+
 void TextureView::destroy() noexcept {
     if (view_ != nullptr) {
         vkDestroyImageView(device_, view_, nullptr);

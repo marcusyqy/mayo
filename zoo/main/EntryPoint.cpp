@@ -9,6 +9,7 @@
 
 #include "render/DescriptorPool.hpp"
 #include "render/Engine.hpp"
+#include "render/Framebuffer.hpp"
 #include "render/Pipeline.hpp"
 #include "render/resources/Buffer.hpp"
 #include "render/resources/Mesh.hpp"
@@ -44,8 +45,13 @@ struct SceneData {
 struct FrameData {
     render::resources::Buffer uniform_buffer;
     render::ResourceBindings bindings;
-
     render::resources::Buffer object_storage_buffer;
+
+    render::resources::Texture depth_buffer;
+    render::Framebuffer render_target;
+
+    render::scene::CommandBuffer command_buffer;
+    render::sync::Fence in_flight_fence;
 };
 
 struct UniformBufferData {
@@ -74,6 +80,17 @@ struct Shaders {
     Shader_Bytes vertex;
     Shader_Bytes fragment;
 };
+
+render::resources::Texture create_depth_buffer(render::DeviceContext& context, u32 x, u32 y) noexcept {
+    static constexpr VkFormat DEPTH_FORMAT_ = VK_FORMAT_D32_SFLOAT;
+    return render::resources::Texture::start_build("DepthBufferSwapchain")
+        .format(DEPTH_FORMAT_)
+        .usage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+        .extent({ x, y, 1 })
+        .allocation_type(VMA_MEMORY_USAGE_GPU_ONLY)
+        .allocation_required_flags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
+        .build(context.allocator());
+}
 
 Shaders read_shaders() noexcept {
 
@@ -160,12 +177,12 @@ T is_power_of_two(T v) noexcept {
     return (((v) != 0) && (((v) & ((v)-1)) == 0));
 }
 
-void* ptr_round_up_align(void* ptr, uintptr_t align) {
+void* ptr_round_up_align(void* ptr, uintptr_t align) noexcept {
     ZOO_ASSERT(is_power_of_two(align), "align must be a power of two!");
     return (void*)(((uintptr_t)ptr + (align - 1)) & ~(align - 1));
 }
 
-void* ptr_round_down_align(void* ptr, uintptr_t align) {
+void* ptr_round_down_align(void* ptr, uintptr_t align) noexcept {
     ZOO_ASSERT(is_power_of_two(align), "align must be a power of two!");
     return (void*)((uintptr_t)ptr & ~(align - 1));
 }
@@ -219,7 +236,13 @@ application::ExitStatus main(application::Settings args) noexcept {
                                                                 .build(context);
     upload_cmd_buffer.submit();
 
-    auto& swapchain = main_window.swapchain();
+    auto& swapchain   = main_window.swapchain();
+    auto image_format = swapchain.format();
+
+    render::AttachmentDescription attachments[] = { render::ColorAttachmentDescription(image_format),
+                                                    render::DepthAttachmentDescription() };
+
+    render::RenderPass renderpass{ context, attachments };
 
     auto buffer_description = render::resources::Vertex::describe();
     std::array vertex_description{ render::VertexInputDescription{ sizeof(render::resources::Vertex),
@@ -246,9 +269,7 @@ application::ExitStatus main(application::Settings args) noexcept {
     render::Pipeline pipeline{ context,
                                render::ShaderStagesSpecification{ vertex_shader, fragment_shader, vertex_description },
                                swapchain.get_viewport_info(),
-                               // TODO: this needs to change to a normal renderpass type that can be
-                               // accessed from the outside AND created AND configured outside.
-                               swapchain.get_renderpass(),
+                               renderpass,
                                binding_descriptors,
                                { &push_constant, 1 } };
 
@@ -272,43 +293,65 @@ application::ExitStatus main(application::Settings args) noexcept {
     render::resources::BufferView buffer_view{ scene_data_buffer, 0, sizeof(SceneData) };
 
     // initialize datas.
-    for (s32 i = 0; i < MAX_FRAMES; ++i) {
-        auto& frame_data = frame_datas[i];
+    {
+        s32 num_images = swapchain.num_images();
+        auto [x, y]    = swapchain.extent();
+        for (s32 i = 0; i < num_images; ++i) {
+            auto& frame_data = frame_datas[i];
 
-        const auto uniform_buffer_name = fmt::format("Uniform buffer : {}", i);
-        const auto object_buffer_name  = fmt::format("Object buffer : {}", i);
-        frame_data.uniform_buffer      = render::resources::Buffer::start_build<UniformBufferData>(uniform_buffer_name)
-                                        .usage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
-                                        .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
-                                        .build(context.allocator());
+            const auto uniform_buffer_name = fmt::format("Uniform buffer : {}", i);
+            const auto object_buffer_name  = fmt::format("Object buffer : {}", i);
+            frame_data.uniform_buffer = render::resources::Buffer::start_build<UniformBufferData>(uniform_buffer_name)
+                                            .usage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
+                                            .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
+                                            .build(context.allocator());
 
-        frame_data.object_storage_buffer = render::resources::Buffer::start_build<ObjectData>(object_buffer_name)
-                                               .count(MAX_OBJECTS)
-                                               .usage(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
-                                               .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
-                                               .build(context.allocator());
+            frame_data.object_storage_buffer = render::resources::Buffer::start_build<ObjectData>(object_buffer_name)
+                                                   .count(MAX_OBJECTS)
+                                                   .usage(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
+                                                   .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
+                                                   .build(context.allocator());
 
-        frame_data.bindings = descriptor_pool.allocate(pipeline);
+            frame_data.bindings = descriptor_pool.allocate(pipeline);
 
-        // clang-format off
-        frame_data.bindings.start_batch()
-            .bind(0, frame_data.uniform_buffer,VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
-            .bind(1, buffer_view, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC)
-            // @EVALUATE : check if this good enough? { 1, 0 } maybe better.
-            .bind(1, 0 , frame_data.object_storage_buffer, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
-            .bind(2, 0, lost_empire, lost_empire_sampler)
-            .end_batch();
+            // clang-format off
+            frame_data.bindings.start_batch()
+                .bind(0, frame_data.uniform_buffer,VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+                .bind(1, buffer_view, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC)
+                // @EVALUATE : check if this good enough? { 1, 0 } maybe better.
+                .bind(1, 0 , frame_data.object_storage_buffer, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+                .bind(2, 0, lost_empire, lost_empire_sampler)
+                .end_batch();
+            // clang-format on
+            frame_data.command_buffer  = render::scene::CommandBuffer{ context, render::Operation::graphics };
+            frame_data.in_flight_fence = render::sync::Fence{ context };
 
-        // clang-format on
+            frame_data.depth_buffer = create_depth_buffer(context, x, y);
+
+            const render::resources::TextureView* tv[] = { swapchain.get_image(i), &(frame_data.depth_buffer.view()) };
+            frame_data.render_target                   = render::Framebuffer{ context, renderpass, tv, x, y };
+        }
     }
+
+    auto resize_fn = [&frame_datas, &context, &renderpass](render::Swapchain& sc, u32 x, u32 y) {
+        auto num_images = sc.num_images();
+        for (s32 i = 0; i < num_images; ++i) {
+            auto& frame_data                           = frame_datas[i];
+            frame_data.depth_buffer                    = create_depth_buffer(context, x, y);
+            const render::resources::TextureView* tv[] = { sc.get_image(i), &(frame_data.depth_buffer.view()) };
+            frame_data.render_target                   = render::Framebuffer{ context, renderpass, tv, x, y };
+        }
+    };
+    swapchain.on_resize(resize_fn);
 
     upload_cmd_buffer.wait();
 
-    auto counter = 0;
     while (main_window.is_open()) {
         // TODO: add frame data in.
         const auto current_idx = swapchain.current_image();
         auto& frame_data       = frame_datas[current_idx];
+        frame_data.in_flight_fence.wait();
+        frame_data.in_flight_fence.reset();
 
         // glm::vec3 cam_pos = { 0.0f, 0.0f, 7.0f };
         // glm::mat4 view       = glm::lookAt(cam_pos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -377,7 +420,6 @@ application::ExitStatus main(application::Settings args) noexcept {
         swapchain.present();
 
         windows::poll_events();
-        ++counter;
     }
 
     // TODO: we can remove this after we find out how to properly tie

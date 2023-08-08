@@ -127,9 +127,6 @@ bool Swapchain::create_swapchain_and_resources() noexcept {
     description_.present_mode   = choose_present_mode(details.present_modes);
     description_.capabilities   = std::move(details.capabilities);
 
-    // TODO: move this out.
-    renderpass_ = RenderPass{ context_, description_.surface_format.format, DEPTH_FORMAT_ };
-
     VkExtent2D extent = choose_extent(description_.capabilities, size_.x, size_.y);
 
     // set to the right extent
@@ -175,12 +172,9 @@ bool Swapchain::create_swapchain_and_resources() noexcept {
     images_.resize(image_count);
     vkGetSwapchainImagesKHR(context_, underlying_, &image_count, images_.data());
 
-    for (auto view : views_) {
-        vkDestroyImageView(context_, view, nullptr);
-    }
-    views_.resize(image_count);
+    views_.clear();
+    views_.reserve(image_count);
 
-    auto view = views_.data();
     for (const auto& image : images_) {
         VkImageViewCreateInfo view_create_info{};
         view_create_info.sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -199,39 +193,13 @@ bool Swapchain::create_swapchain_and_resources() noexcept {
         view_create_info.subresourceRange.baseArrayLayer = 0;
         view_create_info.subresourceRange.layerCount     = 1;
 
-        VK_EXPECT_SUCCESS(
-            vkCreateImageView(context_, &view_create_info, nullptr, view++),
-            [&view, this, &failed](VkResult /* result */) {
-                ZOO_LOG_ERROR("Failed to create image views! For index", std::distance(views_.data(), view - 1));
-                failed = true;
-            });
-    }
-
-    depth_buffers_.clear();
-    depth_buffers_.reserve(std::size(views_));
-    for (size_t i = 0; i < std::size(views_); i++) {
-        depth_buffers_.emplace_back(create_depth_buffer());
-    }
-
-    for (auto fb : framebuffers_) {
-        vkDestroyFramebuffer(context_, fb, nullptr);
-    }
-
-    framebuffers_.resize(image_count);
-
-    for (size_t i = 0; i < std::size(views_); i++) {
-        std::array<VkImageView, 2> attachments = { views_[i], depth_buffers_[i].view() };
-
-        VkFramebufferCreateInfo framebuffer_create_info{};
-        framebuffer_create_info.sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        framebuffer_create_info.renderPass      = renderpass_;
-        framebuffer_create_info.attachmentCount = uint32_t(attachments.size());
-        framebuffer_create_info.pAttachments    = attachments.data();
-        framebuffer_create_info.width           = size_.x;
-        framebuffer_create_info.height          = size_.y;
-        framebuffer_create_info.layers          = 1;
-
-        VK_EXPECT_SUCCESS(vkCreateFramebuffer(context_, &framebuffer_create_info, nullptr, framebuffers_.data() + i));
+        views_.emplace_back("Swapchain image view", context_.logical(), view_create_info);
+        // VK_EXPECT_SUCCESS(
+        //     vkCreateImageView(context_, &view_create_info, nullptr, view++),
+        //     [&view, this, &failed](VkResult /* result */) {
+        //         ZOO_LOG_ERROR("Failed to create image views! For index", std::distance(views_.data(), view - 1));
+        //         failed = true;
+        //     });
     }
 
     while (command_buffers_.size() < image_count) {
@@ -265,15 +233,8 @@ bool Swapchain::create_swapchain_and_resources() noexcept {
 void Swapchain::cleanup_resources() noexcept {
     // wait for resources to be done
     context_.wait();
-    for (auto view : views_) {
-        vkDestroyImageView(context_, view, nullptr);
-    }
     views_.clear();
 
-    for (auto fb : framebuffers_) {
-        vkDestroyFramebuffer(context_, fb, nullptr);
-    }
-    framebuffers_.clear();
     sync_objects_.clear();
     images_.clear();
     command_buffers_.clear();
@@ -298,7 +259,15 @@ void Swapchain::force_resize() noexcept {
     glfwGetFramebufferSize(window_, &width, &height);
     size_.x = static_cast<uint32_t>(width);
     size_.y = static_cast<uint32_t>(height);
+
     create_swapchain_and_resources();
+    for (auto& cb : resize_cbs_) {
+        cb(*this, size_.x, size_.y);
+    }
+}
+
+void Swapchain::on_resize(std::function<void(Swapchain&, u32, u32)> resize_cb) noexcept {
+    resize_cbs_.emplace_back(std::move(resize_cb));
 }
 
 void Swapchain::reset() noexcept {
@@ -353,25 +322,6 @@ void Swapchain::render(
         sync_objects_[current_sync_objects_index_].in_flight_fence);
 }
 
-void Swapchain::for_each(
-    std::function<void(render::scene::CommandBuffer& command_context, VkRenderPassBeginInfo renderpass_info)>
-        exec) noexcept {
-
-    std::uint32_t i{};
-    for (const auto& fb : framebuffers_) {
-        VkRenderPassBeginInfo renderpass_info{};
-        renderpass_info.sType             = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderpass_info.renderPass        = renderpass_;
-        renderpass_info.framebuffer       = fb;
-        renderpass_info.renderArea.offset = { 0, 0 };
-        renderpass_info.renderArea.extent = { static_cast<u32>(size_.x), static_cast<u32>(size_.y) };
-        renderpass_info.pNext             = nullptr;
-
-        command_buffers_[i].record([&] { exec(command_buffers_[i], renderpass_info); });
-        ++i;
-    }
-}
-
 void Swapchain::present() noexcept {
     VkSwapchainKHR swapchains[]     = { underlying_ };
     VkSemaphore signal_semaphores[] = { sync_objects_[current_sync_objects_index_].render_done };
@@ -410,20 +360,13 @@ void Swapchain::assure(VkResult result) noexcept {
         ZOO_LOG_ERROR("FAILED with {}", string_VkResult(result));
 }
 
-resources::Texture Swapchain::create_depth_buffer() {
-    auto [x, y] = extent();
-    return resources::Texture::start_build("DepthBufferSwapchain")
-        .format(DEPTH_FORMAT_)
-        .usage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
-        .extent({ x, y, 1 })
-        .allocation_type(VMA_MEMORY_USAGE_GPU_ONLY)
-        .allocation_required_flags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)
-        .build(context_.allocator());
-}
-
 Swapchain::FrameInfo Swapchain::frame_info() const noexcept {
     return { .current = current_image(), // current
              .count   = num_images() };
+}
+
+const resources::TextureView* Swapchain::get_image(s32 index) const noexcept {
+    return index < (s32)views_.size() ? &views_[index] : nullptr;
 }
 
 s32 Swapchain::num_images() const noexcept { return static_cast<s32>(images_.size()); }

@@ -15,3 +15,7 @@ struct PipelineNode  {
     vector<handle> outputs; // this can be just targets(?)
 };
 ```
+
+
+#### Event system todos are marked:
+- // @TODO-EVENT_SYSTEM

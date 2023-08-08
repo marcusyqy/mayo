@@ -48,6 +48,9 @@ PipelineBindContext::PipelineBindContext(
     cmd_buffer_(cmd_buffer),
     pipeline_(pipeline), pipeline_layout_(pipeline_layout) {}
 
+PresentContext::PresentContext(VkSemaphore image_available, VkSemaphore render_done) noexcept :
+    image_available_(image_available), render_done_(render_done) {}
+
 CommandBuffer::CommandBuffer(DeviceContext& context, Operation op_type) noexcept :
     context_{ std::addressof(context) }, underlying_{ context_->vk_command_buffer_from_pool(op_type) },
     op_type_(op_type) {}
@@ -177,6 +180,31 @@ void CommandBuffer::bind_index_buffer(const render::resources::Buffer& ib) noexc
 void CommandBuffer::bind_mesh(const render::resources::Mesh& mesh) noexcept {
     bind_vertex_buffers({ &mesh.vertices(), 1 });
     bind_index_buffer(mesh.indices());
+}
+
+void CommandBuffer::set_render_target(const Framebuffer& rt, RenderArea* render_area) noexcept {
+
+    RenderArea ra{ .offset = { 0, 0 }, .extent = { rt.width(), rt.height() } };
+    if (render_area == nullptr) render_area = &ra;
+
+    VkRenderPassBeginInfo renderpass_info{};
+    renderpass_info.sType             = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderpass_info.renderPass        = rt.renderpass();
+    renderpass_info.framebuffer       = rt.get();
+    renderpass_info.renderArea.offset = { render_area->offset.x, render_area->offset.y };
+    renderpass_info.renderArea.extent = { render_area->extent.x, render_area->extent.y };
+    renderpass_info.pNext             = nullptr;
+
+    // Add this as a parameter.
+    const static VkClearValue clear_color = { { { 0.1f, 0.1f, 0.1f, 1.0f } } };
+    VkClearValue clear_depth              = {};
+    clear_depth.depthStencil.depth        = 1.0f;
+
+    VkClearValue clear_values[]     = { clear_color, clear_depth };
+    renderpass_info.clearValueCount = 2;
+    renderpass_info.pClearValues    = +clear_values;
+
+    begin_renderpass(renderpass_info);
 }
 
 void CommandBuffer::begin_renderpass(const VkRenderPassBeginInfo& begin_info) noexcept {

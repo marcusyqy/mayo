@@ -13,4 +13,8 @@ void UploadContext::submit() noexcept { CommandBuffer::submit(nullptr, nullptr, 
 UploadContext::UploadContext(DeviceContext& context) noexcept :
     CommandBuffer(context, Operation::transfer), fence_(context) {}
 
+UploadContext::~UploadContext() noexcept {
+    wait();
+}
+
 } // namespace zoo::render::scene
