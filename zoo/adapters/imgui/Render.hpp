@@ -4,6 +4,10 @@
 #include "render/Pipeline.hpp"
 #include "render/scene/CommandBuffer.hpp"
 
+#include "render/DeviceContext.hpp"
+#include "render/Engine.hpp"
+#include "render/Swapchain.hpp"
+
 namespace zoo::adapters::imgui {
 
 // @Brittle this needs to be aligned with the imgui layer.
@@ -12,11 +16,8 @@ struct PushConstantData {
     float translate[2];
 };
 
-// create pipeline functions.
-render::Pipeline imgui_create_pipeline();
-void imgui_push_values(render::scene::PipelineBindContext& context, const PushConstantData& data);
 
-void imgui_init();
+void imgui_init(render::Engine& engine, render::DeviceContext& context, render::Swapchain& main_swapchain);
 void imgui_exit();
 
 } // namespace zoo::adapters::imgui

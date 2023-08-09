@@ -27,6 +27,8 @@ public:
     enum Status { signaled, unsignaled, error };
     Status is_signaled() const noexcept;
 
+    bool valid() const noexcept;
+
 private:
     DeviceContext* context_     = nullptr;
     underlying_type underlying_ = VK_NULL_HANDLE;

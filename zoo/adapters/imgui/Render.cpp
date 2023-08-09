@@ -1749,47 +1749,51 @@ void ImGui_ImplVulkan_InitPlatformInterface() {
     platform_io.Renderer_SwapBuffers   = ImGui_ImplVulkan_SwapBuffers;
 }
 
-void ImGui_ImplVulkan_ShutdownPlatformInterface() { ImGui::DestroyPlatformWindows(); }
-
 namespace zoo::adapters::imgui {
-namespace {
 
-render::PushConstant get_push_constant_descriptor() {
-    return push_constant_info{ .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
-                               .offset     = 0,
-                               .size       = sizeof(PushConstantData) };
-}
+namespace {
 
 struct Imgui_Vulkan_Data {
     render::Engine& engine;
     render::DeviceContext& context;
+    render::scene::UploadContext upload_context;
+
     render::resources::Texture font_tex;
     render::resources::TextureSampler font_sampler;
 
+    render::RenderPass renderpass;
     render::Pipeline pipeline;
+    render::DescriptorPool descriptor_pool;
+};
+
+struct Imgui_Frame_Data {
+    render::scene::CommandBuffer command_buffer; // this will probably not be needed as well.
+    render::resources::Buffer vertex;
+    render::resources::Buffer index;
+    render::ResourceBindings bindings;
 };
 
 struct Imgui_Viewport_Data {
     // the destructor will take care of the deallocation for the reference we will pass in something that doesn't
     // deallocate.
     std::unique_ptr<render::Swapchain> swapchain;
+    ImGui_Frame_Data frame;
 };
 
-struct Imgui_Frame_Data {
-    render::scene::CommandBuffer cmd; // this will probably not be needed as well.
-    render::resources::Buffer vertex;
-    render::resources::Buffer index;
-    render::ResourceBindings bindings;
-};
+render::PushConstant imgui_get_push_constant_descriptor() {
+    return push_constant_info{ .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+                               .offset     = 0,
+                               .size       = sizeof(PushConstantData) };
+}
 
 // For ease of convenience.
-Imgui_Vulkan_Data* get_render_static_data() {
+Imgui_Vulkan_Data* imgui_get_render_static_data() {
     return ImGui::GetCurrentContext() ? (Imgui_Vulkan_Data*)ImGui::GetIO().BackendRendererUserData : nullptr;
 }
 
 void imgui_create_window(ImGuiViewport* viewport) {
     // @TODO : Finish this function.
-    Imgui_Vulkan_Data* bd        = get_render_static_data();
+    Imgui_Vulkan_Data* bd        = imgui_get_render_static_data();
     Imgui_Viewport_Data* vd      = IM_NEW(Imgui_Viewport_Data)();
     viewport->RendererUserData   = vd;
     ImGui_ImplVulkanH_Window* wd = &vd->Window;
@@ -1864,129 +1868,6 @@ void imgui_attach_viewport_callbacks() {
     platform_io.Renderer_SwapBuffers   = ImGui_ImplVulkan_SwapBuffers;
 }
 
-void imgui_init_pipeline_and_descriptors(Imgui_Vulkan_Data& data) {
-    std::array buffer_description{
-        render::VertexBufferDescription{ 0, render::ShaderType::vec2, offsetof(ImDrawVert, pos) },
-        render::VertexBufferDescription{ 1, render::ShaderType::vec2, offsetof(ImDrawVert, uv) },
-        render::VertexBufferDescription{ 2, render::ShaderType::uvec4, offsetof(ImDrawVert, col) }
-    };
-
-    std::array vertex_description{
-        render::VertexInputDescription{ sizeof(ImDrawVert), buffer_description, VK_VERTEX_INPUT_RATE_VERTEX }
-    };
-
-    tools::ShaderCompiler shader_compiler;
-    render::Shader vertex_shader{ device_ctx, __glsl_shader_vert_spv, "main" };
-    render::Shader fragment_shader{ device_ctx, __glsl_shader_frag_spv, "main" };
-
-    render::BindingDescriptor binding_descriptors[] = {
-        { .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .count = 1, .stage = VK_SHADER_STAGE_FRAGMENT_BIT }
-    };
-
-    render::PushConstant push_constant_info{ .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
-                                             .offset     = 0,
-                                             .size       = sizeof(PushConstantData) };
-
-    render::PipelineCreateInfo pipeline_create_info{};
-
-    data.pipeline = imgui_create_pipeline();
-    render::Pipeline{ device_ctx,
-                      render::ShaderStagesSpecification{ vertex_shader, fragment_shader, vertex_description },
-                      // @FIXME: this needs to be outside of the swapchain.
-                      sc.get_viewport_info(),
-                      sc.get_renderpass(),
-                      binding_descriptors,
-                      &push_constant_info,
-                      pipeline_create_info };
-
-    data.descriptor_pool = render::DescriptorPool{ device_ctx, 1000 };
-}
-
-render::resources::Texture
-    init_font_textures(render::scene::UploadContext& upload_ctx, render::DeviceContext& device_ctx) noexcept {
-    ImGuiIO& io = ImGui::GetIO();
-
-    unsigned char* pixels;
-    int width, height;
-    io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
-
-    render::resources::Buffer scratch_buffer =
-        render::resources::Buffer::start_build("ScratchBuffer for ImGui:Font", width * height * 4)
-            .usage(VK_BUFFER_USAGE_TRANSFER_SRC_BIT)
-            .allocation_type(VMA_MEMORY_USAGE_AUTO_PREFER_HOST)
-            .allocation_flag(VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT)
-            .build(device_ctx.allocator());
-
-    auto tex = render::resources::Texture::start_build("ImGui:Font")
-                   .mip(1)
-                   .array(1)
-                   .extent({ .width = static_cast<u32>(width), .height = static_cast<u32>(height), .depth = 1 })
-                   .samples(VK_SAMPLE_COUNT_1_BIT)
-                   .type(VK_IMAGE_TYPE_2D)
-                   .format(VK_FORMAT_R8G8B8A8_UNORM)
-                   .usage(VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT)
-                   .tiling(VK_IMAGE_TILING_OPTIMAL)
-                   .build(device_ctx.allocator());
-
-    upload_ctx.copy(scratch_buffer, tex);
-    upload_ctx.cache(std::move(scratch_buffer));
-    return tex;
-}
-
-void imgui_init_static_render_objects(Imgui_Vulkan_Data& vk_data) {
-    // create uploader.
-    render::scene::UploadContext upload{ vk_data.context };
-
-    // load fonts
-    vk_data.font_tex     = init_font_textures(upload, vk_data.context);
-    vk_data.font_sampler = render::resources::TextureSampler::start_build()
-                               .address_mode_w(VK_SAMPLER_ADDRESS_MODE_REPEAT)
-                               .min_filter(VK_FILTER_LINEAR)
-                               .mag_filter(VK_FILTER_LINEAR)
-                               .mipmap_mode(VK_SAMPLER_MIPMAP_MODE_LINEAR)
-                               .lod(std::make_pair(-1000.f, 1000.f))
-                               .max_anisotrophy(1.f)
-                               .build(device_ctx);
-
-    // @TODO: We need to change renderdata
-    imgui_init_pipeline_and_descriptors(vk_data);
-
-    return true;
-}
-
-} // namespace
-
-void imgui_init(render::Engine& engine, render::DeviceContext& context, render::Swapchain& main_swapchain) {
-
-    ImGuiIO& io = ImGui::GetIO();
-    IM_ASSERT(io.BackendRendererUserData == nullptr && "Already initialized a renderer backend!");
-
-    // @Cleanup: this has to change when swapchain doesn't hold the renderpass anymore
-    Imgui_Vulkan_Data* vk_data = new Imgui_Vulkan_Data{ .engine = engine, .context = context };
-
-    // set backend values flags
-    io.BackendRendererUserData = (void*)vk_data;
-    io.BackendRendererName     = "Zoo Vulkan Imgui";
-    io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset; // We can honor the ImDrawCmd::VtxOffset field, allowing
-                                                               // for large meshes.
-    io.BackendFlags |=
-        ImGuiBackendFlags_RendererHasViewports; // We can create multi-viewports on the Renderer side (optional)
-
-    imgui_init_static_render_objects(*vk_data);
-
-    // Our render function expect RendererUserData to be storing the window render buffer we need (for the main viewport
-    // we won't use ->Window)
-    ImGuiViewport* main_viewport    = ImGui::GetMainViewport();
-    main_viewport->RendererUserData = IM_NEW(ImGui_ImplVulkan_ViewportData)();
-
-    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) imgui_attach_viewport_callbacks();
-}
-
-render::RenderPass imgui_create_renderpass(const render::DeviceContext& context, VkFormat image_format) {
-    render::AttachmentDescription attachments[] = { render::ColorAttachmentDescription(image_format) };
-    return { context, attachments };
-}
-
 render::RenderPass imgui_create_framebuffer(
     const render::DeviceContext& context,
     const render::RenderPass& renderpass,
@@ -1994,6 +1875,15 @@ render::RenderPass imgui_create_framebuffer(
     u32 x,
     u32 y) {
     return { context, renderpass, &texture_view, x, y };
+}
+
+Imgui_Frame_Data imgui_create_frame_data(Imgui_Vulkan_Data& vkdata, render::Swapchain& swapchain) {
+    auto& context = vkdata.context;
+}
+
+render::RenderPass imgui_create_renderpass(const render::DeviceContext& context, VkFormat image_format) {
+    render::AttachmentDescription attachments[] = { render::ColorAttachmentDescription(image_format) };
+    return { context, attachments };
 }
 
 render::Pipeline imgui_create_pipeline(const render::DeviceContext& context, const render::RenderPass& renderpass) {
@@ -2028,8 +1918,291 @@ render::Pipeline imgui_create_pipeline(const render::DeviceContext& context, con
 }
 
 void imgui_push_values(render::scene::PipelineBindContext& context, const PushConstantData& data) {
-    render::PushConstant push_constant = get_push_constant_descriptor();
+    render::PushConstant push_constant = imgui_get_push_constant_descriptor();
     context.push_constants(push_constant, &data);
+}
+
+void imgui_init_pipeline_and_descriptors(Imgui_Vulkan_Data& data, VkFormat format) {
+    auto& device_ctx     = data.context;
+    data.renderpass      = imgui_create_renderpass(device_ctx, format);
+    data.pipeline        = imgui_create_pipeline(device_ctx, renderpass);
+    data.descriptor_pool = render::DescriptorPool{ device_ctx, 1000 };
+}
+
+render::resources::Texture
+    init_font_textures(render::scene::UploadContext& upload_ctx, render::DeviceContext& device_ctx) noexcept {
+    ImGuiIO& io = ImGui::GetIO();
+
+    unsigned char* pixels;
+    int width, height;
+    io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
+
+    render::resources::Buffer scratch_buffer =
+        render::resources::Buffer::start_build("ScratchBuffer for ImGui:Font", width * height * 4)
+            .usage(VK_BUFFER_USAGE_TRANSFER_SRC_BIT)
+            .allocation_type(VMA_MEMORY_USAGE_AUTO_PREFER_HOST)
+            .allocation_flag(VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT)
+            .build(device_ctx.allocator());
+
+    auto tex = render::resources::Texture::start_build("ImGui:Font")
+                   .mip(1)
+                   .array(1)
+                   .extent({ .width = static_cast<u32>(width), .height = static_cast<u32>(height), .depth = 1 })
+                   .samples(VK_SAMPLE_COUNT_1_BIT)
+                   .type(VK_IMAGE_TYPE_2D)
+                   .format(VK_FORMAT_R8G8B8A8_UNORM)
+                   .usage(VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT)
+                   .tiling(VK_IMAGE_TILING_OPTIMAL)
+                   .build(device_ctx.allocator());
+
+    upload_ctx.copy(scratch_buffer, tex);
+    upload_ctx.cache(std::move(scratch_buffer));
+    return tex;
+}
+
+void imgui_init_static_render_objects(Imgui_Vulkan_Data& vk_data, VkFormat image_format) {
+    // create uploader.
+    vk_data.upload_context = { vk_data.context };
+
+    // load fonts
+    vk_data.font_tex     = init_font_textures(vk_data.upload_context, vk_data.context);
+    vk_data.font_sampler = render::resources::TextureSampler::start_build()
+                               .address_mode_w(VK_SAMPLER_ADDRESS_MODE_REPEAT)
+                               .min_filter(VK_FILTER_LINEAR)
+                               .mag_filter(VK_FILTER_LINEAR)
+                               .mipmap_mode(VK_SAMPLER_MIPMAP_MODE_LINEAR)
+                               .lod(std::make_pair(-1000.f, 1000.f))
+                               .max_anisotrophy(1.f)
+                               .build(vk_data.context);
+
+    // @TODO: We need to change renderdata
+    imgui_init_pipeline_and_descriptors(vk_data, format);
+}
+
+} // namespace
+
+void imgui_init(render::Engine& engine, render::DeviceContext& context, render::Swapchain& main_swapchain) {
+
+    ImGuiIO& io = ImGui::GetIO();
+    IM_ASSERT(io.BackendRendererUserData == nullptr && "Already initialized a renderer backend!");
+
+    // @Cleanup: this has to change when swapchain doesn't hold the renderpass anymore
+    Imgui_Vulkan_Data* vk_data = new Imgui_Vulkan_Data{ .engine = engine, .context = context };
+
+    // set backend values flags
+    io.BackendRendererUserData = (void*)vk_data;
+    io.BackendRendererName     = "Zoo Vulkan Imgui";
+    io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset; // We can honor the ImDrawCmd::VtxOffset field, allowing
+                                                               // for large meshes.
+    io.BackendFlags |=
+        ImGuiBackendFlags_RendererHasViewports; // We can create multi-viewports on the Renderer side (optional)
+
+    imgui_init_static_render_objects(*vk_data, main_swapchain.format());
+
+    ImGuiViewport* main_viewport    = ImGui::GetMainViewport();
+    main_viewport->RendererUserData = new Imgui_Viewport_Data {
+        .swapchain = std::make_unique<render::Swapchain>(&main_swapchain, []() { /*noop*/ });
+        .frame     = imgui_create_frame_data(*vk_data, main_swapchain)
+    };
+
+    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) imgui_attach_viewport_callbacks();
+
+    upload_ctx.wait();
+}
+
+void imgui_exit() {
+    Imgui_Vulkan_Data* bd = imgui_get_render_static_data();
+    ZOO_ASSERT(bd != nullptr, "No renderer backend to shutdown, or already shutdown?");
+    bd->context.wait(); // make sure device is idle.
+    ImGuiIO& io = ImGui::GetIO();
+
+    ImGui::DestroyPlatformWindows();
+    // Manually delete main viewport render data in-case we haven't initialized for viewports
+    ImGuiViewport* main_viewport = ImGui::GetMainViewport();
+    if (Imgui_Viewport_Data* vd = (Imgui_Viewport_Data*)main_viewport->RendererUserData) delete vd;
+
+    main_viewport->RendererUserData = nullptr;
+
+    // Clean up windows
+    ImGui_ImplVulkan_ShutdownPlatformInterface();
+
+    io.BackendRendererName     = nullptr;
+    io.BackendRendererUserData = nullptr;
+    io.BackendFlags &= ~(ImGuiBackendFlags_RendererHasVtxOffset | ImGuiBackendFlags_RendererHasViewports);
+
+    delete bd;
+}
+
+void imgui_render(ImDrawData* draw_data) {
+    // Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer
+    // coordinates)
+    int fb_width  = (int)(draw_data->DisplaySize.x * draw_data->FramebufferScale.x);
+    int fb_height = (int)(draw_data->DisplaySize.y * draw_data->FramebufferScale.y);
+    if (fb_width <= 0 || fb_height <= 0) return;
+
+    ImGui_ImplVulkan_Data* bd    = ImGui_ImplVulkan_GetBackendData();
+    ImGui_ImplVulkan_InitInfo* v = &bd->VulkanInitInfo;
+    if (pipeline == VK_NULL_HANDLE) pipeline = bd->Pipeline;
+
+    // Allocate array to store enough vertex/index buffers. Each unique viewport gets its own storage.
+    ImGui_ImplVulkan_ViewportData* viewport_renderer_data =
+        (ImGui_ImplVulkan_ViewportData*)draw_data->OwnerViewport->RendererUserData;
+    IM_ASSERT(viewport_renderer_data != nullptr);
+    ImGui_ImplVulkanH_WindowRenderBuffers* wrb = &viewport_renderer_data->RenderBuffers;
+    if (wrb->FrameRenderBuffers == nullptr) {
+        wrb->Index = 0;
+        wrb->Count = v->ImageCount;
+        wrb->FrameRenderBuffers =
+            (ImGui_ImplVulkanH_FrameRenderBuffers*)IM_ALLOC(sizeof(ImGui_ImplVulkanH_FrameRenderBuffers) * wrb->Count);
+        memset(wrb->FrameRenderBuffers, 0, sizeof(ImGui_ImplVulkanH_FrameRenderBuffers) * wrb->Count);
+    }
+    IM_ASSERT(wrb->Count == v->ImageCount);
+    wrb->Index                               = (wrb->Index + 1) % wrb->Count;
+    ImGui_ImplVulkanH_FrameRenderBuffers* rb = &wrb->FrameRenderBuffers[wrb->Index];
+
+    if (draw_data->TotalVtxCount > 0) {
+        // Create or resize the vertex/index buffers
+        size_t vertex_size = draw_data->TotalVtxCount * sizeof(ImDrawVert);
+        size_t index_size  = draw_data->TotalIdxCount * sizeof(ImDrawIdx);
+        if (rb->VertexBuffer == VK_NULL_HANDLE || rb->VertexBufferSize < vertex_size)
+            CreateOrResizeBuffer(
+                rb->VertexBuffer,
+                rb->VertexBufferMemory,
+                rb->VertexBufferSize,
+                vertex_size,
+                VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+        if (rb->IndexBuffer == VK_NULL_HANDLE || rb->IndexBufferSize < index_size)
+            CreateOrResizeBuffer(
+                rb->IndexBuffer,
+                rb->IndexBufferMemory,
+                rb->IndexBufferSize,
+                index_size,
+                VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+
+        // Upload vertex/index data into a single contiguous GPU buffer
+        ImDrawVert* vtx_dst = nullptr;
+        ImDrawIdx* idx_dst  = nullptr;
+        VkResult err = vkMapMemory(v->Device, rb->VertexBufferMemory, 0, rb->VertexBufferSize, 0, (void**)(&vtx_dst));
+        check_vk_result(err);
+        err = vkMapMemory(v->Device, rb->IndexBufferMemory, 0, rb->IndexBufferSize, 0, (void**)(&idx_dst));
+        check_vk_result(err);
+        for (int n = 0; n < draw_data->CmdListsCount; n++) {
+            const ImDrawList* cmd_list = draw_data->CmdLists[n];
+            memcpy(vtx_dst, cmd_list->VtxBuffer.Data, cmd_list->VtxBuffer.Size * sizeof(ImDrawVert));
+            memcpy(idx_dst, cmd_list->IdxBuffer.Data, cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx));
+            vtx_dst += cmd_list->VtxBuffer.Size;
+            idx_dst += cmd_list->IdxBuffer.Size;
+        }
+        VkMappedMemoryRange range[2] = {};
+        range[0].sType               = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+        range[0].memory              = rb->VertexBufferMemory;
+        range[0].size                = VK_WHOLE_SIZE;
+        range[1].sType               = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+        range[1].memory              = rb->IndexBufferMemory;
+        range[1].size                = VK_WHOLE_SIZE;
+        err                          = vkFlushMappedMemoryRanges(v->Device, 2, range);
+        check_vk_result(err);
+        vkUnmapMemory(v->Device, rb->VertexBufferMemory);
+        vkUnmapMemory(v->Device, rb->IndexBufferMemory);
+    }
+
+    // Setup desired Vulkan state
+    ImGui_ImplVulkan_SetupRenderState(draw_data, pipeline, command_buffer, rb, fb_width, fb_height);
+
+    // Will project scissor/clipping rectangles into framebuffer space
+    ImVec2 clip_off   = draw_data->DisplayPos;       // (0,0) unless using multi-viewports
+    ImVec2 clip_scale = draw_data->FramebufferScale; // (1,1) unless using retina display which are often (2,2)
+
+    // Render command lists
+    // (Because we merged all buffers into a single one, we maintain our own offset into them)
+    int global_vtx_offset = 0;
+    int global_idx_offset = 0;
+    for (int n = 0; n < draw_data->CmdListsCount; n++) {
+        const ImDrawList* cmd_list = draw_data->CmdLists[n];
+        for (int cmd_i = 0; cmd_i < cmd_list->CmdBuffer.Size; cmd_i++) {
+            const ImDrawCmd* pcmd = &cmd_list->CmdBuffer[cmd_i];
+            if (pcmd->UserCallback != nullptr) {
+                // User callback, registered via ImDrawList::AddCallback()
+                // (ImDrawCallback_ResetRenderState is a special callback value used by the user to request the renderer
+                // to reset render state.)
+                if (pcmd->UserCallback == ImDrawCallback_ResetRenderState)
+                    ImGui_ImplVulkan_SetupRenderState(draw_data, pipeline, command_buffer, rb, fb_width, fb_height);
+                else
+                    pcmd->UserCallback(cmd_list, pcmd);
+            } else {
+                // Project scissor/clipping rectangles into framebuffer space
+                ImVec2 clip_min(
+                    (pcmd->ClipRect.x - clip_off.x) * clip_scale.x,
+                    (pcmd->ClipRect.y - clip_off.y) * clip_scale.y);
+                ImVec2 clip_max(
+                    (pcmd->ClipRect.z - clip_off.x) * clip_scale.x,
+                    (pcmd->ClipRect.w - clip_off.y) * clip_scale.y);
+
+                // Clamp to viewport as vkCmdSetScissor() won't accept values that are off bounds
+                if (clip_min.x < 0.0f) {
+                    clip_min.x = 0.0f;
+                }
+                if (clip_min.y < 0.0f) {
+                    clip_min.y = 0.0f;
+                }
+                if (clip_max.x > fb_width) {
+                    clip_max.x = (float)fb_width;
+                }
+                if (clip_max.y > fb_height) {
+                    clip_max.y = (float)fb_height;
+                }
+                if (clip_max.x <= clip_min.x || clip_max.y <= clip_min.y) continue;
+
+                // Apply scissor/clipping rectangle
+                VkRect2D scissor;
+                scissor.offset.x      = (int32_t)(clip_min.x);
+                scissor.offset.y      = (int32_t)(clip_min.y);
+                scissor.extent.width  = (uint32_t)(clip_max.x - clip_min.x);
+                scissor.extent.height = (uint32_t)(clip_max.y - clip_min.y);
+                vkCmdSetScissor(command_buffer, 0, 1, &scissor);
+
+                // Bind DescriptorSet with font or user texture
+                VkDescriptorSet desc_set[1] = { (VkDescriptorSet)pcmd->TextureId };
+                if (sizeof(ImTextureID) < sizeof(ImU64)) {
+                    // We don't support texture switches if ImTextureID hasn't been redefined to be 64-bit. Do a flaky
+                    // check that other textures haven't been used.
+                    IM_ASSERT(pcmd->TextureId == (ImTextureID)bd->FontDescriptorSet);
+                    desc_set[0] = bd->FontDescriptorSet;
+                }
+                vkCmdBindDescriptorSets(
+                    command_buffer,
+                    VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    bd->PipelineLayout,
+                    0,
+                    1,
+                    desc_set,
+                    0,
+                    nullptr);
+
+                // Draw
+                vkCmdDrawIndexed(
+                    command_buffer,
+                    pcmd->ElemCount,
+                    1,
+                    pcmd->IdxOffset + global_idx_offset,
+                    pcmd->VtxOffset + global_vtx_offset,
+                    0);
+            }
+        }
+        global_idx_offset += cmd_list->IdxBuffer.Size;
+        global_vtx_offset += cmd_list->VtxBuffer.Size;
+    }
+
+    // Note: at this point both vkCmdSetViewport() and vkCmdSetScissor() have been called.
+    // Our last values will leak into user/application rendering IF:
+    // - Your app uses a pipeline with VK_DYNAMIC_STATE_VIEWPORT or VK_DYNAMIC_STATE_SCISSOR dynamic state
+    // - And you forgot to call vkCmdSetViewport() and vkCmdSetScissor() yourself to explicitly set that state.
+    // If you use VK_DYNAMIC_STATE_VIEWPORT or VK_DYNAMIC_STATE_SCISSOR you are responsible for setting the values
+    // before rendering. In theory we should aim to backup/restore those values but I am not sure this is possible. We
+    // perform a call to vkCmdSetScissor() to set back a full viewport which is likely to fix things for 99% users but
+    // technically this is not perfect. (See github #4644)
+    VkRect2D scissor = { { 0, 0 }, { (uint32_t)fb_width, (uint32_t)fb_height } };
+    vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 }
 
 } // namespace zoo::adapters::imgui

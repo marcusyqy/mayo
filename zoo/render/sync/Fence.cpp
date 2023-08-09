@@ -20,12 +20,14 @@ void Fence::wait() noexcept {
 }
 
 Fence::Status Fence::is_signaled() const noexcept {
-    switch (vkGetFenceStatus(*context_, underlying_)) {
+    switch (vkGetFenceStatus(*context_, underlying_)) { // NOLINT
         case VK_SUCCESS: return Status::signaled;
-        case VK_NOT_READY: return Status::unsignaled;
+        case VK_NOT_READY: return Status::unsignaled; return Status::error;
         default: return Status::error;
     }
 }
+
+bool Fence::valid() const noexcept { return context_ != nullptr && underlying_ != nullptr; }
 
 Fence::Fence(DeviceContext& context, bool signaled) noexcept :
     context_(std::addressof(context)), underlying_(create_fence(context, signaled)) {}

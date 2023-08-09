@@ -197,13 +197,15 @@ void RenderPass::reset() noexcept {
     if (context_ != nullptr) {
         context_->release_device_resource(release());
         context_ = nullptr;
+        descriptions_.clear();
     }
 }
 
 RenderPass& RenderPass::operator=(RenderPass&& renderpass) noexcept {
     reset();
-    context_    = std::move(renderpass.context_);
-    underlying_ = std::move(renderpass.underlying_);
+    context_      = std::move(renderpass.context_);
+    underlying_   = std::move(renderpass.underlying_);
+    descriptions_ = std::move(renderpass.descriptions_);
     renderpass.release();
     return *this;
 }
@@ -216,7 +218,8 @@ RenderPass::underlying_type RenderPass::release() noexcept {
 }
 
 RenderPass::RenderPass(RenderPass&& renderpass) noexcept :
-    context_(std::move(renderpass.context_)), underlying_(std::move(renderpass.underlying_)) {
+    context_(std::move(renderpass.context_)), underlying_(std::move(renderpass.underlying_)),
+    descriptions_(std::move(renderpass.descriptions_)) {
     renderpass.release();
 }
 
