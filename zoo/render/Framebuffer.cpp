@@ -46,10 +46,17 @@ Framebuffer& Framebuffer::operator=(Framebuffer&& o) noexcept {
     context_    = o.context_;
     underlying_ = o.underlying_;
     renderpass_ = o.renderpass_;
+    width_      = o.width_;
+    height_     = o.height_;
+    layers_     = o.layers_;
 
     o.context_    = nullptr;
     o.underlying_ = nullptr;
     o.renderpass_ = nullptr;
+    o.width_        = 0;
+    o.height_       = 0;
+    o.layers_       = 0;
+
 
     return *this;
 }
