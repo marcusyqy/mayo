@@ -70,6 +70,7 @@ public:
 private:
     DeviceContext* context_;
     underlying_type underlying_;
+    std::vector<AttachmentDescription> descriptions_;
 };
 
 } // namespace zoo::render

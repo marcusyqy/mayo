@@ -1,4 +1,3 @@
-
 #include "EntryPoint.hpp"
 
 #include "Utility.hpp"
@@ -352,8 +351,8 @@ application::ExitStatus minecraft_world() noexcept {
         frame_data.in_flight_fence.wait();
         frame_data.in_flight_fence.reset();
 
-        glm::vec3 cam_pos = { 0.f, -6.f, -10.f };
-        glm::mat4 view    = glm::translate(glm::mat4(1.f), cam_pos);
+        glm::vec3 cam_pos    = { 0.f, -6.f, -10.f };
+        glm::mat4 view       = glm::translate(glm::mat4(1.f), cam_pos);
         glm::mat4 projection = glm::perspective(glm::radians(70.f), 1700.f / 900.f, 0.1f, 200.0f);
         projection[1][1] *= -1;
 

@@ -1982,7 +1982,21 @@ void imgui_init(render::Engine& engine, render::DeviceContext& context, render::
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) imgui_attach_viewport_callbacks();
 }
 
-render::Pipeline imgui_create_pipeline() {
+render::RenderPass imgui_create_renderpass(const render::DeviceContext& context, VkFormat image_format) {
+    render::AttachmentDescription attachments[] = { render::ColorAttachmentDescription(image_format) };
+    return { context, attachments };
+}
+
+render::RenderPass imgui_create_framebuffer(
+    const render::DeviceContext& context,
+    const render::RenderPass& renderpass,
+    const TextureView* texture_view,
+    u32 x,
+    u32 y) {
+    return { context, renderpass, &texture_view, x, y };
+}
+
+render::Pipeline imgui_create_pipeline(const render::DeviceContext& context, const render::RenderPass& renderpass) {
     std::array buffer_description{
         render::VertexBufferDescription{ 0, render::ShaderType::vec2, offsetof(ImDrawVert, pos) },
         render::VertexBufferDescription{ 1, render::ShaderType::vec2, offsetof(ImDrawVert, uv) },
@@ -1994,9 +2008,8 @@ render::Pipeline imgui_create_pipeline() {
     };
 
     tools::ShaderCompiler shader_compiler;
-
-    render::Shader vertex_shader{ device_ctx, __glsl_shader_vert_spv, "main" };
-    render::Shader fragment_shader{ device_ctx, __glsl_shader_frag_spv, "main" };
+    render::Shader vertex_shader{ context, __glsl_shader_vert_spv, "main" };
+    render::Shader fragment_shader{ context, __glsl_shader_frag_spv, "main" };
 
     render::BindingDescriptor binding_descriptors[] = {
         { .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .count = 1, .stage = VK_SHADER_STAGE_FRAGMENT_BIT }
@@ -2006,10 +2019,9 @@ render::Pipeline imgui_create_pipeline() {
 
     render::PipelineCreateInfo pipeline_create_info;
 
-    return render::Pipeline{ device_ctx,
+    return render::Pipeline{ context,
                              render::ShaderStagesSpecification{ vertex_shader, fragment_shader, vertex_description },
-                             sc.get_viewport_info(),
-                             sc.get_renderpass(),
+                             renderpass,
                              binding_descriptors,
                              &push_constant_info,
                              pipeline_create_info };

@@ -190,7 +190,8 @@ RenderPass::RenderPass(DeviceContext& context, VkFormat format, VkFormat depth) 
     context_(&context), underlying_(create_vk_renderpass(*context_, format, depth)) {}
 
 RenderPass::RenderPass(DeviceContext& context, stdx::span<AttachmentDescription> descriptions) noexcept :
-    context_(&context), underlying_(create_renderpass(*context_, descriptions)) {}
+    context_(&context), underlying_(create_renderpass(*context_, descriptions)),
+    descriptions_(descriptions.begin(), descriptions.end()) {}
 
 void RenderPass::reset() noexcept {
     if (context_ != nullptr) {
