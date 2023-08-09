@@ -199,10 +199,7 @@ size_t pad_uniform_buffer_size(const render::DeviceContext& context, size_t orig
 
 } // namespace
 
-application::ExitStatus main(application::Settings args) noexcept {
-    // TODO: to make runtime arguments for different stuff.
-    (void)args;
-
+application::ExitStatus minecraft_world() noexcept {
     const application::Info app_context{ { 0, 0, 0 }, "Zoo::Application" };
     const render::engine::Info render_engine_info{ app_context, true };
 
@@ -269,7 +266,6 @@ application::ExitStatus main(application::Settings args) noexcept {
 
     render::Pipeline pipeline{ context,
                                render::ShaderStagesSpecification{ vertex_shader, fragment_shader, vertex_description },
-                               swapchain.get_viewport_info(),
                                renderpass,
                                binding_descriptors,
                                { &push_constant, 1 } };
@@ -356,14 +352,8 @@ application::ExitStatus main(application::Settings args) noexcept {
         frame_data.in_flight_fence.wait();
         frame_data.in_flight_fence.reset();
 
-        // glm::vec3 cam_pos = { 0.0f, 0.0f, 7.0f };
-        // glm::mat4 view       = glm::lookAt(cam_pos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        // glm::mat4 projection = glm::perspective(glm::radians(70.f), 1700.f / 900.f, 0.1f, 200.0f);
-        // projection[1][1] *= -1;
-
         glm::vec3 cam_pos = { 0.f, -6.f, -10.f };
         glm::mat4 view    = glm::translate(glm::mat4(1.f), cam_pos);
-        // camera projection
         glm::mat4 projection = glm::perspective(glm::radians(70.f), 1700.f / 900.f, 0.1f, 200.0f);
         projection[1][1] *= -1;
 
@@ -401,7 +391,6 @@ application::ExitStatus main(application::Settings args) noexcept {
         command_context.set_viewport(viewport_info.viewport);
         command_context.set_scissor(viewport_info.scissor);
 
-        // verbose.
         VkClearValue depth_clear{};
         depth_clear.depthStencil.depth = 1.f;
         VkClearValue clear_color[]     = { { { { 0.1f, 0.1f, 0.1f, 1.0f } } }, depth_clear };
@@ -426,6 +415,11 @@ application::ExitStatus main(application::Settings args) noexcept {
     context.wait();
 
     return application::ExitStatus::ok;
+}
+
+application::ExitStatus main(application::Settings args) noexcept {
+    (void)args;
+    return minecraft_world();
 }
 
 } // namespace zoo

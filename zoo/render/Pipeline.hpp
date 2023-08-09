@@ -95,7 +95,6 @@ public:
     Pipeline(
         DeviceContext& context,
         const ShaderStagesSpecification& specifications,
-        const ViewportInfo& viewport_info,
         const RenderPass& renderpass,
         stdx::span<BindingDescriptor> binding_descriptors,
         stdx::span<PushConstant> push_constants,
