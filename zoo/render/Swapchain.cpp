@@ -202,18 +202,13 @@ bool Swapchain::create_swapchain_and_resources() noexcept {
         //     });
     }
 
-    while (command_buffers_.size() < image_count) {
-        // TODO: extend command buffer type.
-        command_buffers_.emplace_back(context_, Operation::graphics);
-    }
-
     // reset
     sync_objects_.clear();
     sync_objects_.reserve(std::size(images_));
 
     // TODO : change sizes to s32.
     for (s32 i = 0, size = static_cast<s32>(std::size(images_)); i < size; ++i) {
-        sync_objects_.push_back(SyncObjects{ context_, context_, { context_, true } });
+        sync_objects_.push_back(SyncObjects{ context_, context_});
     }
 
     // reset sync object index so that we don't have to care about size of the
@@ -237,7 +232,6 @@ void Swapchain::cleanup_resources() noexcept {
 
     sync_objects_.clear();
     images_.clear();
-    command_buffers_.clear();
 }
 
 void Swapchain::cleanup_swapchain_and_resources() noexcept {
@@ -287,40 +281,40 @@ ViewportInfo Swapchain::get_viewport_info() const noexcept {
              VkRect2D{ VkOffset2D{ 0, 0 }, extent() } };
 }
 
-void Swapchain::render(
-    std::function<void(render::scene::CommandBuffer& command_context, VkRenderPassBeginInfo renderpass_info)>
-        exec) noexcept {
-    // wait for last frame to finish
-    sync_objects_[current_sync_objects_index_].in_flight_fence.wait();
-    sync_objects_[current_sync_objects_index_].in_flight_fence.reset();
-
-    VkRenderPassBeginInfo renderpass_info{};
-    renderpass_info.sType             = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderpass_info.renderPass        = renderpass_;
-    renderpass_info.framebuffer       = framebuffers_[current_frame_];
-    renderpass_info.renderArea.offset = { 0, 0 };
-    renderpass_info.renderArea.extent = { static_cast<u32>(size_.x), static_cast<u32>(size_.y) };
-    renderpass_info.pNext             = nullptr;
-
-    const static VkClearValue clear_color = { { { 0.1f, 0.1f, 0.1f, 1.0f } } };
-    VkClearValue clear_depth              = {};
-    clear_depth.depthStencil.depth        = 1.0f;
-
-    VkClearValue clear_values[]     = { clear_color, clear_depth };
-    renderpass_info.clearValueCount = 2;
-    renderpass_info.pClearValues    = +clear_values;
-
-    command_buffers_[current_frame_].record([&] { exec(command_buffers_[current_frame_], renderpass_info); });
-
-    VkSemaphore wait_semaphores[]      = { sync_objects_[current_sync_objects_index_].image_avail };
-    VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-    VkSemaphore signal_semaphores[]    = { sync_objects_[current_sync_objects_index_].render_done };
-    command_buffers_[current_frame_].submit(
-        wait_semaphores,
-        wait_stages,
-        signal_semaphores,
-        sync_objects_[current_sync_objects_index_].in_flight_fence);
-}
+// void Swapchain::render(
+//     std::function<void(render::scene::CommandBuffer& command_context, VkRenderPassBeginInfo renderpass_info)>
+//         exec) noexcept {
+//     // wait for last frame to finish
+//     sync_objects_[current_sync_objects_index_].in_flight_fence.wait();
+//     sync_objects_[current_sync_objects_index_].in_flight_fence.reset();
+//
+//     VkRenderPassBeginInfo renderpass_info{};
+//     renderpass_info.sType             = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+//     renderpass_info.renderPass        = renderpass_;
+//     renderpass_info.framebuffer       = framebuffers_[current_frame_];
+//     renderpass_info.renderArea.offset = { 0, 0 };
+//     renderpass_info.renderArea.extent = { static_cast<u32>(size_.x), static_cast<u32>(size_.y) };
+//     renderpass_info.pNext             = nullptr;
+//
+//     const static VkClearValue clear_color = { { { 0.1f, 0.1f, 0.1f, 1.0f } } };
+//     VkClearValue clear_depth              = {};
+//     clear_depth.depthStencil.depth        = 1.0f;
+//
+//     VkClearValue clear_values[]     = { clear_color, clear_depth };
+//     renderpass_info.clearValueCount = 2;
+//     renderpass_info.pClearValues    = +clear_values;
+//
+//     command_buffers_[current_frame_].record([&] { exec(command_buffers_[current_frame_], renderpass_info); });
+//
+//     VkSemaphore wait_semaphores[]      = { sync_objects_[current_sync_objects_index_].image_avail };
+//     VkPipelineStageFlags wait_stages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+//     VkSemaphore signal_semaphores[]    = { sync_objects_[current_sync_objects_index_].render_done };
+//     command_buffers_[current_frame_].submit(
+//         wait_semaphores,
+//         wait_stages,
+//         signal_semaphores,
+//         sync_objects_[current_sync_objects_index_].in_flight_fence);
+// }
 
 void Swapchain::present() noexcept {
     VkSwapchainKHR swapchains[]     = { underlying_ };
@@ -371,5 +365,11 @@ const resources::TextureView* Swapchain::get_image(s32 index) const noexcept {
 
 s32 Swapchain::num_images() const noexcept { return static_cast<s32>(images_.size()); }
 
+scene::PresentContext Swapchain::current_present_context() const noexcept {
+    return { sync_objects_[current_sync_objects_index_].image_avail,
+             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+             sync_objects_[current_sync_objects_index_].render_done };
+}
 s32 Swapchain::current_image() const noexcept { return static_cast<s32>(current_frame_); }
+
 } // namespace zoo::render

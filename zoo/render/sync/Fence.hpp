@@ -14,7 +14,7 @@ public:
     underlying_type get() const noexcept { return underlying_; }
     operator underlying_type() const noexcept { return get(); }
 
-    Fence() noexcept;
+    Fence() noexcept = default;
     Fence(DeviceContext& context, bool signaled = false) noexcept;
     ~Fence() noexcept;
 

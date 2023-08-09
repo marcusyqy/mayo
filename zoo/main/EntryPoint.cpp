@@ -15,6 +15,7 @@
 #include "render/resources/Mesh.hpp"
 #include "render/scene/CommandBuffer.hpp"
 #include "render/scene/UploadContext.hpp"
+#include "render/sync/Fence.hpp"
 
 #include "stdx/expected.hpp"
 
@@ -324,7 +325,7 @@ application::ExitStatus main(application::Settings args) noexcept {
                 .end_batch();
             // clang-format on
             frame_data.command_buffer  = render::scene::CommandBuffer{ context, render::Operation::graphics };
-            frame_data.in_flight_fence = render::sync::Fence{ context };
+            frame_data.in_flight_fence = render::sync::Fence{ context, true };
 
             frame_data.depth_buffer = create_depth_buffer(context, x, y);
 
@@ -350,6 +351,8 @@ application::ExitStatus main(application::Settings args) noexcept {
         // TODO: add frame data in.
         const auto current_idx = swapchain.current_image();
         auto& frame_data       = frame_datas[current_idx];
+
+        // wait for frame to begin.
         frame_data.in_flight_fence.wait();
         frame_data.in_flight_fence.reset();
 
@@ -384,6 +387,7 @@ application::ExitStatus main(application::Settings args) noexcept {
 
         glm::mat4 model = // glm::mat4{ 1.0f };
             glm::translate(glm::vec3{ 5, -10, 0 });
+
         // glm::rotate(glm::mat4{ 1.0f }, time * glm::radians(90.0f), glm::vec3(0, 1, 0));
         push_constant_data.render_matrix = model;
         frame_data.object_storage_buffer.map<ObjectData>([&](ObjectData* data) {
@@ -392,31 +396,26 @@ application::ExitStatus main(application::Settings args) noexcept {
             }
         });
 
-        auto populate_command_ctx = [&](render::scene::CommandBuffer& command_context,
-                                        VkRenderPassBeginInfo renderpass_info) {
-            VkClearValue depth_clear{};
-            depth_clear.depthStencil.depth = 1.f;
+        auto& command_context     = frame_data.command_buffer;
+        const auto& viewport_info = swapchain.get_viewport_info();
+        command_context.set_viewport(viewport_info.viewport);
+        command_context.set_scissor(viewport_info.scissor);
 
-            // f32 flash                        = abs(sin(var));
-            const VkClearValue clear_color[] = { { { { 0.1f, 0.1f, 0.1f, 1.0f } } }, depth_clear };
-            renderpass_info.clearValueCount  = 2;
-            renderpass_info.pClearValues     = clear_color;
+        // verbose.
+        VkClearValue depth_clear{};
+        depth_clear.depthStencil.depth = 1.f;
+        VkClearValue clear_color[]     = { { { { 0.1f, 0.1f, 0.1f, 1.0f } } }, depth_clear };
+        command_context.begin_renderpass(frame_data.render_target, clear_color);
 
-            const auto& viewport_info = swapchain.get_viewport_info();
-            command_context.set_viewport(viewport_info.viewport);
-            command_context.set_scissor(viewport_info.scissor);
+        command_context.bind_pipeline(pipeline)
+            .push_constants(push_constant, &push_constant_data)
+            .bindings(frame_data.bindings, { &offset, 1 });
 
-            command_context.exec(renderpass_info, [&]() {
-                command_context.bind_pipeline(pipeline)
-                    .push_constants(push_constant, &push_constant_data)
-                    .bindings(frame_data.bindings, { &offset, 1 });
+        command_context.bind_mesh(mesh);
+        command_context.draw_indexed(1);
 
-                command_context.bind_mesh(mesh);
-                command_context.draw_indexed(1);
-            });
-        };
-
-        swapchain.render(populate_command_ctx);
+        command_context.end_renderpass();
+        command_context.submit(swapchain.current_present_context(), frame_data.in_flight_fence);
         swapchain.present();
 
         windows::poll_events();

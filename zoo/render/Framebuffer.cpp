@@ -11,7 +11,7 @@ VkFramebuffer create_framebuffer(
     u32 height,
     u32 layers) noexcept {
 
-    u32 MAX_ATTACHMENTS = 5;
+    constexpr u32 MAX_ATTACHMENTS = 5;
     VkImageView attachments[MAX_ATTACHMENTS];
     u32 attachments_count = {};
 

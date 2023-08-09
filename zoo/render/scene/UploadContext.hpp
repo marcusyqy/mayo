@@ -23,6 +23,8 @@ public:
 private:
     std::vector<resources::Buffer> buffers_;
     sync::Fence fence_;
+
+    bool submitted_;
 };
 
 } // namespace zoo::render::scene

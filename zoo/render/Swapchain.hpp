@@ -42,10 +42,6 @@ public:
 
     void present() noexcept;
 
-    void
-        render(std::function<void(render::scene::CommandBuffer& command_context, VkRenderPassBeginInfo renderpass_info)>
-                   exec) noexcept;
-
     // TODO: remove when "abstracted"
     struct FrameInfo {
         s32 current;
@@ -62,6 +58,8 @@ public:
     void on_resize(std::function<void(Swapchain&, u32, u32)> resize) noexcept;
 
     const resources::TextureView* get_image(s32 index) const noexcept;
+
+    scene::PresentContext current_present_context() const noexcept;
 
 private:
     bool create_swapchain_and_resources() noexcept;
@@ -96,16 +94,15 @@ private:
     struct SyncObjects {
         sync::Semaphore image_avail;
         sync::Semaphore render_done;
-        sync::Fence in_flight_fence;
     };
 
+    // @TODO: change these all to arrays.
     // frame specific stuff
     std::vector<VkImage> images_;
     std::vector<SyncObjects> sync_objects_;
     size_t current_sync_objects_index_ = {};
 
     std::vector<resources::TextureView> views_;
-    std::vector<render::scene::CommandBuffer> command_buffers_;
 
     u32 current_frame_                      = 0;
     bool should_resize_                     = false;

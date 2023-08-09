@@ -48,8 +48,12 @@ PipelineBindContext::PipelineBindContext(
     cmd_buffer_(cmd_buffer),
     pipeline_(pipeline), pipeline_layout_(pipeline_layout) {}
 
-PresentContext::PresentContext(VkSemaphore image_available, VkSemaphore render_done) noexcept :
-    image_available_(image_available), render_done_(render_done) {}
+PresentContext::PresentContext(
+    VkSemaphore image_available,
+    VkPipelineStageFlags pipeline_stage_flags,
+    VkSemaphore render_done) noexcept :
+    image_available_(image_available),
+    pipeline_stage_flags_(pipeline_stage_flags), render_done_(render_done) {}
 
 CommandBuffer::CommandBuffer(DeviceContext& context, Operation op_type) noexcept :
     context_{ std::addressof(context) }, underlying_{ context_->vk_command_buffer_from_pool(op_type) },
@@ -101,6 +105,7 @@ void CommandBuffer::end_record() noexcept {
 }
 
 void CommandBuffer::draw(uint32_t instance_count, uint32_t first_vertex, uint32_t first_instance) noexcept {
+    assure_status(RecordStatus::begin);
     if (vertex_buffer_bind_context_.buffers_.empty()) {
         ZOO_LOG_ERROR("`draw` called without `bind_vertex_buffers`");
         return;
@@ -118,6 +123,7 @@ void CommandBuffer::draw_indexed(
     uint32_t first_index,
     uint32_t first_vertex,
     uint32_t first_instance) noexcept {
+    assure_status(RecordStatus::begin);
     if (vertex_buffer_bind_context_.buffers_.empty()) {
         ZOO_LOG_ERROR("`draw_indexed` called without `bind_vertex_buffers`");
         return;
@@ -137,11 +143,13 @@ void CommandBuffer::draw_indexed(
 }
 
 PipelineBindContext CommandBuffer::bind_pipeline(const render::Pipeline& pipeline) noexcept {
+    assure_status(RecordStatus::begin);
     vkCmdBindPipeline(underlying_, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
     return { underlying_, pipeline.get(), pipeline.layout() };
 }
 
 void CommandBuffer::bind_vertex_buffers(stdx::span<const render::resources::Buffer> buffers) noexcept {
+    assure_status(RecordStatus::begin);
     const auto size = buffers.size();
     auto& vbbuffers = vertex_buffer_bind_context_.buffers_;
     vbbuffers.clear();
@@ -164,6 +172,7 @@ void CommandBuffer::bind_vertex_buffers(stdx::span<const render::resources::Buff
 }
 
 void CommandBuffer::bind_index_buffer(const render::resources::Buffer& ib) noexcept {
+    assure_status(RecordStatus::begin);
 
     index_buffer_bind_context_.buffer_     = ib.handle();
     index_buffer_bind_context_.offset_     = 0;
@@ -178,14 +187,17 @@ void CommandBuffer::bind_index_buffer(const render::resources::Buffer& ib) noexc
 }
 
 void CommandBuffer::bind_mesh(const render::resources::Mesh& mesh) noexcept {
+    assure_status(RecordStatus::begin);
     bind_vertex_buffers({ &mesh.vertices(), 1 });
     bind_index_buffer(mesh.indices());
 }
 
-void CommandBuffer::set_render_target(const Framebuffer& rt, RenderArea* render_area) noexcept {
-
-    RenderArea ra{ .offset = { 0, 0 }, .extent = { rt.width(), rt.height() } };
-    if (render_area == nullptr) render_area = &ra;
+void CommandBuffer::begin_renderpass(
+    const Framebuffer& rt,
+    stdx::span<VkClearValue> clear_colors,
+    RenderArea* render_area) noexcept {
+    RenderArea default_ra{ .offset = { 0, 0 }, .extent = { rt.width(), rt.height() } };
+    if (render_area == nullptr) render_area = &default_ra;
 
     VkRenderPassBeginInfo renderpass_info{};
     renderpass_info.sType             = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -199,25 +211,31 @@ void CommandBuffer::set_render_target(const Framebuffer& rt, RenderArea* render_
     const static VkClearValue clear_color = { { { 0.1f, 0.1f, 0.1f, 1.0f } } };
     VkClearValue clear_depth              = {};
     clear_depth.depthStencil.depth        = 1.0f;
+    VkClearValue clear_values[]           = { clear_color, clear_depth };
 
-    VkClearValue clear_values[]     = { clear_color, clear_depth };
-    renderpass_info.clearValueCount = 2;
-    renderpass_info.pClearValues    = +clear_values;
+    renderpass_info.clearValueCount = (u32)clear_colors.size();
+    renderpass_info.pClearValues    = clear_colors.data();
 
     begin_renderpass(renderpass_info);
 }
 
 void CommandBuffer::begin_renderpass(const VkRenderPassBeginInfo& begin_info) noexcept {
+    assure_status(RecordStatus::begin);
     vkCmdBeginRenderPass(underlying_, &begin_info, VK_SUBPASS_CONTENTS_INLINE);
 }
 
-void CommandBuffer::end_renderpass() noexcept { vkCmdEndRenderPass(underlying_); }
+void CommandBuffer::end_renderpass() noexcept {
+    // no need to assure command buffer has began since begin renderpass would be called first.
+    vkCmdEndRenderPass(underlying_);
+}
 
 void CommandBuffer::set_viewport(const VkViewport& viewport) noexcept {
+    assure_status(RecordStatus::begin);
     vkCmdSetViewport(underlying_, 0, 1, std::addressof(viewport));
 }
 
 void CommandBuffer::set_scissor(const VkRect2D& scissor) noexcept {
+    assure_status(RecordStatus::begin);
     vkCmdSetScissor(underlying_, 0, 1, std::addressof(scissor));
 }
 
@@ -279,6 +297,13 @@ void CommandBuffer::submit(
 
     // TODO: determine if we really need a fence here
     VK_EXPECT_SUCCESS(vkQueueSubmit(queue, 1, &submit_info, fence));
+}
+
+void CommandBuffer::submit(const PresentContext& present_context, VkFence fence) noexcept {
+    VkSemaphore wait_semaphores[]      = { present_context.image_available_ };
+    VkPipelineStageFlags wait_stages[] = { present_context.pipeline_stage_flags_ };
+    VkSemaphore signal_semaphores[]    = { present_context.render_done_ };
+    submit(wait_semaphores, wait_stages, signal_semaphores, fence);
 }
 
 void CommandBuffer::copy(const render::resources::Buffer& from, render::resources::Buffer& to) noexcept {
@@ -365,7 +390,7 @@ void CommandBuffer::transition(
         .subresourceRange = range,
     };
 
-    // TODO: maybe batch this.
+    // @TODO: maybe batch this.
     // barrier the image into the transfer-receive layout
     vkCmdPipelineBarrier(
         underlying_,
