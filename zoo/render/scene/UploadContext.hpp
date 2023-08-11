@@ -21,17 +21,16 @@ public:
     UploadContext() noexcept = default;
     ~UploadContext() noexcept;
 
-    UploadContext(const UploadContext&) noexcept = delete;
+    UploadContext(const UploadContext&) noexcept            = delete;
     UploadContext& operator=(const UploadContext&) noexcept = delete;
 
     UploadContext(UploadContext&& o) noexcept;
     UploadContext& operator=(UploadContext&& o) noexcept;
 
-
 private:
     std::vector<resources::Buffer> buffers_ = {};
-    sync::Fence fence_ = {};
-    bool submitted_ = false;
+    sync::Fence fence_                      = {};
+    bool submitted_                         = false;
 };
 
 } // namespace zoo::render::scene

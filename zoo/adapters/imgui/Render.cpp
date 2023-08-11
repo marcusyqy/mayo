@@ -19,83 +19,6 @@
 #pragma warning(disable : 4127) // condition expression is constant
 #endif
 
-struct ImGui_ImplVulkan_Data {
-    ImGui_ImplVulkan_InitInfo VulkanInitInfo;
-    VkRenderPass RenderPass;
-    VkDeviceSize BufferMemoryAlignment;
-    VkPipelineCreateFlags PipelineCreateFlags;
-    VkDescriptorSetLayout DescriptorSetLayout;
-    VkPipelineLayout PipelineLayout;
-    VkPipeline Pipeline;
-    uint32_t Subpass;
-    VkShaderModule ShaderModuleVert;
-    VkShaderModule ShaderModuleFrag;
-
-    // Font data
-    VkSampler FontSampler;
-    VkDeviceMemory FontMemory;
-    VkImage FontImage;
-    VkImageView FontView;
-    VkDescriptorSet FontDescriptorSet;
-    VkDeviceMemory UploadBufferMemory;
-    VkBuffer UploadBuffer;
-
-    // Render buffers for main window
-    ImGui_ImplVulkanH_WindowRenderBuffers MainWindowRenderBuffers;
-
-    ImGui_ImplVulkan_Data() {
-        memset((void*)this, 0, sizeof(*this));
-        BufferMemoryAlignment = 256;
-    }
-};
-
-// Forward Declarations
-bool ImGui_ImplVulkan_CreateDeviceObjects();
-
-void ImGui_ImplVulkan_DestroyDeviceObjects();
-
-void ImGui_ImplVulkanH_DestroyFrame(
-    VkDevice device,
-    ImGui_ImplVulkanH_Frame* fd,
-    const VkAllocationCallbacks* allocator);
-
-void ImGui_ImplVulkanH_DestroyFrameSemaphores(
-    VkDevice device,
-    ImGui_ImplVulkanH_FrameSemaphores* fsd,
-    const VkAllocationCallbacks* allocator);
-
-void ImGui_ImplVulkanH_DestroyFrameRenderBuffers(
-    VkDevice device,
-    ImGui_ImplVulkanH_FrameRenderBuffers* buffers,
-    const VkAllocationCallbacks* allocator);
-
-void ImGui_ImplVulkanH_DestroyWindowRenderBuffers(
-    VkDevice device,
-    ImGui_ImplVulkanH_WindowRenderBuffers* buffers,
-    const VkAllocationCallbacks* allocator);
-
-void ImGui_ImplVulkanH_DestroyAllViewportsRenderBuffers(VkDevice device, const VkAllocationCallbacks* allocator);
-
-void ImGui_ImplVulkanH_CreateWindowSwapChain(
-    VkPhysicalDevice physical_device,
-    VkDevice device,
-    ImGui_ImplVulkanH_Window* wd,
-    const VkAllocationCallbacks* allocator,
-    int w,
-    int h,
-    uint32_t min_image_count);
-
-void ImGui_ImplVulkanH_CreateWindowCommandBuffers(
-    VkPhysicalDevice physical_device,
-    VkDevice device,
-    ImGui_ImplVulkanH_Window* wd,
-    uint32_t queue_family,
-    const VkAllocationCallbacks* allocator);
-
-//-----------------------------------------------------------------------------
-// SHADERS
-//-----------------------------------------------------------------------------
-
 // Forward Declarations
 static void ImGui_ImplVulkan_InitPlatformInterface();
 static void ImGui_ImplVulkan_ShutdownPlatformInterface();
@@ -103,31 +26,6 @@ static void ImGui_ImplVulkan_ShutdownPlatformInterface();
 //-----------------------------------------------------------------------------
 // FUNCTIONS
 //-----------------------------------------------------------------------------
-
-// Backend data stored in io.BackendRendererUserData to allow support for multiple Dear ImGui contexts
-// It is STRONGLY preferred that you use docking branch with multi-viewports (== single Dear ImGui context + multiple
-// windows) instead of multiple Dear ImGui contexts.
-// FIXME: multi-context support is not tested and probably dysfunctional in this backend.
-static ImGui_ImplVulkan_Data* ImGui_ImplVulkan_GetBackendData() {
-    return ImGui::GetCurrentContext() ? (ImGui_ImplVulkan_Data*)ImGui::GetIO().BackendRendererUserData : nullptr;
-}
-
-static uint32_t ImGui_ImplVulkan_MemoryType(VkMemoryPropertyFlags properties, uint32_t type_bits) {
-    ImGui_ImplVulkan_Data* bd    = ImGui_ImplVulkan_GetBackendData();
-    ImGui_ImplVulkan_InitInfo* v = &bd->VulkanInitInfo;
-    VkPhysicalDeviceMemoryProperties prop;
-    vkGetPhysicalDeviceMemoryProperties(v->PhysicalDevice, &prop);
-    for (uint32_t i = 0; i < prop.memoryTypeCount; i++)
-        if ((prop.memoryTypes[i].propertyFlags & properties) == properties && type_bits & (1 << i)) return i;
-    return 0xFFFFFFFF; // Unable to find memoryType
-}
-
-static void check_vk_result(VkResult err) {
-    ImGui_ImplVulkan_Data* bd = ImGui_ImplVulkan_GetBackendData();
-    if (!bd) return;
-    ImGui_ImplVulkan_InitInfo* v = &bd->VulkanInitInfo;
-    if (v->CheckVkResultFn) v->CheckVkResultFn(err);
-}
 
 static void CreateOrResizeBuffer(
     VkBuffer& buffer,

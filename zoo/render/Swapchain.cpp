@@ -51,10 +51,16 @@ bool is_device_compatible(const SwapchainSupportDetails& details) noexcept {
 // TODO: create a priority list to choose surface format.
 // for now just hardcode this.
 VkSurfaceFormatKHR choose_surface_format(const std::vector<VkSurfaceFormatKHR>& available_formats) noexcept {
+    // Select Surface Format (from ImGui):
+    // const VkFormat requestSurfaceImageFormat[]     = { VK_FORMAT_B8G8R8A8_UNORM,
+    //                                                    VK_FORMAT_R8G8B8A8_UNORM,
+    //                                                    VK_FORMAT_B8G8R8_UNORM,
+    //                                                    VK_FORMAT_R8G8B8_UNORM };
     for (const auto& format : available_formats) {
         if (format.format == VK_FORMAT_B8G8R8A8_SRGB && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
             return format;
     }
+
     return available_formats.front();
 }
 
@@ -208,7 +214,7 @@ bool Swapchain::create_swapchain_and_resources() noexcept {
 
     // TODO : change sizes to s32.
     for (s32 i = 0, size = static_cast<s32>(std::size(images_)); i < size; ++i) {
-        sync_objects_.push_back(SyncObjects{ context_, context_});
+        sync_objects_.push_back(SyncObjects{ context_, context_ });
     }
 
     // reset sync object index so that we don't have to care about size of the

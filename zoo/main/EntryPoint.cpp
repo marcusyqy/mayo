@@ -322,7 +322,7 @@ application::ExitStatus minecraft_world() noexcept {
             frame_data.command_buffer  = render::scene::CommandBuffer{ context, render::Operation::graphics };
             frame_data.in_flight_fence = render::sync::Fence{ context, true };
 
-            frame_data.depth_buffer = create_depth_buffer(context, x, y);
+            frame_data.depth_buffer                    = create_depth_buffer(context, x, y);
             const render::resources::TextureView* tv[] = { swapchain.get_image(i), &(frame_data.depth_buffer.view()) };
             frame_data.render_target                   = render::Framebuffer{ context, renderpass, tv, x, y };
         }

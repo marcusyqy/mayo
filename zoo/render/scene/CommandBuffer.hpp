@@ -28,7 +28,10 @@ private:
 };
 
 struct PresentContext {
-    PresentContext(VkSemaphore image_available, VkPipelineStageFlags pipeline_stage_flags, VkSemaphore render_done) noexcept;
+    PresentContext(
+        VkSemaphore image_available,
+        VkPipelineStageFlags pipeline_stage_flags,
+        VkSemaphore render_done) noexcept;
 
 private:
     friend class CommandBuffer;
@@ -80,10 +83,7 @@ public:
         stdx::span<VkSemaphore> signal_semaphores,
         VkFence fence) noexcept;
 
-    void submit(
-            const PresentContext& present_context,
-            VkFence fence
-            ) noexcept;
+    void submit(const PresentContext& present_context, VkFence fence) noexcept;
 
     // TODO: add range.
     void copy(const render::resources::Buffer& from, render::resources::Buffer& to) noexcept;
@@ -110,7 +110,10 @@ public:
     void start_record() noexcept;
     void end_record() noexcept;
     void begin_renderpass(const VkRenderPassBeginInfo& begin_info) noexcept;
-    void begin_renderpass(const Framebuffer& rt, stdx::span<VkClearValue> clear_colors, RenderArea* render_area = nullptr) noexcept;
+    void begin_renderpass(
+        const Framebuffer& rt,
+        stdx::span<VkClearValue> clear_colors,
+        RenderArea* render_area = nullptr) noexcept;
     void end_renderpass() noexcept;
 
 private:

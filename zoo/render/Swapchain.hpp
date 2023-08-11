@@ -104,7 +104,7 @@ private:
 
     std::vector<resources::TextureView> views_;
 
-    u32 current_frame_                      = 0;
-    bool should_resize_                     = false;
+    u32 current_frame_  = 0;
+    bool should_resize_ = false;
 };
 } // namespace zoo::render

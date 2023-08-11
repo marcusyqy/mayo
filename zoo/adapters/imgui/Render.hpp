@@ -16,7 +16,6 @@ struct PushConstantData {
     float translate[2];
 };
 
-
 void imgui_init(render::Engine& engine, render::DeviceContext& context, render::Swapchain& main_swapchain);
 void imgui_exit();
 
