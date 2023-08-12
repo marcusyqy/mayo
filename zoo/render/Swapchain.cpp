@@ -376,6 +376,7 @@ scene::PresentContext Swapchain::current_present_context() const noexcept {
              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
              sync_objects_[current_sync_objects_index_].render_done };
 }
+// @TODO: this function should be named better.
 s32 Swapchain::current_image() const noexcept { return static_cast<s32>(current_frame_); }
 
 } // namespace zoo::render

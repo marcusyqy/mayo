@@ -128,16 +128,16 @@ private:
     underlying_type underlying_ = nullptr;
 
     struct VertexBufferBindContext {
-        std::vector<VkBuffer> buffers_;
-        std::vector<VkDeviceSize> offsets_;
-        size_t count_;
+        std::vector<VkBuffer> buffers_ = {};
+        std::vector<VkDeviceSize> offsets_ = {};
+        size_t count_ = {};
     } vertex_buffer_bind_context_;
 
     struct IndexBufferBindContext {
-        VkBuffer buffer_;
-        VkDeviceSize offset_;
-        VkIndexType index_type_;
-        size_t count_;
+        VkBuffer buffer_        = {};
+        VkDeviceSize offset_    = {};
+        VkIndexType index_type_ = VK_INDEX_TYPE_UINT32;
+        size_t count_ = {};
     } index_buffer_bind_context_;
 
     Operation op_type_          = Operation::unknown;
