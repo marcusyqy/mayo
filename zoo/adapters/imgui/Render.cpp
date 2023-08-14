@@ -1720,18 +1720,12 @@ void imgui_render(ImDrawData* draw_data, Imgui_Frame_Data& fd) {
         size_t vertex_size = draw_data->TotalVtxCount * sizeof(ImDrawVert);
         size_t index_size  = draw_data->TotalIdxCount * sizeof(ImDrawIdx);
         if (rb->VertexBuffer == VK_NULL_HANDLE || rb->VertexBufferSize < vertex_size)
-            CreateOrResizeBuffer(
-                rb->VertexBuffer,
-                rb->VertexBufferMemory,
-                rb->VertexBufferSize,
-                vertex_size,
+            fd.vertex = imgui_create_buffer<ImDrawVert>(
+                draw_data->TotalVtxCount,
                 VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
         if (rb->IndexBuffer == VK_NULL_HANDLE || rb->IndexBufferSize < index_size)
-            CreateOrResizeBuffer(
-                rb->IndexBuffer,
-                rb->IndexBufferMemory,
-                rb->IndexBufferSize,
-                index_size,
+            fd.index = imgui_create_buffer<ImDrawIdx>(
+                draw_data->TotalIdxCount,
                 VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
 
         // Upload vertex/index data into a single contiguous GPU buffer
