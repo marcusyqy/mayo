@@ -67,10 +67,14 @@ public:
     void draw(uint32_t instance_count, uint32_t first_vertex = 0, uint32_t first_instance = 0) noexcept;
 
     void draw_indexed(
+        uint32_t instance_count) noexcept;
+
+    void draw_indexed(
         uint32_t instance_count,
-        uint32_t first_index    = 0,
-        uint32_t first_vertex   = 0,
-        uint32_t first_instance = 0) noexcept;
+        uint32_t index_count,
+        uint32_t first_index,
+        uint32_t first_vertex,
+        uint32_t first_instance) noexcept;
 
     void exec(const VkRenderPassBeginInfo& begin_info, stdx::function_ref<void()> c) noexcept;
 
@@ -128,16 +132,16 @@ private:
     underlying_type underlying_ = nullptr;
 
     struct VertexBufferBindContext {
-        std::vector<VkBuffer> buffers_ = {};
+        std::vector<VkBuffer> buffers_     = {};
         std::vector<VkDeviceSize> offsets_ = {};
-        size_t count_ = {};
+        size_t count_                      = {};
     } vertex_buffer_bind_context_;
 
     struct IndexBufferBindContext {
         VkBuffer buffer_        = {};
         VkDeviceSize offset_    = {};
         VkIndexType index_type_ = VK_INDEX_TYPE_UINT32;
-        size_t count_ = {};
+        size_t count_           = {};
     } index_buffer_bind_context_;
 
     Operation op_type_          = Operation::unknown;

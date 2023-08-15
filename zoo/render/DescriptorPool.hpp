@@ -21,6 +21,12 @@ struct BindingBatch {
         bind(u32 set, u32 binding, VkBuffer buffer, u32 offset, u32 size, VkDescriptorType bind_type) noexcept;
 
     BindingBatch& bind(
+        u32 binding,
+        resources::Texture& texture,
+        resources::TextureSampler& sampler,
+        VkDescriptorType bind_type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) noexcept;
+
+    BindingBatch& bind(
         u32 set,
         u32 binding,
         resources::Texture& texture,

@@ -10,13 +10,10 @@
 
 namespace zoo::adapters::imgui {
 
-// @Brittle this needs to be aligned with the imgui layer.
-struct PushConstantData {
-    float scale[2];
-    float translate[2];
-};
-
+// @TODO: Need to refine these adapters.
 void imgui_init(render::Engine& engine, render::DeviceContext& context, render::Swapchain& main_swapchain);
 void imgui_exit();
+void imgui_frame_render();
+void imgui_present();
 
 } // namespace zoo::adapters::imgui

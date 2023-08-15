@@ -7,6 +7,8 @@
 
 #include "render/resources/Texture.hpp"
 
+#include "main/Info.hpp"
+
 namespace zoo::adapters::imgui {
 
 class Layer {
@@ -24,5 +26,7 @@ private:
     render::Engine* engine_;
     Window* window_;
 };
+
+application::ExitStatus test();
 
 } // namespace zoo::adapters::imgui

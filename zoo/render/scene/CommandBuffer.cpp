@@ -118,8 +118,13 @@ void CommandBuffer::draw(uint32_t instance_count, uint32_t first_vertex, uint32_
         first_instance);
 }
 
+void CommandBuffer::draw_indexed(uint32_t instance_count) noexcept {
+    draw_indexed(instance_count, static_cast<uint32_t>(index_buffer_bind_context_.count_), 0, 0, 0);
+}
+
 void CommandBuffer::draw_indexed(
     uint32_t instance_count,
+    uint32_t index_count,
     uint32_t first_index,
     uint32_t first_vertex,
     uint32_t first_instance) noexcept {
@@ -135,12 +140,13 @@ void CommandBuffer::draw_indexed(
     }
     vkCmdDrawIndexed(
         underlying_,
-        static_cast<uint32_t>(index_buffer_bind_context_.count_),
+        index_count, // static_cast<uint32_t>(index_buffer_bind_context_.count_),
         instance_count,
         first_index,
         first_vertex,
         first_instance);
 }
+
 
 PipelineBindContext CommandBuffer::bind_pipeline(const render::Pipeline& pipeline) noexcept {
     assure_status(RecordStatus::begin);

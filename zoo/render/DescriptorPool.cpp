@@ -36,26 +36,29 @@ BindingBatch& BindingBatch::bind(
 }
 
 BindingBatch& BindingBatch::bind(u32 binding, resources::Buffer& buffer, VkDescriptorType bind_type) noexcept {
-    bind(0, binding, buffer.handle(), 0, static_cast<u32>(buffer.allocated_size()), bind_type);
-    return *this;
+    return bind(0, binding, buffer.handle(), 0, static_cast<u32>(buffer.allocated_size()), bind_type);
 }
 
 BindingBatch& BindingBatch::bind(u32 binding, resources::BufferView& buffer, VkDescriptorType bind_type) noexcept {
     auto [start, end] = buffer.span();
-    bind(0, binding, buffer.handle(), static_cast<u32>(start), static_cast<u32>(end - start), bind_type);
-    return *this;
+    return bind(0, binding, buffer.handle(), static_cast<u32>(start), static_cast<u32>(end - start), bind_type);
 }
 
 BindingBatch& BindingBatch::bind(u32 set, u32 binding, resources::Buffer& buffer, VkDescriptorType bind_type) noexcept {
-    bind(set, binding, buffer.handle(), 0, static_cast<u32>(buffer.allocated_size()), bind_type);
-    return *this;
+    return bind(set, binding, buffer.handle(), 0, static_cast<u32>(buffer.allocated_size()), bind_type);
 }
 
 BindingBatch&
     BindingBatch::bind(u32 set, u32 binding, resources::BufferView& buffer, VkDescriptorType bind_type) noexcept {
     auto [start, end] = buffer.span();
-    bind(set, binding, buffer.handle(), static_cast<u32>(start), static_cast<u32>(end - start), bind_type);
-    return *this;
+    return bind(set, binding, buffer.handle(), static_cast<u32>(start), static_cast<u32>(end - start), bind_type);
+}
+BindingBatch& BindingBatch::bind(
+    u32 binding,
+    resources::Texture& texture,
+    resources::TextureSampler& sampler,
+    VkDescriptorType bind_type /*= VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER */) noexcept {
+    return bind(0, binding, texture, sampler, bind_type);
 }
 
 BindingBatch& BindingBatch::bind(

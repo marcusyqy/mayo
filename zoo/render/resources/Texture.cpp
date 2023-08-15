@@ -32,8 +32,11 @@ VkImageAspectFlags vk_image_usage_to_aspect_mask(VkImageUsageFlags usage_flags) 
 }
 
 size_t get_format_size(VkFormat format) noexcept {
-    ZOO_ASSERT(format == VK_FORMAT_R8G8B8A8_SRGB);
-    return 4;
+    switch (format) {
+        case VK_FORMAT_R8G8B8A8_SRGB: return 4;
+        case VK_FORMAT_R8G8B8A8_UNORM: return 4;
+        default: ZOO_ASSERT(false);
+    }
 }
 
 } // namespace
@@ -264,7 +267,7 @@ TextureSampler Builder::build(DeviceContext& context) noexcept {
         .addressModeU  = address_mode_.u,
         .addressModeV  = address_mode_.v,
         .addressModeW  = address_mode_.w,
-        .maxAnisotropy = max_anistrophy_,
+        .maxAnisotropy = max_anisotrophy_,
         .minLod        = lod_range_.first,
         .maxLod        = lod_range_.second,
     };
@@ -317,8 +320,8 @@ Builder& Builder::lod(std::pair<f32, f32> range) noexcept {
     return *this;
 }
 
-Builder& Builder::max_anistrophy(f32 value) noexcept {
-    max_anistrophy_ = value;
+Builder& Builder::max_anisotrophy(f32 value) noexcept {
+    max_anisotrophy_ = value;
     return *this;
 }
 

@@ -268,16 +268,27 @@ Pipeline::Pipeline(
     multisampling_create_info.alphaToCoverageEnable = VK_FALSE; // Optional
     multisampling_create_info.alphaToOneEnable      = VK_FALSE; // Optional
 
-    VkPipelineColorBlendAttachmentState color_blend_attachment_state{};
-    color_blend_attachment_state.colorWriteMask =
-        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    color_blend_attachment_state.blendEnable         = VK_FALSE;
-    color_blend_attachment_state.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;  // Optional
-    color_blend_attachment_state.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
-    color_blend_attachment_state.colorBlendOp        = VK_BLEND_OP_ADD;      // Optional
-    color_blend_attachment_state.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;  // Optional
-    color_blend_attachment_state.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
-    color_blend_attachment_state.alphaBlendOp        = VK_BLEND_OP_ADD;      // Optional
+    // needed by ImGui.
+    VkPipelineColorBlendAttachmentState color_blend_attachment_state = {};
+    color_blend_attachment_state.blendEnable = VK_TRUE;
+    color_blend_attachment_state.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+    color_blend_attachment_state.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    color_blend_attachment_state.colorBlendOp = VK_BLEND_OP_ADD;
+    color_blend_attachment_state.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+    color_blend_attachment_state.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    color_blend_attachment_state.alphaBlendOp = VK_BLEND_OP_ADD;
+    color_blend_attachment_state.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+
+    // VkPipelineColorBlendAttachmentState color_blend_attachment_state{};
+    // color_blend_attachment_state.colorWriteMask =
+    //     VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    // color_blend_attachment_state.blendEnable         = VK_FALSE;
+    // color_blend_attachment_state.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;  // Optional
+    // color_blend_attachment_state.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
+    // color_blend_attachment_state.colorBlendOp        = VK_BLEND_OP_ADD;      // Optional
+    // color_blend_attachment_state.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;  // Optional
+    // color_blend_attachment_state.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
+    // color_blend_attachment_state.alphaBlendOp        = VK_BLEND_OP_ADD;      // Optional
 
     VkPipelineColorBlendStateCreateInfo color_blend_state_create_info{};
     color_blend_state_create_info.sType             = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
@@ -342,8 +353,8 @@ Pipeline::Pipeline(Pipeline&& o) noexcept { *this = std::move(o); }
 Pipeline& Pipeline::operator=(Pipeline&& o) noexcept {
     this->~Pipeline();
 
-    o.context_        = o.context_;
-    o.underlying_     = o.underlying_;
+    context_        = o.context_;
+    underlying_     = o.underlying_;
     layout_           = o.layout_;
     set_layout_count_ = o.set_layout_count_;
 
