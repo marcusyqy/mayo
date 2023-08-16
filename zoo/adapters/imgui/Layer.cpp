@@ -4,12 +4,14 @@
 
 #include "backends/imgui_impl_glfw.h"
 
-#include "fonts/Roboto.hpp"
+// Using a non hpp so that it doesn't kill lsp.
+#include "fonts/Roboto.embed"
+
 #include "render/scene/UploadContext.hpp"
 
 namespace zoo::adapters::imgui {
-    
-    Layer::Layer(render::Engine& engine, Window& window) noexcept : engine_(&engine), window_(&window) {}
+
+Layer::Layer(render::Engine& engine, Window& window) noexcept : engine_(&engine), window_(&window) {}
 
 Layer::~Layer() noexcept {}
 
@@ -26,17 +28,14 @@ void Layer::init() noexcept {
     // io.ConfigViewportsNoTaskBarIcon = true;
 
     // Setup Dear ImGui style
-    
-    ImGui::StyleColorsDark();
 
+    ImGui::StyleColorsDark();
 
     ImGuiStyle& style = ImGui::GetStyle();
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
         style.WindowRounding              = 0.0f;
         style.Colors[ImGuiCol_WindowBg].w = 1.0f;
     }
-
-
 
     // Load default font
     ImFontConfig font_config;
@@ -108,8 +107,7 @@ void Layer::update() noexcept {
             ImGui::EndMenuBar();
         }
 
-        if(show_demo_window)
-            ImGui::ShowDemoWindow(&show_demo_window);
+        if (show_demo_window) ImGui::ShowDemoWindow(&show_demo_window);
 
         ImGui::End();
     }

@@ -18,8 +18,8 @@
 
 #include "stdx/expected.hpp"
 
-#include "adapters/tools/ShaderCompiler.hpp"
 #include "adapters/imgui/Layer.hpp"
+#include "adapters/tools/ShaderCompiler.hpp"
 
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
@@ -265,10 +265,8 @@ size_t pad_uniform_buffer_size(const render::DeviceContext& context, size_t orig
 //     };
 //
 //     render::Pipeline pipeline{ context,
-//                                render::ShaderStagesSpecification{ vertex_shader, fragment_shader, vertex_description },
-//                                renderpass,
-//                                binding_descriptors,
-//                                { &push_constant, 1 } };
+//                                render::ShaderStagesSpecification{ vertex_shader, fragment_shader, vertex_description
+//                                }, renderpass, binding_descriptors, { &push_constant, 1 } };
 //
 //     render::DescriptorPool descriptor_pool{ context };
 //
@@ -280,8 +278,8 @@ size_t pad_uniform_buffer_size(const render::DeviceContext& context, size_t orig
 //
 //     render::resources::Buffer scene_data_buffer = render::resources::Buffer::start_build(
 //                                                       "SceneDataBuffer",
-//                                                       MAX_FRAMES * pad_uniform_buffer_size(context, sizeof(SceneData)))
-//                                                       .usage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
+//                                                       MAX_FRAMES * pad_uniform_buffer_size(context,
+//                                                       sizeof(SceneData))) .usage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
 //                                                       //.allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
 //                                                       .allocation_type(VMA_MEMORY_USAGE_AUTO)
 //                                                       .allocation_flag(VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT)
@@ -298,7 +296,8 @@ size_t pad_uniform_buffer_size(const render::DeviceContext& context, size_t orig
 //
 //             const auto uniform_buffer_name = fmt::format("Uniform buffer : {}", i);
 //             const auto object_buffer_name  = fmt::format("Object buffer : {}", i);
-//             frame_data.uniform_buffer = render::resources::Buffer::start_build<UniformBufferData>(uniform_buffer_name)
+//             frame_data.uniform_buffer =
+//             render::resources::Buffer::start_build<UniformBufferData>(uniform_buffer_name)
 //                                             .usage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
 //                                             .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
 //                                             .build(context.allocator());
@@ -324,8 +323,8 @@ size_t pad_uniform_buffer_size(const render::DeviceContext& context, size_t orig
 //             frame_data.in_flight_fence = render::sync::Fence{ context, true };
 //
 //             frame_data.depth_buffer                    = create_depth_buffer(context, x, y);
-//             const render::resources::TextureView* tv[] = { swapchain.get_image(i), &(frame_data.depth_buffer.view()) };
-//             frame_data.render_target                   = render::Framebuffer{ context, renderpass, tv, x, y };
+//             const render::resources::TextureView* tv[] = { swapchain.get_image(i), &(frame_data.depth_buffer.view())
+//             }; frame_data.render_target                   = render::Framebuffer{ context, renderpass, tv, x, y };
 //         }
 //     }
 //
@@ -366,12 +365,12 @@ size_t pad_uniform_buffer_size(const render::DeviceContext& context, size_t orig
 //         });
 //
 //         auto current_time = std::chrono::high_resolution_clock::now();
-//         f32 time          = std::chrono::duration<f32, std::chrono::seconds::period>(current_time - start_time).count();
-//         f32 var           = time * glm::radians(360.0f);
+//         f32 time          = std::chrono::duration<f32, std::chrono::seconds::period>(current_time -
+//         start_time).count(); f32 var           = time * glm::radians(360.0f);
 //
 //         u32 offset = static_cast<u32>(current_idx * pad_uniform_buffer_size(context, sizeof(SceneData)));
-//         render::resources::BufferView scene_data_buffer_view{ scene_data_buffer, offset, offset + sizeof(SceneData) };
-//         scene_data_buffer_view.map<SceneData>([&](SceneData* data) {
+//         render::resources::BufferView scene_data_buffer_view{ scene_data_buffer, offset, offset + sizeof(SceneData)
+//         }; scene_data_buffer_view.map<SceneData>([&](SceneData* data) {
 //             if (data) data->ambient_color = { sin(var), 0, cos(var), 1 };
 //         });
 //
@@ -416,8 +415,6 @@ size_t pad_uniform_buffer_size(const render::DeviceContext& context, size_t orig
 //
 //     return application::ExitStatus::ok;
 // }
-
-
 
 application::ExitStatus main(application::Settings args) noexcept {
     (void)args;

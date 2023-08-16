@@ -186,7 +186,7 @@ private:
     } address_mode_;
     VkSamplerMipmapMode mipmap_mode_ = {};
     std::pair<f32, f32> lod_range_   = {};
-    f32 max_anisotrophy_              = {};
+    f32 max_anisotrophy_             = {};
 };
 
 } // namespace texture_sampler

@@ -66,8 +66,7 @@ public:
 
     void draw(uint32_t instance_count, uint32_t first_vertex = 0, uint32_t first_instance = 0) noexcept;
 
-    void draw_indexed(
-        uint32_t instance_count) noexcept;
+    void draw_indexed(uint32_t instance_count) noexcept;
 
     void draw_indexed(
         uint32_t instance_count,

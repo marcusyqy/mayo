@@ -147,7 +147,6 @@ void CommandBuffer::draw_indexed(
         first_instance);
 }
 
-
 PipelineBindContext CommandBuffer::bind_pipeline(const render::Pipeline& pipeline) noexcept {
     assure_status(RecordStatus::begin);
     vkCmdBindPipeline(underlying_, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
