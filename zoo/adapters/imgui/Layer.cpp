@@ -89,7 +89,7 @@ void Layer::update() noexcept {
         // We cannot preserve the docking relationship between an active window and an inactive docking, otherwise
         // any change of dockspace/settings would lead to windows being stuck in limbo and never being visible.
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-        ImGui::Begin("DockSpace Demo", nullptr, window_flags);
+        ImGui::Begin("DockSpace", nullptr, window_flags);
         ImGui::PopStyleVar();
 
         ImGui::PopStyleVar(2);
@@ -97,7 +97,7 @@ void Layer::update() noexcept {
         // Submit the DockSpace
         ImGuiIO& io = ImGui::GetIO();
         if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable) {
-            ImGuiID dockspace_id = ImGui::GetID("VulkanAppDockspace");
+            ImGuiID dockspace_id = ImGui::GetID("Zoo Dockspace");
             ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
         }
 
