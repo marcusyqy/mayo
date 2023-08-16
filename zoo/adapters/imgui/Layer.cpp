@@ -10,7 +10,7 @@ namespace zoo::adapters::imgui {
 
 Layer::Layer(render::Engine& engine, Window& window) noexcept : engine_(&engine), window_(&window) {}
 
-Layer::~Layer() noexcept { exit(); }
+Layer::~Layer() noexcept { }
 
 void Layer::init() noexcept {
     IMGUI_CHECKVERSION();
@@ -20,7 +20,7 @@ void Layer::init() noexcept {
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;  // Enable Gamepad Controls
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;     // Enable Docking
-    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;   // Enable Multi-Viewport / Platform Windows
+    // io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;   // Enable Multi-Viewport / Platform Windows
     // io.ConfigViewportsNoAutoMerge = true;
     // io.ConfigViewportsNoTaskBarIcon = true;
 
@@ -39,8 +39,8 @@ void Layer::init() noexcept {
 }
 
 void Layer::exit() noexcept {
-    ImGui_ImplGlfw_Shutdown();
     imgui_exit();
+    ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
 }
 

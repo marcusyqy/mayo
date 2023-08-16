@@ -444,9 +444,7 @@ render::Pipeline imgui_create_pipeline(render::DeviceContext& context, const ren
 
     render::PushConstant push_constant_info = imgui_get_push_constant_descriptor();
 
-    render::PipelineCreateInfo pipeline_create_info {
-        false
-    };
+    render::PipelineCreateInfo pipeline_create_info{ false };
 
     return render::Pipeline{ context,
                              render::ShaderStagesSpecification{ vertex_shader, fragment_shader, vertex_description },
@@ -588,16 +586,17 @@ void imgui_exit() {
     bd.context.wait(); // make sure device is idle.
     ImGuiIO& io = ImGui::GetIO();
 
-    ImGui::DestroyPlatformWindows();
     // Manually delete main viewport render data in-case we haven't initialized for viewports
     ImGuiViewport* main_viewport = ImGui::GetMainViewport();
-    if (Imgui_Viewport_Data* vd = (Imgui_Viewport_Data*)main_viewport->RendererUserData) delete vd;
+    if (Imgui_Viewport_Data* vd = (Imgui_Viewport_Data*)main_viewport->RendererUserData) {
+        delete vd;
+        main_viewport->RendererUserData = nullptr;
+    }
 
-    main_viewport->RendererUserData = nullptr;
+    imgui_destroy_viewports();
 
     // Clean up windows
     // ImGui_ImplVulkan_ShutdownPlatformInterface();
-    imgui_destroy_viewports();
 
     io.BackendRendererName     = nullptr;
     io.BackendRendererUserData = nullptr;
