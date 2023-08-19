@@ -10,8 +10,8 @@ namespace zoo::platform::render {
 
 Query::Query(Parameters parameters) noexcept : parameters_{ parameters } {}
 
-info Query::get_info() const noexcept {
-    info info{};
+Info Query::get_info() const noexcept {
+    Info info{};
     info.extensions_ = get_extensions();
     info.layers_     = get_layers();
     return info;

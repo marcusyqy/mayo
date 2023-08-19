@@ -93,7 +93,7 @@ Swapchain::~Swapchain() noexcept {
     cleanup_swapchain_and_resources();
     reset();
 }
-//
+
 Swapchain::Swapchain(render::Engine& engine, underlying_window_type glfw_window, s32 x, s32 y) noexcept :
     instance_(engine.vk_instance()), window_(glfw_window), context_(engine.context()), sync_objects_{} {
 
@@ -247,9 +247,9 @@ void Swapchain::cleanup_swapchain_and_resources() noexcept {
     underlying_ = nullptr;
 }
 
-void Swapchain::resize([[maybe_unused]] s32 x, [[maybe_unused]] s32 y) noexcept { should_resize_ = true; }
+void Swapchain::resize(s32 x, s32 y) noexcept { force_resize(x, y); }
 
-void Swapchain::force_resize() noexcept {
+Swapchain::WindowSize Swapchain::get_new_size() const noexcept {
     int width = 0, height = 0;
     while (width == 0 || height == 0) {
         glfwGetFramebufferSize(window_, &width, &height);
@@ -257,9 +257,12 @@ void Swapchain::force_resize() noexcept {
         glfwWaitEvents(); // this should be done outside (maybe)
     }
     glfwGetFramebufferSize(window_, &width, &height);
-    size_.x = static_cast<uint32_t>(width);
-    size_.y = static_cast<uint32_t>(height);
+    return { static_cast<s32>(width), static_cast<s32>(height) };
+}
 
+void Swapchain::force_resize(s32 width, s32 height) noexcept {
+    size_.x = width;
+    size_.y = height;
     create_swapchain_and_resources();
     for (auto& cb : resize_cbs_) {
         cb(*this, size_.x, size_.y);
@@ -340,7 +343,7 @@ void Swapchain::present() noexcept {
     // increment to get next sync object
     current_sync_objects_index_ = (current_sync_objects_index_ + 1) % std::size(sync_objects_);
 
-    if (!should_resize_ || result == VK_SUCCESS)
+    if (result == VK_SUCCESS)
         assure(vkAcquireNextImageKHR(
             context_,
             underlying_,
@@ -348,14 +351,17 @@ void Swapchain::present() noexcept {
             sync_objects_[current_sync_objects_index_].image_avail,
             nullptr,
             &current_frame_));
-    else
-        force_resize();
+    else {
+        size_ = get_new_size();
+        force_resize(size_.x, size_.y);
+    }
 }
 
 void Swapchain::assure(VkResult result) noexcept {
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         ZOO_LOG_INFO("Should recreate");
-        force_resize();
+        size_ = get_new_size();
+        force_resize(size_.x, size_.y);
     } else if (result != VK_SUBOPTIMAL_KHR && result != VK_SUCCESS)
         ZOO_LOG_ERROR("FAILED with {}", string_VkResult(result));
 }

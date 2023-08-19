@@ -48,7 +48,7 @@ VkInstance create_instance(const engine::Info& info) noexcept {
                                 .engineVersion      = make_version(core::engine::version),
                                 .apiVersion         = Defines::vk_version };
 
-    platform::render::info query_info = query.get_info();
+    platform::render::Info query_info = query.get_info();
     const auto& enabled_layers        = query_info.layers_;
     const auto& enabled_extensions    = query_info.extensions_;
 

@@ -62,13 +62,20 @@ public:
     scene::PresentContext current_present_context() const noexcept;
 
 private:
+    struct WindowSize {
+        s32 x;
+        s32 y;
+    };
+
+private:
     bool create_swapchain_and_resources() noexcept;
     void cleanup_swapchain_and_resources() noexcept;
     void cleanup_resources() noexcept;
 
     void create_sync_objects() noexcept;
     void cleanup_sync_objects() noexcept;
-    void force_resize() noexcept;
+    void force_resize(s32 width, s32 height) noexcept;
+    WindowSize get_new_size() const noexcept;
     void assure(VkResult result) noexcept;
 
 private:
@@ -80,10 +87,8 @@ private:
 
     std::vector<std::function<void(Swapchain&, u32, u32)>> resize_cbs_;
 
-    struct {
-        s32 x;
-        s32 y;
-    } size_ = {};
+    WindowSize size_ = {};
+    // std::optional<WindowSize> new_size_ = {};
 
     struct {
         VkSurfaceFormatKHR surface_format;
@@ -104,7 +109,6 @@ private:
 
     std::vector<resources::TextureView> views_;
 
-    u32 current_frame_  = 0;
-    bool should_resize_ = false;
+    u32 current_frame_ = 0;
 };
 } // namespace zoo::render

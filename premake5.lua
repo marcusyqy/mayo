@@ -18,15 +18,8 @@ flags {
 outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
 --for grouping projects in the future
-group "Dependencies"
-warnings "Off"
-    include "deps/glfw"
-    include "deps/vma"
-    include "deps/tinyobj"
-    include "deps/stb"
-    include "xtr"
-    include "deps"
-
+include "deps"
+include "xtr"
 
 group ""
     include "zoo"

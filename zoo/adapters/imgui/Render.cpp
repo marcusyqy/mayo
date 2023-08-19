@@ -15,6 +15,7 @@
 
 #include "adapters/tools/ShaderCompiler.hpp"
 
+#include "Window.hpp"
 #include "imgui.h"
 #include <stdio.h>
 
@@ -23,6 +24,8 @@
 #ifdef _MSC_VER
 #pragma warning(disable : 4127) // condition expression is constant
 #endif
+
+#include <GLFW/glfw3.h>
 
 namespace zoo::adapters::imgui {
 
@@ -73,9 +76,6 @@ struct Imgui_Vulkan_Data {
     render::DescriptorPool descriptor_pool;
 
     Imgui_Viewport_Data* main_window_data;
-
-    // @TODO: may have to dynamically set this
-    static constexpr auto BUFFER_MEMORY_ALIGNMENT = 256;
 };
 
 // For ease of convenience.
@@ -91,8 +91,6 @@ render::resources::Buffer imgui_create_buffer(size_t count, VkBufferUsageFlagBit
     auto& bd = imgui_get_render_static_data();
 
     // @NOTE: Don't think we need to align the memory. We can assume that VMA does it for us.
-    // VkDeviceSize vertex_buffer_size_aligned =
-    //     ((new_size - 1) / bd->BUFFER_MEMORY_ALIGNMENT + 1) * bd->BUFFER_MEMORY_ALIGNMENT;
     return render::resources::Buffer::start_build<T>("Imgui buffer")
         .usage(usage)
         .count(count)
@@ -103,283 +101,6 @@ render::resources::Buffer imgui_create_buffer(size_t count, VkBufferUsageFlagBit
 
 render::PushConstant imgui_get_push_constant_descriptor() {
     return { .stageFlags = VK_SHADER_STAGE_VERTEX_BIT, .offset = 0, .size = sizeof(PushConstantData) };
-}
-
-// @NOTE: uncomment to implement.
-// void imgui_create_window(ImGuiViewport* viewport) {
-//     // @TODO : Finish this function.
-//     Imgui_Vulkan_Data* bd        = imgui_get_render_static_data();
-//     Imgui_Viewport_Data* vd      = IM_NEW(Imgui_Viewport_Data)();
-//     viewport->RendererUserData   = vd;
-//     ImGui_ImplVulkanH_Window* wd = &vd->Window;
-//     ImGui_ImplVulkan_InitInfo* v = &bd->VulkanInitInfo;
-//
-//     // Create surface
-//     ImGuiPlatformIO& platform_io = ImGui::GetPlatformIO();
-//     VkResult err                 = (VkResult)platform_io.Platform_CreateVkSurface(
-//         viewport,
-//         (ImU64)v->Instance,
-//         (const void*)v->Allocator,
-//         (ImU64*)&wd->Surface);
-//     check_vk_result(err);
-//
-//     // Check for WSI support
-//     VkBool32 res;
-//     vkGetPhysicalDeviceSurfaceSupportKHR(v->PhysicalDevice, v->QueueFamily, wd->Surface, &res);
-//     if (res != VK_TRUE) {
-//         IM_ASSERT(0); // Error: no WSI support on physical device
-//         return;
-//     }
-//
-//     // Select Surface Format
-//     const VkFormat requestSurfaceImageFormat[]     = { VK_FORMAT_B8G8R8A8_UNORM,
-//                                                        VK_FORMAT_R8G8B8A8_UNORM,
-//                                                        VK_FORMAT_B8G8R8_UNORM,
-//                                                        VK_FORMAT_R8G8B8_UNORM };
-//     const VkColorSpaceKHR requestSurfaceColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
-//     wd->SurfaceFormat                              = ImGui_ImplVulkanH_SelectSurfaceFormat(
-//         v->PhysicalDevice,
-//         wd->Surface,
-//         requestSurfaceImageFormat,
-//         (size_t)IM_ARRAYSIZE(requestSurfaceImageFormat),
-//         requestSurfaceColorSpace);
-//
-//     // Select Present Mode
-//     // FIXME-VULKAN: Even thought mailbox seems to get us maximum framerate with a single window, it halves framerate
-//     // with a second window etc. (w/ Nvidia and SDK 1.82.1)
-//     VkPresentModeKHR present_modes[] = { VK_PRESENT_MODE_MAILBOX_KHR,
-//                                          VK_PRESENT_MODE_IMMEDIATE_KHR,
-//                                          VK_PRESENT_MODE_FIFO_KHR };
-//     wd->PresentMode                  = ImGui_ImplVulkanH_SelectPresentMode(
-//         v->PhysicalDevice,
-//         wd->Surface,
-//         &present_modes[0],
-//         IM_ARRAYSIZE(present_modes));
-//     // printf("[vulkan] Secondary window selected PresentMode = %d\n", wd->PresentMode);
-//
-//     // Create SwapChain, RenderPass, Framebuffer, etc.
-//     wd->ClearEnable         = (viewport->Flags & ImGuiViewportFlags_NoRendererClear) ? false : true;
-//     wd->UseDynamicRendering = v->UseDynamicRendering;
-//     ImGui_ImplVulkanH_CreateOrResizeWindow(
-//         v->Instance,
-//         v->PhysicalDevice,
-//         v->Device,
-//         wd,
-//         v->QueueFamily,
-//         v->Allocator,
-//         (int)viewport->Size.x,
-//         (int)viewport->Size.y,
-//         v->MinImageCount);
-//     vd->WindowOwned = true;
-// }
-//
-//
-// void imgui_destroy_window(ImGuiViewport* viewport) {
-//     // The main viewport (owned by the application) will always have RendererUserData == 0 since we didn't create the
-//     // data for it.
-//     ImGui_ImplVulkan_Data* bd = ImGui_ImplVulkan_GetBackendData();
-//     if (ImGui_ImplVulkan_ViewportData* vd = (ImGui_ImplVulkan_ViewportData*)viewport->RendererUserData) {
-//         ImGui_ImplVulkan_InitInfo* v = &bd->VulkanInitInfo;
-//         if (vd->WindowOwned) ImGui_ImplVulkanH_DestroyWindow(v->Instance, v->Device, &vd->Window, v->Allocator);
-//         ImGui_ImplVulkanH_DestroyWindowRenderBuffers(v->Device, &vd->RenderBuffers, v->Allocator);
-//         IM_DELETE(vd);
-//     }
-//     viewport->RendererUserData = nullptr;
-// }
-//
-// void imgui_window_resize(ImGuiViewport* viewport, ImVec2 size) {
-//     ImGui_ImplVulkan_Data* bd         = ImGui_ImplVulkan_GetBackendData();
-//     ImGui_ImplVulkan_ViewportData* vd = (ImGui_ImplVulkan_ViewportData*)viewport->RendererUserData;
-//     if (vd == nullptr) // This is nullptr for the main viewport (which is left to the user/app to handle)
-//         return;
-//     ImGui_ImplVulkan_InitInfo* v = &bd->VulkanInitInfo;
-//     vd->Window.ClearEnable       = (viewport->Flags & ImGuiViewportFlags_NoRendererClear) ? false : true;
-//     ImGui_ImplVulkanH_CreateOrResizeWindow(
-//         v->Instance,
-//         v->PhysicalDevice,
-//         v->Device,
-//         &vd->Window,
-//         v->QueueFamily,
-//         v->Allocator,
-//         (int)size.x,
-//         (int)size.y,
-//         v->MinImageCount);
-// }
-//
-// void imgui_render_window(ImGuiViewport* viewport, void*) {
-//     ImGui_ImplVulkan_Data* bd         = ImGui_ImplVulkan_GetBackendData();
-//     ImGui_ImplVulkan_ViewportData* vd = (ImGui_ImplVulkan_ViewportData*)viewport->RendererUserData;
-//     ImGui_ImplVulkanH_Window* wd      = &vd->Window;
-//     ImGui_ImplVulkan_InitInfo* v      = &bd->VulkanInitInfo;
-//     VkResult err;
-//
-//     ImGui_ImplVulkanH_Frame* fd            = &wd->Frames[wd->FrameIndex];
-//     ImGui_ImplVulkanH_FrameSemaphores* fsd = &wd->FrameSemaphores[wd->SemaphoreIndex];
-//     {
-//         {
-//             err = vkAcquireNextImageKHR(
-//                 v->Device,
-//                 wd->Swapchain,
-//                 UINT64_MAX,
-//                 fsd->ImageAcquiredSemaphore,
-//                 VK_NULL_HANDLE,
-//                 &wd->FrameIndex);
-//             check_vk_result(err);
-//             fd = &wd->Frames[wd->FrameIndex];
-//         }
-//         for (;;) {
-//             err = vkWaitForFences(v->Device, 1, &fd->Fence, VK_TRUE, 100);
-//             if (err == VK_SUCCESS) break;
-//             if (err == VK_TIMEOUT) continue;
-//             check_vk_result(err);
-//         }
-//         {
-//             err = vkResetCommandPool(v->Device, fd->CommandPool, 0);
-//             check_vk_result(err);
-//             VkCommandBufferBeginInfo info = {};
-//             info.sType                    = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-//             info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-//             err = vkBeginCommandBuffer(fd->CommandBuffer, &info);
-//             check_vk_result(err);
-//         }
-//         {
-//             ImVec4 clear_color = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
-//             memcpy(&wd->ClearValue.color.float32[0], &clear_color, 4 * sizeof(float));
-//         }
-// #ifdef IMGUI_IMPL_VULKAN_HAS_DYNAMIC_RENDERING
-//         if (v->UseDynamicRendering) {
-//             // Transition swapchain image to a layout suitable for drawing.
-//             VkImageMemoryBarrier barrier        = {};
-//             barrier.sType                       = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-//             barrier.dstAccessMask               = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-//             barrier.oldLayout                   = VK_IMAGE_LAYOUT_UNDEFINED;
-//             barrier.newLayout                   = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-//             barrier.image                       = fd->Backbuffer;
-//             barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-//             barrier.subresourceRange.levelCount = 1;
-//             barrier.subresourceRange.layerCount = 1;
-//             vkCmdPipelineBarrier(
-//                 fd->CommandBuffer,
-//                 VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-//                 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-//                 0,
-//                 0,
-//                 nullptr,
-//                 0,
-//                 nullptr,
-//                 1,
-//                 &barrier);
-//
-//             VkRenderingAttachmentInfo attachmentInfo = {};
-//             attachmentInfo.sType                     = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
-//             attachmentInfo.imageView                 = fd->BackbufferView;
-//             attachmentInfo.imageLayout               = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-//             attachmentInfo.resolveMode               = VK_RESOLVE_MODE_NONE;
-//             attachmentInfo.loadOp                    = VK_ATTACHMENT_LOAD_OP_CLEAR;
-//             attachmentInfo.storeOp                   = VK_ATTACHMENT_STORE_OP_STORE;
-//             attachmentInfo.clearValue                = wd->ClearValue;
-//
-//             VkRenderingInfo renderingInfo          = {};
-//             renderingInfo.sType                    = VK_STRUCTURE_TYPE_RENDERING_INFO_KHR;
-//             renderingInfo.renderArea.extent.width  = wd->Width;
-//             renderingInfo.renderArea.extent.height = wd->Height;
-//             renderingInfo.layerCount               = 1;
-//             renderingInfo.viewMask                 = 0;
-//             renderingInfo.colorAttachmentCount     = 1;
-//             renderingInfo.pColorAttachments        = &attachmentInfo;
-//
-//             ImGuiImplVulkanFuncs_vkCmdBeginRenderingKHR(fd->CommandBuffer, &renderingInfo);
-//         } else
-// #endif
-//         {
-//             VkRenderPassBeginInfo info    = {};
-//             info.sType                    = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-//             info.renderPass               = wd->RenderPass;
-//             info.framebuffer              = fd->Framebuffer;
-//             info.renderArea.extent.width  = wd->Width;
-//             info.renderArea.extent.height = wd->Height;
-//             info.clearValueCount          = (viewport->Flags & ImGuiViewportFlags_NoRendererClear) ? 0 : 1;
-//             info.pClearValues = (viewport->Flags & ImGuiViewportFlags_NoRendererClear) ? nullptr : &wd->ClearValue;
-//             vkCmdBeginRenderPass(fd->CommandBuffer, &info, VK_SUBPASS_CONTENTS_INLINE);
-//         }
-//     }
-//
-//     imgui_render_impl(viewport->DrawData, fd->CommandBuffer, wd->Pipeline);
-//
-//     {
-// #ifdef IMGUI_IMPL_VULKAN_HAS_DYNAMIC_RENDERING
-//         if (v->UseDynamicRendering) {
-//             ImGuiImplVulkanFuncs_vkCmdEndRenderingKHR(fd->CommandBuffer);
-//
-//             // Transition image to a layout suitable for presentation
-//             VkImageMemoryBarrier barrier        = {};
-//             barrier.sType                       = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-//             barrier.srcAccessMask               = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-//             barrier.oldLayout                   = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-//             barrier.newLayout                   = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-//             barrier.image                       = fd->Backbuffer;
-//             barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-//             barrier.subresourceRange.levelCount = 1;
-//             barrier.subresourceRange.layerCount = 1;
-//             vkCmdPipelineBarrier(
-//                 fd->CommandBuffer,
-//                 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-//                 VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-//                 0,
-//                 0,
-//                 nullptr,
-//                 0,
-//                 nullptr,
-//                 1,
-//                 &barrier);
-//         } else
-// #endif
-//         {
-//             vkCmdEndRenderPass(fd->CommandBuffer);
-//         }
-//         {
-//             VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-//             VkSubmitInfo info               = {};
-//             info.sType                      = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-//             info.waitSemaphoreCount         = 1;
-//             info.pWaitSemaphores            = &fsd->ImageAcquiredSemaphore;
-//             info.pWaitDstStageMask          = &wait_stage;
-//             info.commandBufferCount         = 1;
-//             info.pCommandBuffers            = &fd->CommandBuffer;
-//             info.signalSemaphoreCount       = 1;
-//             info.pSignalSemaphores          = &fsd->RenderCompleteSemaphore;
-//
-//             err = vkEndCommandBuffer(fd->CommandBuffer);
-//             check_vk_result(err);
-//             err = vkResetFences(v->Device, 1, &fd->Fence);
-//             check_vk_result(err);
-//             err = vkQueueSubmit(v->Queue, 1, &info, fd->Fence);
-//             check_vk_result(err);
-//         }
-//     }
-// }
-//
-// void imgui_swapbuffers(ImGuiViewport* viewport, void*) {
-//     auto* vd = (Imgui_Viewport_Data*)viewport->RendererUserData;
-//     // Probably just need to this.
-//     vd->swapchain.present();
-// }
-
-void imgui_attach_viewport_callbacks() {
-    ZOO_LOG_ERROR("imgui_attach_viewport_callbacks-not implemented");
-    // @TODO finish all the created functions
-    ImGuiPlatformIO& platform_io       = ImGui::GetPlatformIO();
-    platform_io.Renderer_CreateWindow  = nullptr; // imgui_create_window;
-    platform_io.Renderer_DestroyWindow = nullptr; // imgui_destroy_window;
-    platform_io.Renderer_SetWindowSize = nullptr; // imgui_window_resize;
-    platform_io.Renderer_RenderWindow  = nullptr; // imgui_render_window;
-    platform_io.Renderer_SwapBuffers   = nullptr; // imgui_swapbuffers;
-}
-
-void imgui_destroy_viewports() {
-    // @TODO : work on this.
-    ZOO_LOG_ERROR("`imgui_destroy_viewports` := this is not really implemented well as well.");
-    ImGui::DestroyPlatformWindows();
 }
 
 Imgui_Frame_Data imgui_create_frame_data(
@@ -498,111 +219,13 @@ render::resources::Texture
     upload_ctx.cache(std::move(scratch_buffer));
 
     upload_ctx.submit();
-    // Store our identifier
-    // io.Fonts->SetTexID((ImTextureID)bd->FontDescriptorSet);
-
     return tex;
 }
 
-void imgui_init_static_render_objects(Imgui_Vulkan_Data& vk_data, VkFormat image_format) {
-    // create uploader.
-    vk_data.upload_context = { vk_data.context };
-
-    // load fonts
-    vk_data.font_tex     = init_font_textures(vk_data.upload_context, vk_data.context);
-    vk_data.font_sampler = render::resources::TextureSampler::start_build()
-                               .address_mode(VK_SAMPLER_ADDRESS_MODE_REPEAT)
-                               .min_filter(VK_FILTER_LINEAR)
-                               .mag_filter(VK_FILTER_LINEAR)
-                               .mipmap_mode(VK_SAMPLER_MIPMAP_MODE_LINEAR)
-                               .lod(std::make_pair(-1000.f, 1000.f))
-                               .max_anisotrophy(1.f)
-                               .build(vk_data.context);
-
-    // @TODO: We need to change renderdata
-    imgui_init_pipeline_and_descriptors(vk_data, image_format);
-}
-
-} // namespace
-
-void imgui_init(render::Engine& engine, render::DeviceContext& context, render::Swapchain& main_swapchain) {
-
-    ImGuiIO& io = ImGui::GetIO();
-    IM_ASSERT(io.BackendRendererUserData == nullptr && "Already initialized a renderer backend!");
-
-    // @Cleanup: this has to change when swapchain doesn't hold the renderpass anymore
-    Imgui_Vulkan_Data* vk_data = new Imgui_Vulkan_Data{ .engine = engine, .context = context };
-
-    // set backend values flags
-    io.BackendRendererUserData = (void*)vk_data;
-    io.BackendRendererName     = "Zoo Vulkan Imgui";
-    io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset; // We can honor the ImDrawCmd::VtxOffset field, allowing
-                                                               // for large meshes.
-    io.BackendFlags |=
-        ImGuiBackendFlags_RendererHasViewports; // We can create multi-viewports on the Renderer side (optional)
-
-    imgui_init_static_render_objects(*vk_data, main_swapchain.format());
-
-    // Creation of initial main window.
-    ImGuiViewport* main_viewport    = ImGui::GetMainViewport();
-    main_viewport->RendererUserData = vk_data->main_window_data =
-        new Imgui_Viewport_Data{ .swapchain = { &main_swapchain, Imgui_Deleter{ false } } };
-
-    // this will not be null.
-    auto& main_window_data = *vk_data->main_window_data;
-
-    auto& swapchain = *main_window_data.swapchain;
-
-    auto populate_or_repopulate_frame_data = [](bool use_old_data) {
-        return [use_old_data](render::Swapchain& swapchain, s32 x, s32 y) {
-            auto& vd       = imgui_get_render_static_data();
-            s32 num_images = swapchain.num_images();
-            ZOO_ASSERT(num_images <= Imgui_Viewport_Data::MAX_FRAMES);
-            ZOO_ASSERT(vd.main_window_data);
-            for (s32 i = 0; i < num_images; ++i)
-                vd.main_window_data->frame[i] = imgui_create_frame_data(
-                    vd,
-                    swapchain,
-                    i,
-                    x,
-                    y,
-                    use_old_data ? &vd.main_window_data->frame[i] : nullptr);
-        };
-    };
-
-    auto [x, y] = swapchain.extent();
-    populate_or_repopulate_frame_data(false)(swapchain, x, y);
-    swapchain.on_resize(populate_or_repopulate_frame_data(true));
-
-    imgui_attach_viewport_callbacks();
-
-    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) imgui_attach_viewport_callbacks();
-
-    vk_data->upload_context.wait();
-}
-
-void imgui_exit() {
-    Imgui_Vulkan_Data& bd = imgui_get_render_static_data();
-    bd.context.wait(); // make sure device is idle.
-    ImGuiIO& io = ImGui::GetIO();
-
-    // Manually delete main viewport render data in-case we haven't initialized for viewports
-    ImGuiViewport* main_viewport = ImGui::GetMainViewport();
-    if (Imgui_Viewport_Data* vd = (Imgui_Viewport_Data*)main_viewport->RendererUserData) {
-        delete vd;
-        main_viewport->RendererUserData = nullptr;
-    }
-
-    imgui_destroy_viewports();
-
-    // Clean up windows
-    // ImGui_ImplVulkan_ShutdownPlatformInterface();
-
-    io.BackendRendererName     = nullptr;
-    io.BackendRendererUserData = nullptr;
-    io.BackendFlags &= ~(ImGuiBackendFlags_RendererHasVtxOffset | ImGuiBackendFlags_RendererHasViewports);
-
-    delete std::addressof(bd);
+bool imgui_should_render(const ImDrawData& draw_data) {
+    int fb_width  = (int)(draw_data.DisplaySize.x * draw_data.FramebufferScale.x);
+    int fb_height = (int)(draw_data.DisplaySize.y * draw_data.FramebufferScale.y);
+    return !(fb_width <= 0 || fb_height <= 0);
 }
 
 void imgui_setup_render_state(const ImDrawData& draw_data, Imgui_Frame_Data& fd, int fb_width, int fb_height) {
@@ -635,11 +258,6 @@ void imgui_setup_render_state(const ImDrawData& draw_data, Imgui_Frame_Data& fd,
         viewport.maxDepth = 1.0f;
         command_context.set_viewport(viewport);
     }
-}
-bool imgui_should_render(const ImDrawData& draw_data) {
-    int fb_width  = (int)(draw_data.DisplaySize.x * draw_data.FramebufferScale.x);
-    int fb_height = (int)(draw_data.DisplaySize.y * draw_data.FramebufferScale.y);
-    return !(fb_width <= 0 || fb_height <= 0);
 }
 
 void imgui_render(const ImDrawData& draw_data, Imgui_Frame_Data& fd) {
@@ -780,7 +398,198 @@ void imgui_render(const ImDrawData& draw_data, Imgui_Frame_Data& fd) {
     command_context.set_scissor(scissor);
 }
 
-void imgui_frame_render() {
+// @NOTE: uncomment to implement.
+void imgui_create_window(ImGuiViewport* viewport) {
+    Imgui_Vulkan_Data& bd = imgui_get_render_static_data();
+
+    // Create surface
+    GLFWwindow* window = imgui_window_handle_from_viewport(viewport);
+
+    auto swapchain = new render::Swapchain(bd.engine, window, (s32)viewport->Size.x, (s32)viewport->Size.y);
+
+    Imgui_Viewport_Data* vd = new Imgui_Viewport_Data{ .swapchain = { swapchain, Imgui_Deleter{ true } } };
+
+    // this will not be null.
+    auto populate_or_repopulate_frame_data = [vd](bool use_old_data) {
+        return [vd, use_old_data](render::Swapchain& swapchain, s32 x, s32 y) {
+            s32 num_images = swapchain.num_images();
+            ZOO_ASSERT(num_images <= Imgui_Viewport_Data::MAX_FRAMES);
+            for (s32 i = 0; i < num_images; ++i)
+                vd->frame[i] = imgui_create_frame_data(
+                    imgui_get_render_static_data(),
+                    swapchain,
+                    i,
+                    x,
+                    y,
+                    use_old_data ? &vd->frame[i] : nullptr);
+        };
+    };
+
+    auto [x, y] = swapchain->extent();
+    populate_or_repopulate_frame_data(false)(*swapchain, x, y);
+    swapchain->on_resize(populate_or_repopulate_frame_data(true));
+    viewport->RendererUserData = vd;
+}
+
+void imgui_destroy_window(ImGuiViewport* viewport) {
+    // The main viewport (owned by the application) will always have RendererUserData == 0 since we didn't create the
+    // data for it.
+    if (Imgui_Viewport_Data* vd = (Imgui_Viewport_Data*)viewport->RendererUserData) {
+        // defer frame.
+        delete vd;
+    }
+    viewport->RendererUserData = nullptr;
+}
+
+void imgui_window_resize(ImGuiViewport* viewport, ImVec2 size) {
+    auto& viewport_data = *(Imgui_Viewport_Data*)viewport->RendererUserData;
+    ZOO_ASSERT(viewport && viewport->RendererUserData);
+
+    auto& swapchain = *viewport_data.swapchain;
+    swapchain.resize(static_cast<s32>(size.x), static_cast<s32>(size.y));
+}
+
+void imgui_render_window(ImGuiViewport* viewport, void*) {
+    ZOO_ASSERT(viewport && viewport->RendererUserData);
+
+    auto& viewport_data    = *(Imgui_Viewport_Data*)viewport->RendererUserData;
+    auto& swapchain        = *viewport_data.swapchain;
+    const auto current_idx = swapchain.current_image();
+
+    Imgui_Frame_Data& fd = viewport_data.frame[current_idx];
+    fd.fence.wait();
+    fd.fence.reset();
+
+    auto& command_context      = fd.command_buffer;
+    VkClearValue clear_color[] = { { { { 0.1f, 0.1f, 0.1f, 1.0f } } } };
+    command_context.begin_renderpass(fd.render_target, clear_color);
+
+    ZOO_ASSERT(viewport->DrawData != nullptr, "Something went wrong with ImGui drawdata.");
+    imgui_render(*viewport->DrawData, fd);
+
+    command_context.end_renderpass();
+    command_context.submit(swapchain.current_present_context(), fd.fence);
+}
+
+void imgui_swapbuffers(ImGuiViewport* viewport, void*) {
+    auto* vd = (Imgui_Viewport_Data*)viewport->RendererUserData;
+    // Probably just need to this.
+    vd->swapchain->present();
+}
+
+void imgui_attach_viewport_callbacks() {
+    ImGuiPlatformIO& platform_io       = ImGui::GetPlatformIO();
+    platform_io.Renderer_CreateWindow  = imgui_create_window;
+    platform_io.Renderer_DestroyWindow = imgui_destroy_window;
+    platform_io.Renderer_SetWindowSize = imgui_window_resize;
+    platform_io.Renderer_RenderWindow  = imgui_render_window;
+    platform_io.Renderer_SwapBuffers   = imgui_swapbuffers;
+}
+
+void imgui_destroy_viewports() { ImGui::DestroyPlatformWindows(); }
+
+void imgui_init_static_render_objects(Imgui_Vulkan_Data& vk_data, VkFormat image_format) {
+    // create uploader.
+    vk_data.upload_context = { vk_data.context };
+
+    // load fonts
+    vk_data.font_tex     = init_font_textures(vk_data.upload_context, vk_data.context);
+    vk_data.font_sampler = render::resources::TextureSampler::start_build()
+                               .address_mode(VK_SAMPLER_ADDRESS_MODE_REPEAT)
+                               .min_filter(VK_FILTER_LINEAR)
+                               .mag_filter(VK_FILTER_LINEAR)
+                               .mipmap_mode(VK_SAMPLER_MIPMAP_MODE_LINEAR)
+                               .lod(std::make_pair(-1000.f, 1000.f))
+                               .max_anisotrophy(1.f)
+                               .build(vk_data.context);
+
+    // @TODO: We need to change renderdata
+    imgui_init_pipeline_and_descriptors(vk_data, image_format);
+}
+
+} // namespace
+
+void imgui_render_init(render::Engine& engine, render::DeviceContext& context, render::Swapchain& main_swapchain) {
+
+    ImGuiIO& io = ImGui::GetIO();
+    IM_ASSERT(io.BackendRendererUserData == nullptr && "Already initialized a renderer backend!");
+
+    // @Cleanup: this has to change when swapchain doesn't hold the renderpass anymore
+    Imgui_Vulkan_Data* vk_data = new Imgui_Vulkan_Data{ .engine = engine, .context = context };
+
+    // set backend values flags
+    io.BackendRendererUserData = (void*)vk_data;
+    io.BackendRendererName     = "Zoo Vulkan Imgui";
+    io.BackendFlags |= ImGuiBackendFlags_RendererHasVtxOffset; // We can honor the ImDrawCmd::VtxOffset field, allowing
+                                                               // for large meshes.
+    io.BackendFlags |=
+        ImGuiBackendFlags_RendererHasViewports; // We can create multi-viewports on the Renderer side (optional)
+
+    imgui_init_static_render_objects(*vk_data, main_swapchain.format());
+
+    // Creation of initial main window.
+    ImGuiViewport* main_viewport    = ImGui::GetMainViewport();
+    main_viewport->RendererUserData = vk_data->main_window_data =
+        new Imgui_Viewport_Data{ .swapchain = { &main_swapchain, Imgui_Deleter{ false } } };
+
+    // this will not be null.
+    auto& main_window_data = *vk_data->main_window_data;
+
+    auto& swapchain = *main_window_data.swapchain;
+
+    auto populate_or_repopulate_frame_data = [](bool use_old_data) {
+        return [use_old_data](render::Swapchain& swapchain, s32 x, s32 y) {
+            auto& vd       = imgui_get_render_static_data();
+            s32 num_images = swapchain.num_images();
+            ZOO_ASSERT(num_images <= Imgui_Viewport_Data::MAX_FRAMES);
+            ZOO_ASSERT(vd.main_window_data);
+            for (s32 i = 0; i < num_images; ++i)
+                vd.main_window_data->frame[i] = imgui_create_frame_data(
+                    vd,
+                    swapchain,
+                    i,
+                    x,
+                    y,
+                    use_old_data ? &vd.main_window_data->frame[i] : nullptr);
+        };
+    };
+
+    auto [x, y] = swapchain.extent();
+    populate_or_repopulate_frame_data(false)(swapchain, x, y);
+    swapchain.on_resize(populate_or_repopulate_frame_data(true));
+
+    imgui_attach_viewport_callbacks();
+
+    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) imgui_attach_viewport_callbacks();
+
+    vk_data->upload_context.wait();
+}
+
+void imgui_render_exit() {
+    Imgui_Vulkan_Data& bd = imgui_get_render_static_data();
+    bd.context.wait(); // make sure device is idle.
+    ImGuiIO& io = ImGui::GetIO();
+
+    // Manually delete main viewport render data in-case we haven't initialized for viewports
+    ImGuiViewport* main_viewport = ImGui::GetMainViewport();
+    if (Imgui_Viewport_Data* vd = (Imgui_Viewport_Data*)main_viewport->RendererUserData) {
+        delete vd;
+        main_viewport->RendererUserData = nullptr;
+    }
+
+    imgui_destroy_viewports();
+
+    // Clean up windows
+    // ImGui_ImplVulkan_ShutdownPlatformInterface();
+
+    io.BackendRendererName     = nullptr;
+    io.BackendRendererUserData = nullptr;
+    io.BackendFlags &= ~(ImGuiBackendFlags_RendererHasVtxOffset | ImGuiBackendFlags_RendererHasViewports);
+
+    delete std::addressof(bd);
+}
+
+void imgui_render_frame_render() {
     auto& vd = imgui_get_render_static_data();
     ZOO_ASSERT(vd.main_window_data);
     // wait for all uploads to be done.
@@ -804,7 +613,7 @@ void imgui_frame_render() {
     command_context.submit(swapchain.current_present_context(), fd.fence);
 }
 
-void imgui_present() {
+void imgui_render_present() {
     auto& vd = imgui_get_render_static_data();
     ZOO_ASSERT(vd.main_window_data && vd.main_window_data->swapchain);
     ImDrawData* main_draw_data = ImGui::GetDrawData();

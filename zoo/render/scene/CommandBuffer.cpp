@@ -212,12 +212,6 @@ void CommandBuffer::begin_renderpass(
     renderpass_info.renderArea.extent = { render_area->extent.x, render_area->extent.y };
     renderpass_info.pNext             = nullptr;
 
-    // Add this as a parameter.
-    const static VkClearValue clear_color = { { { 0.1f, 0.1f, 0.1f, 1.0f } } };
-    VkClearValue clear_depth              = {};
-    clear_depth.depthStencil.depth        = 1.0f;
-    VkClearValue clear_values[]           = { clear_color, clear_depth };
-
     renderpass_info.clearValueCount = (u32)clear_colors.size();
     renderpass_info.pClearValues    = clear_colors.data();
 
