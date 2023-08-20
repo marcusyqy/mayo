@@ -1,9 +1,9 @@
 #pragma once
-#include "render/DescriptorPool.hpp"
-#include "render/DeviceContext.hpp"
+#include "render/Descriptor_Pool.hpp"
+#include "render/Device_Context.hpp"
 #include "render/Framebuffer.hpp"
 #include "render/Pipeline.hpp"
-#include "render/RenderPass.hpp"
+#include "render/Render_Pass.hpp"
 #include "render/fwd.hpp"
 #include "render/resources/Buffer.hpp"
 #include "render/resources/Mesh.hpp"
@@ -17,7 +17,7 @@ struct PipelineBindContext {
 public:
     PipelineBindContext& push_constants(const PushConstant& constant, void* data) noexcept;
 
-    PipelineBindContext& bindings(const ResourceBindings& binding, stdx::span<u32> offset = nullptr) noexcept;
+    PipelineBindContext& bindings(const Resource_Bindings& binding, stdx::span<u32> offset = nullptr) noexcept;
 
     PipelineBindContext(VkCommandBuffer cmd_buffer, VkPipeline pipeline, VkPipelineLayout pipeline_layout) noexcept;
 
@@ -49,7 +49,7 @@ public:
     void clear() noexcept;
 
     CommandBuffer() noexcept = default;
-    CommandBuffer(DeviceContext& context, Operation op_type) noexcept;
+    CommandBuffer(Device_Context& context, Operation op_type) noexcept;
     CommandBuffer(CommandBuffer&& other) noexcept;
     CommandBuffer& operator=(CommandBuffer&& other) noexcept;
     ~CommandBuffer() noexcept;
@@ -127,7 +127,7 @@ private:
     void assure_status(RecordStatus status);
 
 private:
-    DeviceContext* context_     = nullptr;
+    Device_Context* context_     = nullptr;
     underlying_type underlying_ = nullptr;
 
     struct VertexBufferBindContext {

@@ -85,7 +85,7 @@ void Shader::reset() noexcept {
     module_ = nullptr;
 }
 
-Shader::Shader(DeviceContext& context, stdx::span<uint32_t> code, std::string_view entry_point) noexcept :
+Shader::Shader(Device_Context& context, stdx::span<uint32_t> code, std::string_view entry_point) noexcept :
     context_(&context), module_(nullptr), entry_point_(entry_point) {
     VkShaderModuleCreateInfo create_info{};
     create_info.sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -119,12 +119,12 @@ Shader& Shader::operator=(Shader&& other) noexcept {
 Shader::~Shader() noexcept { reset(); }
 
 Pipeline::Pipeline(
-    DeviceContext& context,
+    Device_Context& context,
     const ShaderStagesSpecification& specifications,
     // @CONSIDERATIONS: should this be something we consdier when setting a dynamic
     // pipeline? :
     // const ViewportInfo& viewport_info,
-    const RenderPass& renderpass,
+    const Render_Pass& renderpass,
     stdx::span<BindingDescriptor> binding_descriptors,
     stdx::span<PushConstant> push_constants,
     const PipelineCreateInfo& create_info) noexcept :

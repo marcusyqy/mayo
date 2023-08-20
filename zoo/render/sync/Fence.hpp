@@ -15,7 +15,7 @@ public:
     operator underlying_type() const noexcept { return get(); }
 
     Fence() noexcept = default;
-    Fence(DeviceContext& context, bool signaled = false) noexcept;
+    Fence(Device_Context& context, bool signaled = false) noexcept;
     ~Fence() noexcept;
 
     Fence(const Fence& other)            = delete;
@@ -30,7 +30,7 @@ public:
     bool valid() const noexcept;
 
 private:
-    DeviceContext* context_     = nullptr;
+    Device_Context* context_     = nullptr;
     underlying_type underlying_ = VK_NULL_HANDLE;
 };
 

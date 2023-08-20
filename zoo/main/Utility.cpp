@@ -23,7 +23,7 @@ stdx::expected<std::string, std::runtime_error> read_file(std::string_view filen
 }
 
 namespace example {
-void populate_vertices(render::DeviceContext& context) {
+void populate_vertices(render::Device_Context& context) {
     const std::vector<render::resources::Vertex> vertices = {
         { { -0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f } },
         { { 0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f } },

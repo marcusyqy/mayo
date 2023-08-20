@@ -8,25 +8,25 @@
 namespace zoo::render {
 
 // Forward Declare.
-class ResourceBindings;
+class Resource_Bindings;
 
-struct BindingBatch {
+struct Binding_Batch {
 
-    BindingBatch& bind(u32 binding, resources::Buffer& buffer, VkDescriptorType bind_type) noexcept;
-    BindingBatch& bind(u32 binding, resources::BufferView& buffer, VkDescriptorType bind_type) noexcept;
-    BindingBatch& bind(u32 set, u32 binding, resources::Buffer& buffer, VkDescriptorType bind_type) noexcept;
-    BindingBatch& bind(u32 set, u32 binding, resources::BufferView& buffer, VkDescriptorType bind_type) noexcept;
+    Binding_Batch& bind(u32 binding, resources::Buffer& buffer, VkDescriptorType bind_type) noexcept;
+    Binding_Batch& bind(u32 binding, resources::BufferView& buffer, VkDescriptorType bind_type) noexcept;
+    Binding_Batch& bind(u32 set, u32 binding, resources::Buffer& buffer, VkDescriptorType bind_type) noexcept;
+    Binding_Batch& bind(u32 set, u32 binding, resources::BufferView& buffer, VkDescriptorType bind_type) noexcept;
 
-    BindingBatch&
+    Binding_Batch&
         bind(u32 set, u32 binding, VkBuffer buffer, u32 offset, u32 size, VkDescriptorType bind_type) noexcept;
 
-    BindingBatch& bind(
+    Binding_Batch& bind(
         u32 binding,
         resources::Texture& texture,
         resources::TextureSampler& sampler,
         VkDescriptorType bind_type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) noexcept;
 
-    BindingBatch& bind(
+    Binding_Batch& bind(
         u32 set,
         u32 binding,
         resources::Texture& texture,
@@ -35,7 +35,7 @@ struct BindingBatch {
 
     void end_batch() noexcept;
 
-    BindingBatch(ResourceBindings& target) noexcept : target_(target) {}
+    Binding_Batch(Resource_Bindings& target) noexcept : target_(target) {}
 
 private:
     static constexpr u32 MAX_RESOURCE_SIZE                  = 5;
@@ -49,24 +49,24 @@ private:
     u32 write_descriptors_count_                               = 0;
 
 private:
-    friend class ResourceBindings;
-    ResourceBindings& target_;
+    friend class Resource_Bindings;
+    Resource_Bindings& target_;
 };
 
-class ResourceBindings {
+class Resource_Bindings {
 public:
-    static constexpr u32 MAX_RESOURCE_SIZE = BindingBatch::MAX_RESOURCE_SIZE;
-    ResourceBindings(DeviceContext& context, VkDescriptorPool pool, stdx::span<VkDescriptorSet> sets) noexcept;
+    static constexpr u32 MAX_RESOURCE_SIZE = Binding_Batch::MAX_RESOURCE_SIZE;
+    Resource_Bindings(Device_Context& context, VkDescriptorPool pool, stdx::span<VkDescriptorSet> sets) noexcept;
 
-    ResourceBindings() noexcept = default;
-    ~ResourceBindings() noexcept;
+    Resource_Bindings() noexcept = default;
+    ~Resource_Bindings() noexcept;
 
     // should not need this since `context_` is a reference :D
-    ResourceBindings(ResourceBindings&& o) noexcept;
-    ResourceBindings& operator=(ResourceBindings&& o) noexcept;
+    Resource_Bindings(Resource_Bindings&& o) noexcept;
+    Resource_Bindings& operator=(Resource_Bindings&& o) noexcept;
 
-    BindingBatch start_batch() noexcept;
-    void write(const BindingBatch& batch) noexcept;
+    Binding_Batch start_batch() noexcept;
+    void write(const Binding_Batch& batch) noexcept;
     void release() noexcept;
 
     operator bool() const noexcept { return valid(); }
@@ -80,35 +80,35 @@ private:
     void release_allocation() noexcept;
 
 private:
-    DeviceContext* context_                 = nullptr;
+    Device_Context* context_                 = nullptr;
     VkDescriptorPool pool_                  = nullptr;
     VkDescriptorSet set_[MAX_RESOURCE_SIZE] = {};
     u32 set_count_                          = {};
 };
 
-class DescriptorPool {
+class Descriptor_Pool {
 public:
     // TODO: keep resource count.
-    ResourceBindings allocate(render::Pipeline& pipeline) noexcept;
+    Resource_Bindings allocate(render::Pipeline& pipeline) noexcept;
 
-    DescriptorPool(const DescriptorPool&) noexcept            = delete;
-    DescriptorPool& operator=(const DescriptorPool&) noexcept = delete;
+    Descriptor_Pool(const Descriptor_Pool&) noexcept            = delete;
+    Descriptor_Pool& operator=(const Descriptor_Pool&) noexcept = delete;
 
-    DescriptorPool(DescriptorPool&&) noexcept;
-    DescriptorPool& operator=(DescriptorPool&&) noexcept;
+    Descriptor_Pool(Descriptor_Pool&&) noexcept;
+    Descriptor_Pool& operator=(Descriptor_Pool&&) noexcept;
 
     // TODO: extend to have some sort of settings to contain all the possible
     // resource that we can have.
     static constexpr u32 DEFAULT_MAX_POOL_SIZE = 10;
-    DescriptorPool(DeviceContext& context, u32 pool_size = DEFAULT_MAX_POOL_SIZE) noexcept;
-    DescriptorPool() noexcept = default;
-    ~DescriptorPool() noexcept;
+    Descriptor_Pool(Device_Context& context, u32 pool_size = DEFAULT_MAX_POOL_SIZE) noexcept;
+    Descriptor_Pool() noexcept = default;
+    ~Descriptor_Pool() noexcept;
 
     inline operator bool() const noexcept { return valid(); }
     inline bool valid() const noexcept { return pool_ != nullptr; }
 
 private:
-    DeviceContext* context_ = nullptr;
+    Device_Context* context_ = nullptr;
     VkDescriptorPool pool_  = nullptr;
 };
 

@@ -4,8 +4,8 @@ namespace zoo::render {
 
 namespace {
 VkFramebuffer create_framebuffer(
-    render::DeviceContext& context,
-    const RenderPass& renderpass,
+    render::Device_Context& context,
+    const Render_Pass& renderpass,
     stdx::span<const resources::TextureView*> render_targets,
     u32 width,
     u32 height,
@@ -63,8 +63,8 @@ Framebuffer& Framebuffer::operator=(Framebuffer&& o) noexcept {
 Framebuffer::Framebuffer(Framebuffer&& o) noexcept { *this = std::move(o); }
 
 Framebuffer::Framebuffer(
-    render::DeviceContext& context,
-    const RenderPass& renderpass,
+    render::Device_Context& context,
+    const Render_Pass& renderpass,
     stdx::span<const resources::TextureView*> render_targets,
     u32 width,
     u32 height,

@@ -1,6 +1,6 @@
 
 #pragma once
-#include "RenderPass.hpp"
+#include "Render_Pass.hpp"
 #include "resources/Texture.hpp"
 #include <stdx/span.hpp>
 
@@ -15,8 +15,8 @@ public:
     Framebuffer(Framebuffer&&) noexcept;
 
     Framebuffer(
-        render::DeviceContext& context,
-        const RenderPass& renderpass,
+        render::Device_Context& context,
+        const Render_Pass& renderpass,
         stdx::span<const resources::TextureView*> render_targets,
         u32 width,
         u32 height,
@@ -32,7 +32,7 @@ public:
     u32 height() const noexcept { return height_; }
 
 private:
-    DeviceContext* context_   = nullptr;
+    Device_Context* context_   = nullptr;
     VkFramebuffer underlying_ = nullptr;
     VkRenderPass renderpass_  = nullptr;
 

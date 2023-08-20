@@ -50,5 +50,5 @@ struct RenderArea {
  * */
 enum class Operation : uint32_t { graphics, compute, transfer, present, unknown };
 
-class DeviceContext;
+class Device_Context;
 } // namespace zoo::render

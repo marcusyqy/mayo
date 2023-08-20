@@ -1,6 +1,6 @@
 #pragma once
-#include "DeviceContext.hpp"
-#include "RenderPass.hpp"
+#include "Device_Context.hpp"
+#include "Render_Pass.hpp"
 #include "core/fwd.hpp"
 #include "fwd.hpp"
 #include "stdx/span.hpp"
@@ -18,7 +18,7 @@ public:
 
     void reset() noexcept;
 
-    Shader(DeviceContext& context, stdx::span<uint32_t> code, std::string_view entry_point) noexcept;
+    Shader(Device_Context& context, stdx::span<uint32_t> code, std::string_view entry_point) noexcept;
 
     Shader() noexcept;
     ~Shader() noexcept;
@@ -30,7 +30,7 @@ public:
     Shader& operator=(Shader&& other) noexcept;
 
 private:
-    DeviceContext* context_;
+    Device_Context* context_;
     underlying_type module_ = nullptr;
     std::string entry_point_;
 };
@@ -93,9 +93,9 @@ public:
     using underlying_type = VkPipeline;
 
     Pipeline(
-        DeviceContext& context,
+        Device_Context& context,
         const ShaderStagesSpecification& specifications,
-        const RenderPass& renderpass,
+        const Render_Pass& renderpass,
         stdx::span<BindingDescriptor> binding_descriptors,
         stdx::span<PushConstant> push_constants,
         const PipelineCreateInfo& create_info = {}) noexcept;
@@ -114,10 +114,10 @@ public:
 
     VkPipelineLayout layout() const { return layout_; }
 
-    friend class DescriptorPool;
+    friend class Descriptor_Pool;
 
 private:
-    DeviceContext* context_     = nullptr;
+    Device_Context* context_     = nullptr;
     underlying_type underlying_ = nullptr;
 
     VkPipelineLayout layout_ = nullptr;

@@ -4,8 +4,8 @@
 #include "render/fwd.hpp"
 
 // Our renderer contexts.
-#include "render/DescriptorPool.hpp"
-#include "render/DeviceContext.hpp"
+#include "render/Descriptor_Pool.hpp"
+#include "render/Device_Context.hpp"
 #include "render/Engine.hpp"
 #include "render/Pipeline.hpp"
 #include "render/resources/Buffer.hpp"
@@ -39,7 +39,7 @@ struct PushConstantData {
 
 struct Imgui_Frame_Data {
     render::scene::CommandBuffer command_buffer; // this will probably not be needed as well.
-    render::ResourceBindings bindings;
+    render::Resource_Bindings bindings;
     render::sync::Fence fence;
     render::Framebuffer render_target;
 
@@ -65,15 +65,15 @@ struct Imgui_Viewport_Data {
 
 struct Imgui_Vulkan_Data {
     render::Engine& engine;
-    render::DeviceContext& context;
+    render::Device_Context& context;
     render::scene::UploadContext upload_context;
 
     render::resources::Texture font_tex;
     render::resources::TextureSampler font_sampler;
 
-    render::RenderPass renderpass;
+    render::Render_Pass renderpass;
     render::Pipeline pipeline;
-    render::DescriptorPool descriptor_pool;
+    render::Descriptor_Pool descriptor_pool;
 
     Imgui_Viewport_Data* main_window_data;
 };
@@ -139,12 +139,12 @@ Imgui_Frame_Data imgui_create_frame_data(
              .index          = std::move(index_buffer) };
 }
 
-render::RenderPass imgui_create_renderpass(render::DeviceContext& context, VkFormat image_format) {
+render::Render_Pass imgui_create_renderpass(render::Device_Context& context, VkFormat image_format) {
     render::AttachmentDescription attachments[] = { render::ColorAttachmentDescription(image_format) };
     return { context, attachments };
 }
 
-render::Pipeline imgui_create_pipeline(render::DeviceContext& context, const render::RenderPass& renderpass) {
+render::Pipeline imgui_create_pipeline(render::Device_Context& context, const render::Render_Pass& renderpass) {
     std::array buffer_description{
         render::VertexBufferDescription{ 0, render::ShaderType::vec2, offsetof(ImDrawVert, pos) },
         render::VertexBufferDescription{ 1, render::ShaderType::vec2, offsetof(ImDrawVert, uv) },
@@ -179,11 +179,11 @@ void imgui_init_pipeline_and_descriptors(Imgui_Vulkan_Data& data, VkFormat forma
     auto& device_ctx     = data.context;
     data.renderpass      = imgui_create_renderpass(device_ctx, format);
     data.pipeline        = imgui_create_pipeline(device_ctx, data.renderpass);
-    data.descriptor_pool = render::DescriptorPool{ device_ctx, 1000 };
+    data.descriptor_pool = render::Descriptor_Pool{ device_ctx, 1000 };
 }
 
 render::resources::Texture
-    init_font_textures(render::scene::UploadContext& upload_ctx, render::DeviceContext& device_ctx) noexcept {
+    init_font_textures(render::scene::UploadContext& upload_ctx, render::Device_Context& device_ctx) noexcept {
     ImGuiIO& io = ImGui::GetIO();
 
     unsigned char* pixels;
@@ -509,7 +509,7 @@ void imgui_init_static_render_objects(Imgui_Vulkan_Data& vk_data, VkFormat image
 
 } // namespace
 
-void imgui_render_init(render::Engine& engine, render::DeviceContext& context, render::Swapchain& main_swapchain) {
+void imgui_render_init(render::Engine& engine, render::Device_Context& context, render::Swapchain& main_swapchain) {
 
     ImGuiIO& io = ImGui::GetIO();
     IM_ASSERT(io.BackendRendererUserData == nullptr && "Already initialized a renderer backend!");

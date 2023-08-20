@@ -3,7 +3,7 @@
 #include "render/fwd.hpp"
 
 #include "Allocator.hpp"
-#include "render/DeviceContext.hpp"
+#include "render/Device_Context.hpp"
 #include <stdx/function_ref.hpp>
 
 namespace zoo::render::resources {
@@ -160,7 +160,7 @@ namespace texture_sampler {
 
 struct Builder {
 
-    TextureSampler build(DeviceContext& context) noexcept;
+    TextureSampler build(Device_Context& context) noexcept;
 
     Builder& address_mode(VkSamplerAddressMode address) noexcept;
 

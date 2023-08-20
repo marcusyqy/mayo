@@ -1,6 +1,6 @@
 #pragma once
 
-#include "DeviceContext.hpp"
+#include "Device_Context.hpp"
 #include "fwd.hpp"
 #include "stdx/span.hpp"
 
@@ -44,31 +44,31 @@ struct DepthAttachmentDescription : AttachmentDescription {
 };
 
 // @TODO: Make Renderpass reusable so that it doesn't need to live inside Swapchain.
-class RenderPass {
+class Render_Pass {
 public:
     using underlying_type = VkRenderPass;
 
-    void emplace(DeviceContext& device, underlying_type type) noexcept;
+    void emplace(Device_Context& device, underlying_type type) noexcept;
     void reset() noexcept;
     underlying_type release() noexcept;
 
     underlying_type get() const noexcept { return underlying_; }
     operator underlying_type() const noexcept { return get(); }
 
-    RenderPass() noexcept;
-    RenderPass(DeviceContext& context, VkFormat format, VkFormat depth) noexcept;
-    RenderPass(DeviceContext& context, stdx::span<AttachmentDescription> descriptions) noexcept;
+    Render_Pass() noexcept;
+    Render_Pass(Device_Context& context, VkFormat format, VkFormat depth) noexcept;
+    Render_Pass(Device_Context& context, stdx::span<AttachmentDescription> descriptions) noexcept;
 
-    ~RenderPass() noexcept;
+    ~Render_Pass() noexcept;
 
-    RenderPass& operator=(RenderPass&& renderpass) noexcept;
-    RenderPass(RenderPass&& renderpass) noexcept;
+    Render_Pass& operator=(Render_Pass&& renderpass) noexcept;
+    Render_Pass(Render_Pass&& renderpass) noexcept;
 
-    RenderPass& operator=(const RenderPass& renderpass) noexcept = delete;
-    RenderPass(const RenderPass& renderpass) noexcept            = delete;
+    Render_Pass& operator=(const Render_Pass& renderpass) noexcept = delete;
+    Render_Pass(const Render_Pass& renderpass) noexcept            = delete;
 
 private:
-    DeviceContext* context_;
+    Device_Context* context_;
     underlying_type underlying_;
     std::vector<AttachmentDescription> descriptions_;
 };

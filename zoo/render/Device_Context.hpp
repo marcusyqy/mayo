@@ -10,21 +10,21 @@
 
 namespace zoo::render {
 
-class DeviceContext {
+class Device_Context {
 public:
-    DeviceContext(
+    Device_Context(
         VkInstance instance,
         utils::PhysicalDevice pdevice,
         const utils::QueueFamilyProperties& family_props,
         const platform::render::Query& query) noexcept;
 
-    ~DeviceContext() noexcept;
+    ~Device_Context() noexcept;
 
-    DeviceContext(const DeviceContext& other) noexcept = delete;
-    DeviceContext(DeviceContext&& other) noexcept      = delete;
+    Device_Context(const Device_Context& other) noexcept = delete;
+    Device_Context(Device_Context&& other) noexcept      = delete;
 
-    DeviceContext& operator=(const DeviceContext& other) noexcept = delete;
-    DeviceContext& operator=(DeviceContext&& other) noexcept      = delete;
+    Device_Context& operator=(const Device_Context& other) noexcept = delete;
+    Device_Context& operator=(Device_Context&& other) noexcept      = delete;
 
     void reset() noexcept;
 

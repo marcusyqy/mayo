@@ -1,7 +1,7 @@
 #pragma once
 #include "zoo.hpp"
 
-#include "DeviceContext.hpp"
+#include "Device_Context.hpp"
 #include "Engine.hpp"
 #include "core/fwd.hpp"
 #include "core/platform/window/Detail.hpp"
@@ -9,7 +9,7 @@
 #include "render/scene/CommandBuffer.hpp"
 #include <cstdint>
 
-#include "RenderPass.hpp"
+#include "Render_Pass.hpp"
 #include "core/fwd.hpp"
 #include "resources/Texture.hpp"
 #include "sync/Fence.hpp"
@@ -83,7 +83,7 @@ private:
     surface_type surface_       = nullptr;
     GLFWwindow* window_         = nullptr;
     underlying_type underlying_ = nullptr;
-    DeviceContext& context_;
+    Device_Context& context_;
 
     std::vector<std::function<void(Swapchain&, u32, u32)>> resize_cbs_;
 

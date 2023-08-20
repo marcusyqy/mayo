@@ -1,4 +1,4 @@
-#include "DeviceContext.hpp"
+#include "Device_Context.hpp"
 #include "core/fwd.hpp"
 #include "render/fwd.hpp"
 #include "scene/CommandBuffer.hpp"
@@ -12,7 +12,7 @@ const char* device_extension{ VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 // TODO: since we need to create the queues at the start should we also just
 // initialize the engine with settings that will determine the queues that
 // is important to us?
-DeviceContext::DeviceContext(
+Device_Context::Device_Context(
     [[maybe_unused]] VkInstance instance,
     utils::PhysicalDevice pdevice,
     const utils::QueueFamilyProperties& family_props,
@@ -90,7 +90,7 @@ DeviceContext::DeviceContext(
     allocator_.emplace(instance, logical_, physical_);
 }
 
-void DeviceContext::reset() noexcept {
+void Device_Context::reset() noexcept {
     if (logical_ != nullptr) {
         wait();
         allocator_.reset();
@@ -101,9 +101,9 @@ void DeviceContext::reset() noexcept {
     }
 }
 
-DeviceContext::~DeviceContext() noexcept { reset(); }
+Device_Context::~Device_Context() noexcept { reset(); }
 
-VkCommandBuffer DeviceContext::vk_command_buffer_from_pool(Operation op) const noexcept {
+VkCommandBuffer Device_Context::vk_command_buffer_from_pool(Operation op) const noexcept {
     static_cast<void>(op);
     VkCommandBufferAllocateInfo alloc_info{};
     alloc_info.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -120,27 +120,27 @@ VkCommandBuffer DeviceContext::vk_command_buffer_from_pool(Operation op) const n
 /*
     release device resources for each vulkan resource
 */
-void DeviceContext::release_device_resource(VkFence fence) noexcept {
+void Device_Context::release_device_resource(VkFence fence) noexcept {
     if (fence != nullptr) vkDestroyFence(logical_, fence, nullptr);
 }
 
-void DeviceContext::release_device_resource(VkRenderPass renderpass) noexcept {
+void Device_Context::release_device_resource(VkRenderPass renderpass) noexcept {
     if (renderpass != nullptr) vkDestroyRenderPass(logical_, renderpass, nullptr);
 }
 
-void DeviceContext::release_device_resource(VkSemaphore semaphore) noexcept {
+void Device_Context::release_device_resource(VkSemaphore semaphore) noexcept {
     if (semaphore != nullptr) vkDestroySemaphore(logical_, semaphore, nullptr);
 }
 
-void DeviceContext::release_device_resource(VkBuffer buffer) noexcept {
+void Device_Context::release_device_resource(VkBuffer buffer) noexcept {
     if (buffer != nullptr) vkDestroyBuffer(logical_, buffer, nullptr);
 }
 
-void DeviceContext::release_device_resource(VkDeviceMemory device_memory) noexcept {
+void Device_Context::release_device_resource(VkDeviceMemory device_memory) noexcept {
     if (device_memory != nullptr) vkFreeMemory(logical_, device_memory, nullptr);
 }
 
-VkQueue DeviceContext::retrieve(Operation op) const noexcept {
+VkQueue Device_Context::retrieve(Operation op) const noexcept {
 
     switch (op) {
         case Operation::graphics: [[fallthrough]];
@@ -151,7 +151,7 @@ VkQueue DeviceContext::retrieve(Operation op) const noexcept {
     return queue_;
 }
 
-void DeviceContext::wait() noexcept {
+void Device_Context::wait() noexcept {
     if (logical_ != nullptr) vkDeviceWaitIdle(logical_);
     else
         ZOO_LOG_ERROR("Calling wait on a already deallocated device_context!");

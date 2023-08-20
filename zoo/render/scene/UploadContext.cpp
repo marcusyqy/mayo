@@ -17,7 +17,7 @@ void UploadContext::submit() noexcept {
     submitted_ = true;
 }
 
-UploadContext::UploadContext(DeviceContext& context) noexcept :
+UploadContext::UploadContext(Device_Context& context) noexcept :
     CommandBuffer(context, Operation::transfer), fence_(context), submitted_(false) {}
 
 UploadContext::~UploadContext() noexcept {

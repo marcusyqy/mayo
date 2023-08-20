@@ -2,7 +2,7 @@
 
 #include <optional>
 
-#include "DeviceContext.hpp"
+#include "Device_Context.hpp"
 #include "fwd.hpp"
 #include "main/Info.hpp"
 #include "utils/PhysicalDevice.hpp"
@@ -22,7 +22,7 @@ struct Info {
 
 // this class should be just to query for properties that are related to
 // rendering.
-// all other rendering logic should be in `DeviceContext`
+// all other rendering logic should be in `Device_Context`
 class Engine {
 public:
     using Info                     = engine::Info;
@@ -45,8 +45,8 @@ public:
         return callbacks_ ? std::addressof(callbacks_.value()) : nullptr;
     }
 
-    DeviceContext& context() noexcept { return context_; }
-    const DeviceContext& context() const noexcept { return context_; }
+    Device_Context& context() noexcept { return context_; }
+    const Device_Context& context() const noexcept { return context_; }
 
 private:
     Info info_;
@@ -57,7 +57,7 @@ private:
     // could be stored in another class that can show more intent
     // and possibly have a better syntax as compared to this.
     std::vector<utils::PhysicalDevice> physical_devices_{};
-    DeviceContext context_;
+    Device_Context context_;
 
     // debugger may be named incorrectly
     // TODO: change this name to something that is more correct

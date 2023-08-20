@@ -6,7 +6,7 @@
 #include "core/Log.hpp"
 #include "core/platform/Window.hpp"
 
-#include "render/DescriptorPool.hpp"
+#include "render/Descriptor_Pool.hpp"
 #include "render/Engine.hpp"
 #include "render/Framebuffer.hpp"
 #include "render/Pipeline.hpp"
@@ -45,7 +45,7 @@ struct SceneData {
 
 struct FrameData {
     render::resources::Buffer uniform_buffer;
-    render::ResourceBindings bindings;
+    render::Resource_Bindings bindings;
     render::resources::Buffer object_storage_buffer;
 
     render::resources::Texture depth_buffer;
@@ -82,7 +82,7 @@ struct Shaders {
     Shader_Bytes fragment;
 };
 
-render::resources::Texture create_depth_buffer(render::DeviceContext& context, u32 x, u32 y) noexcept {
+render::resources::Texture create_depth_buffer(render::Device_Context& context, u32 x, u32 y) noexcept {
     static constexpr VkFormat DEPTH_FORMAT_ = VK_FORMAT_D32_SFLOAT;
     return render::resources::Texture::start_build("DepthBufferSwapchain")
         .format(DEPTH_FORMAT_)
@@ -119,7 +119,7 @@ Shaders read_shaders() noexcept {
 }
 
 render::resources::Texture load_image_from_file(
-    render::DeviceContext& context,
+    render::Device_Context& context,
     render::scene::UploadContext& upload_context,
     std::string_view file_name) {
 
@@ -178,17 +178,7 @@ T is_power_of_two(T v) noexcept {
     return (((v) != 0) && (((v) & ((v)-1)) == 0));
 }
 
-void* ptr_round_up_align(void* ptr, uintptr_t align) noexcept {
-    ZOO_ASSERT(is_power_of_two(align), "align must be a power of two!");
-    return (void*)(((uintptr_t)ptr + (align - 1)) & ~(align - 1));
-}
-
-void* ptr_round_down_align(void* ptr, uintptr_t align) noexcept {
-    ZOO_ASSERT(is_power_of_two(align), "align must be a power of two!");
-    return (void*)((uintptr_t)ptr & ~(align - 1));
-}
-
-size_t pad_uniform_buffer_size(const render::DeviceContext& context, size_t original_size) {
+size_t pad_uniform_buffer_size(const render::Device_Context& context, size_t original_size) {
     size_t min_ubo_alignment = context.physical().limits().minUniformBufferOffsetAlignment;
     size_t aligned_size      = original_size;
 
@@ -240,7 +230,7 @@ size_t pad_uniform_buffer_size(const render::DeviceContext& context, size_t orig
 //     render::AttachmentDescription attachments[] = { render::ColorAttachmentDescription(image_format),
 //                                                     render::DepthAttachmentDescription() };
 //
-//     render::RenderPass renderpass{ context, attachments };
+//     render::Render_Pass renderpass{ context, attachments };
 //
 //     auto buffer_description = render::resources::Vertex::describe();
 //     std::array vertex_description{ render::VertexInputDescription{ sizeof(render::resources::Vertex),
@@ -268,7 +258,7 @@ size_t pad_uniform_buffer_size(const render::DeviceContext& context, size_t orig
 //                                render::ShaderStagesSpecification{ vertex_shader, fragment_shader, vertex_description
 //                                }, renderpass, binding_descriptors, { &push_constant, 1 } };
 //
-//     render::DescriptorPool descriptor_pool{ context };
+//     render::Descriptor_Pool descriptor_pool{ context };
 //
 //     PushConstantData push_constant_data{};
 //     auto start_time = std::chrono::high_resolution_clock::now();

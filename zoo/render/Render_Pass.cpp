@@ -1,10 +1,10 @@
-#include "RenderPass.hpp"
+#include "Render_Pass.hpp"
 
 namespace zoo::render {
 
 namespace {
 
-VkRenderPass create_vk_renderpass(DeviceContext& context, VkFormat format, VkFormat depth) noexcept {
+VkRenderPass create_vk_renderpass(Device_Context& context, VkFormat format, VkFormat depth) noexcept {
     VkAttachmentDescription color_attachment{};
     color_attachment.format         = format;
     color_attachment.samples        = VK_SAMPLE_COUNT_1_BIT;
@@ -76,7 +76,7 @@ VkRenderPass create_vk_renderpass(DeviceContext& context, VkFormat format, VkFor
     return renderpass;
 }
 
-VkRenderPass create_renderpass(DeviceContext& context, stdx::span<AttachmentDescription> descriptions) noexcept {
+VkRenderPass create_renderpass(Device_Context& context, stdx::span<AttachmentDescription> descriptions) noexcept {
     // initialize counts
     constexpr s32 ATTACHMENT_MAX_SIZE = 5;
     u32 attachment_count{};
@@ -184,16 +184,16 @@ DepthAttachmentDescription::DepthAttachmentDescription() noexcept :
         Type::depth
     } {}
 
-RenderPass::RenderPass() noexcept : context_(nullptr), underlying_(nullptr) {}
+Render_Pass::Render_Pass() noexcept : context_(nullptr), underlying_(nullptr) {}
 
-RenderPass::RenderPass(DeviceContext& context, VkFormat format, VkFormat depth) noexcept :
+Render_Pass::Render_Pass(Device_Context& context, VkFormat format, VkFormat depth) noexcept :
     context_(&context), underlying_(create_vk_renderpass(*context_, format, depth)) {}
 
-RenderPass::RenderPass(DeviceContext& context, stdx::span<AttachmentDescription> descriptions) noexcept :
+Render_Pass::Render_Pass(Device_Context& context, stdx::span<AttachmentDescription> descriptions) noexcept :
     context_(&context), underlying_(create_renderpass(*context_, descriptions)),
     descriptions_(descriptions.begin(), descriptions.end()) {}
 
-void RenderPass::reset() noexcept {
+void Render_Pass::reset() noexcept {
     if (context_ != nullptr) {
         context_->release_device_resource(release());
         context_ = nullptr;
@@ -201,7 +201,7 @@ void RenderPass::reset() noexcept {
     }
 }
 
-RenderPass& RenderPass::operator=(RenderPass&& renderpass) noexcept {
+Render_Pass& Render_Pass::operator=(Render_Pass&& renderpass) noexcept {
     reset();
     context_      = std::move(renderpass.context_);
     underlying_   = std::move(renderpass.underlying_);
@@ -210,24 +210,24 @@ RenderPass& RenderPass::operator=(RenderPass&& renderpass) noexcept {
     return *this;
 }
 
-RenderPass::underlying_type RenderPass::release() noexcept {
+Render_Pass::underlying_type Render_Pass::release() noexcept {
     underlying_type ret = underlying_;
     underlying_         = nullptr;
     context_            = nullptr;
     return ret;
 }
 
-RenderPass::RenderPass(RenderPass&& renderpass) noexcept :
+Render_Pass::Render_Pass(Render_Pass&& renderpass) noexcept :
     context_(std::move(renderpass.context_)), underlying_(std::move(renderpass.underlying_)),
     descriptions_(std::move(renderpass.descriptions_)) {
     renderpass.release();
 }
 
-void RenderPass::emplace(DeviceContext& device, underlying_type type) noexcept {
+void Render_Pass::emplace(Device_Context& device, underlying_type type) noexcept {
     context_    = std::addressof(device);
     underlying_ = type;
 }
 
-RenderPass::~RenderPass() noexcept { reset(); }
+Render_Pass::~Render_Pass() noexcept { reset(); }
 
 } // namespace zoo::render

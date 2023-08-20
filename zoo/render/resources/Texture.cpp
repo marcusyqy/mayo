@@ -257,7 +257,7 @@ bool TextureView::valid() const noexcept { return view_ != nullptr; }
 
 namespace texture_sampler {
 
-TextureSampler Builder::build(DeviceContext& context) noexcept {
+TextureSampler Builder::build(Device_Context& context) noexcept {
     VkSamplerCreateInfo info = {
         .sType         = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
         .pNext         = nullptr,

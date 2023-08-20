@@ -24,7 +24,7 @@ PipelineBindContext& PipelineBindContext::push_constants(const PushConstant& con
     return *this;
 }
 
-PipelineBindContext& PipelineBindContext::bindings(const ResourceBindings& binding, stdx::span<u32> offset) noexcept {
+PipelineBindContext& PipelineBindContext::bindings(const Resource_Bindings& binding, stdx::span<u32> offset) noexcept {
     auto set   = binding.sets();
     auto count = binding.count();
 
@@ -55,7 +55,7 @@ PresentContext::PresentContext(
     image_available_(image_available),
     pipeline_stage_flags_(pipeline_stage_flags), render_done_(render_done) {}
 
-CommandBuffer::CommandBuffer(DeviceContext& context, Operation op_type) noexcept :
+CommandBuffer::CommandBuffer(Device_Context& context, Operation op_type) noexcept :
     context_{ std::addressof(context) }, underlying_{ context_->vk_command_buffer_from_pool(op_type) },
     op_type_(op_type) {}
 

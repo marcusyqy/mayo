@@ -17,7 +17,7 @@ public:
     using CommandBuffer::transition_to_copy;
     using CommandBuffer::transition_to_shader_read;
 
-    UploadContext(DeviceContext& context) noexcept;
+    UploadContext(Device_Context& context) noexcept;
     UploadContext() noexcept = default;
     ~UploadContext() noexcept;
 

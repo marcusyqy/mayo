@@ -77,7 +77,7 @@ std::vector<utils::PhysicalDevice> populate_physical_devices(VkInstance instance
     if (device_count == 0) {
         ZOO_LOG_ERROR("Devices cannot be 0 for vkEnumeratePhysicalDevices!");
 
-        // TODO: this needs to fail (assertion) or some sort of termination that
+        // @TODO: this needs to fail (assertion) or some sort of termination that
         // tells us something meaningful which users can report to us about.
         return {};
     }
@@ -92,7 +92,7 @@ std::optional<debug::Messenger> create_debugger(VkInstance instance, const engin
     return instance != nullptr && info.debug_layer ? std::make_optional(instance) : std::nullopt;
 }
 
-DeviceContext create_context(VkInstance instance, const std::vector<utils::PhysicalDevice>& physical_devices) {
+Device_Context create_context(VkInstance instance, const std::vector<utils::PhysicalDevice>& physical_devices) {
 
     for (const auto& pd : physical_devices) {
         auto optional_index = get_queue_index_if_physical_device_is_chosen(pd, instance);

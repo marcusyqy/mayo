@@ -2,7 +2,7 @@
 #include "imgui.h"
 
 #include "core/platform/Window.hpp"
-#include "render/DescriptorPool.hpp"
+#include "render/Descriptor_Pool.hpp"
 #include "render/Engine.hpp"
 
 #include "render/resources/Texture.hpp"

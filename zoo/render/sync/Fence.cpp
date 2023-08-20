@@ -1,5 +1,5 @@
 #include "Fence.hpp"
-#include "render/DeviceContext.hpp"
+#include "render/Device_Context.hpp"
 
 namespace zoo::render::sync {
 
@@ -29,7 +29,7 @@ Fence::Status Fence::is_signaled() const noexcept {
 
 bool Fence::valid() const noexcept { return context_ != nullptr && underlying_ != nullptr; }
 
-Fence::Fence(DeviceContext& context, bool signaled) noexcept :
+Fence::Fence(Device_Context& context, bool signaled) noexcept :
     context_(std::addressof(context)), underlying_(create_fence(context, signaled)) {}
 
 Fence::~Fence() noexcept {
