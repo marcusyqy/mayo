@@ -4,7 +4,6 @@
 #include "Device_Context.hpp"
 #include "Engine.hpp"
 #include "core/fwd.hpp"
-#include "core/window/Detail.hpp"
 #include "fwd.hpp"
 #include "render/scene/Command_Buffer.hpp"
 #include <cstdint>
@@ -14,6 +13,10 @@
 #include "resources/Texture.hpp"
 #include "sync/Fence.hpp"
 #include "sync/Semaphore.hpp"
+
+
+// forward declare
+struct GLFWwindow;
 
 namespace zoo::render {
 

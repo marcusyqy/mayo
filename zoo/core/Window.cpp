@@ -3,13 +3,46 @@
 
 #include "render/Device_Context.hpp"
 #include "render/fwd.hpp"
+#include "core/Initializer.hpp"
 
 namespace zoo {
 
-Window::Window(render::Engine& engine, const window::Traits& traits, window::InputCallback callback) noexcept :
-    traits_{ traits }, callback_{ std::move(callback) },
-    impl_{ glfwCreateWindow(traits_.size.x, traits_.size.y, traits_.name.data(), NULL, NULL) }, context_set_{ false },
-    swapchain_(engine, impl_, traits_.size.x, traits_.size.y) {
+namespace {
+static void error_callback(int, [[maybe_unused]] const char* description) noexcept {
+    ZOO_LOG_ERROR("Error: {}", description);
+}
+
+namespace detail {
+void construct() {
+    glfwSetErrorCallback(error_callback);
+    if (!glfwInit()) {
+        ZOO_LOG_ERROR("Something went wrong when initializing glfw");
+        std::abort();
+    }
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+
+    // disable resizing for now
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+}
+
+void destruct() { glfwTerminate(); }
+} // namespace detail
+
+const core::Initializer<> initializer{ detail::construct, detail::destruct };
+
+} // namespace
+
+Window::Window(
+    render::Engine& engine,
+    s32 width,
+    s32 height,
+    std::string_view name,
+    InputCallback callback) noexcept :
+    width_{ width },
+    height_{ height }, name_{ name }, callback_{ std::move(callback) },
+    impl_{ glfwCreateWindow(width_, height_, name_.c_str(), NULL, NULL) }, swapchain_(engine, impl_, width_, height_) {
 
     glfwSetWindowUserPointer(impl_, this);
     glfwSetKeyCallback(impl_, [](GLFWwindow* glfw_window, int key, int scancode, int action, int mods) {
@@ -38,5 +71,7 @@ void Window::swap_buffers() noexcept {
     // swap buffer for vulkan here.
     swapchain_.present();
 }
+
+void Window::poll_events() noexcept { glfwPollEvents(); }
 
 } // namespace zoo

@@ -5,7 +5,6 @@
 #include "Input.hpp"
 
 #include "render/Engine.hpp"
-#include "window/Detail.hpp"
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
@@ -17,7 +16,15 @@ namespace zoo {
 
 class Window {
 public:
-    explicit Window(render::Engine& engine, const window::Traits& traits, window::InputCallback callback) noexcept;
+    using InputCallback = std::function<void(Window&, input::KeyCode)>;
+
+    explicit Window(
+        render::Engine& engine,
+        s32 width,
+        s32 height,
+        std::string_view name,
+        // @TODO: maybe we don't need this as well.
+        InputCallback callback) noexcept;
 
     ~Window() noexcept;
 
@@ -41,13 +48,19 @@ public:
     GLFWwindow* impl() noexcept { return impl_; }
     const GLFWwindow* impl() const noexcept { return impl_; }
 
-private:
-    window::Traits traits_;
-    window::InputCallback callback_;
-    GLFWwindow* impl_;
-    bool context_set_;
+    static void poll_events() noexcept;
 
+private:
+    s32 width_;
+    s32 height_;
+    std::string name_;
+    InputCallback callback_;
+
+    GLFWwindow* impl_;
+
+    // I want to remove this.
     render::Swapchain swapchain_;
+    friend class render::Swapchain;
 };
 
 } // namespace zoo

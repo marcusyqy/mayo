@@ -136,7 +136,7 @@ void test() {
 
     // TODO: I think we should just merge swapchain and window
     Window main_window{ render_engine,
-                        window::Traits{ window::Size{ 1280, 960 }, false, "Zoo" },
+                        1280, 960, "Zoo",
                         [](Window& win, input::KeyCode keycode) {
                             if (keycode.key_ == input::Key::escape && keycode.action_ == input::Action::pressed) {
                                 win.close();
@@ -149,7 +149,7 @@ void test() {
     while (main_window.is_open()) {
         layer.update();
         layer.render();
-        windows::poll_events();
+        Window::poll_events();
     }
 
     layer.exit();

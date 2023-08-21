@@ -199,7 +199,7 @@ void minecraft_world() noexcept {
 
     // TODO: I think we should just merge swapchain and window
     Window main_window{ render_engine,
-                        window::Traits{ window::Size{ 1280, 960 }, false, "Zoo" },
+                        1280, 960, "Zoo",
                         [](Window& win, input::KeyCode keycode) {
                             if (keycode.key_ == input::Key::escape && keycode.action_ == input::Action::pressed) {
                                 win.close();
@@ -396,7 +396,7 @@ void minecraft_world() noexcept {
         command_context.submit(swapchain.current_present_context(), frame_data.in_flight_fence);
         swapchain.present();
 
-        windows::poll_events();
+        Window::poll_events();
     }
 
     // TODO: we can remove this after we find out how to properly tie
