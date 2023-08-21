@@ -121,9 +121,6 @@ Shader::~Shader() noexcept { reset(); }
 Pipeline::Pipeline(
     Device_Context& context,
     const ShaderStagesSpecification& specifications,
-    // @CONSIDERATIONS: should this be something we consdier when setting a dynamic
-    // pipeline? :
-    // const ViewportInfo& viewport_info,
     const Render_Pass& renderpass,
     stdx::span<BindingDescriptor> binding_descriptors,
     stdx::span<PushConstant> push_constants,
@@ -196,8 +193,6 @@ Pipeline::Pipeline(
 
     VkViewport viewport = {};
     VkRect2D scissor    = {};
-    // const auto& viewport = viewport_info.viewport;
-    // const auto& scissor  = viewport_info.scissor;
 
     VkPipelineViewportStateCreateInfo viewport_state_create_info{};
     viewport_state_create_info.sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
