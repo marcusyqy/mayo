@@ -4,7 +4,7 @@
 #include "Device_Context.hpp"
 #include "Engine.hpp"
 #include "core/fwd.hpp"
-#include "core/platform/window/Detail.hpp"
+#include "core/window/Detail.hpp"
 #include "fwd.hpp"
 #include "render/scene/CommandBuffer.hpp"
 #include <cstdint>

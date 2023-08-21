@@ -3,7 +3,6 @@
 #include <string_view>
 
 #include "Input.hpp"
-#include "main/Info.hpp"
 
 #include "render/Engine.hpp"
 #include "window/Detail.hpp"

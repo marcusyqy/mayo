@@ -4,7 +4,6 @@
 
 #include "Device_Context.hpp"
 #include "fwd.hpp"
-#include "main/Info.hpp"
 #include "utils/PhysicalDevice.hpp"
 
 #include "render/debug/Messenger.hpp"
@@ -14,7 +13,6 @@ namespace zoo::render {
 namespace engine {
 
 struct Info {
-    application::Info app_info;
     bool debug_layer;
 };
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "core/fwd.hpp"
-#include "core/platform/Input.hpp"
+#include "core/Input.hpp"
 #include "render/Engine.hpp"
 
 #include <cstdint>

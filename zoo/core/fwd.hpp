@@ -28,22 +28,4 @@ using u64 = uint64_t;
 using f32 = float;
 using f64 = double;
 
-namespace core {
-
-struct Version {
-    s16 major;
-    s16 minor;
-    s16 patch;
-};
-
-namespace engine {
-
-constexpr core::Version version = { 0, 0, 0 };
-// should i remove this data?
-constexpr std::string_view name = "Zoo Engine";
-
-} // namespace engine
-
-} // namespace core
-
 } // namespace zoo

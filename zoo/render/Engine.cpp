@@ -4,7 +4,7 @@
 
 #include "Defines.hpp"
 
-#include "core/platform/Query.hpp"
+#include "core/Query.hpp"
 #include "render/fwd.hpp"
 
 #include <optional>
@@ -35,17 +35,17 @@ std::optional<size_t> get_queue_index_if_physical_device_is_chosen(
     return std::nullopt;
 }
 
-uint32_t make_version(core::Version version) noexcept {
-    return VK_MAKE_VERSION(version.major, version.minor, version.patch);
+uint32_t get_version() noexcept {
+    return VK_MAKE_VERSION(0, 0, 0);
 }
 
-VkInstance create_instance(const engine::Info& info) noexcept {
+VkInstance create_instance() noexcept {
     VkApplicationInfo app_info{ .sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO,
                                 .pNext              = nullptr, // for now
-                                .pApplicationName   = info.app_info.name.c_str(),
-                                .applicationVersion = make_version(info.app_info.version),
-                                .pEngineName        = core::engine::name.data(),
-                                .engineVersion      = make_version(core::engine::version),
+                                .pApplicationName   = "Zoo",
+                                .applicationVersion = get_version(),
+                                .pEngineName        = "Zoo Engine",
+                                .engineVersion      = get_version(),
                                 .apiVersion         = Defines::vk_version };
 
     platform::render::Info query_info = query.get_info();
@@ -110,7 +110,7 @@ Device_Context create_context(VkInstance instance, const std::vector<utils::Phys
 } // namespace
 
 Engine::Engine(const Info& info) noexcept :
-    info_(info), instance_(create_instance(info_)), physical_devices_(populate_physical_devices(instance_)),
+    info_(info), instance_(create_instance()), physical_devices_(populate_physical_devices(instance_)),
     context_(create_context(instance_, physical_devices_)), debugger_(create_debugger(instance_, info)) {}
 
 Engine::~Engine() noexcept {

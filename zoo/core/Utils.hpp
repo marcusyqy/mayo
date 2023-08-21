@@ -4,6 +4,9 @@
 #include <utility>
 #include <cstdint>
 #include "fwd.hpp"
+#include  <exception>
+#include "stdx/expected.hpp"
+#include <stdexcept>
 
 namespace zoo::core {
 
@@ -15,5 +18,9 @@ T is_power_of_two(T v) noexcept {
 
 void* ptr_round_up_align(void* ptr, uintptr_t align) noexcept;
 void* ptr_round_down_align(void* ptr, uintptr_t align) noexcept;
+
+void attach_debug() noexcept;
+
+stdx::expected<std::string, std::runtime_error> read_file(std::string_view filename) noexcept;
 
 } // namespace zoo::core

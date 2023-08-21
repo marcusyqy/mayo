@@ -1,13 +1,12 @@
 #pragma once
 #include "imgui.h"
 
-#include "core/platform/Window.hpp"
+#include "core/Window.hpp"
 #include "render/Descriptor_Pool.hpp"
 #include "render/Engine.hpp"
 
 #include "render/resources/Texture.hpp"
 
-#include "main/Info.hpp"
 
 namespace zoo::adapters::imgui {
 
@@ -27,6 +26,6 @@ private:
     Window* window_;
 };
 
-application::ExitStatus test();
+void test();
 
 } // namespace zoo::adapters::imgui

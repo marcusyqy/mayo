@@ -127,9 +127,8 @@ void Layer::render() noexcept {
     imgui_render_present();
 }
 
-application::ExitStatus test() {
-    const application::Info app_context{ { 0, 0, 0 }, "Zoo::Application" };
-    const render::engine::Info render_engine_info{ app_context, true };
+void test() {
+    const render::engine::Info render_engine_info{ true };
 
     ZOO_LOG_INFO("Starting application");
 
@@ -154,7 +153,6 @@ application::ExitStatus test() {
     }
 
     layer.exit();
-    return application::ExitStatus::ok;
 }
 
 } // namespace zoo::adapters::imgui

@@ -3,7 +3,7 @@
 
 #include "utils/PhysicalDevice.hpp"
 
-#include "core/platform/Query.hpp"
+#include "core/Query.hpp"
 #include "fwd.hpp"
 #include "render/resources/Allocator.hpp"
 #include <memory>

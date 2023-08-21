@@ -1,14 +1,15 @@
 
-#include "main/EntryPoint.hpp"
+#include "adapters/imgui/Layer.hpp"
+#include "core/Utils.hpp"
 
 int main(int argc, char* argv[]) { // NOLINT
-// TODO: check if this is only for windows
-#if defined(WIN32)
-#if defined(DEBUG) | defined(_DEBUG)
-    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-#endif
-#endif
+    static_cast<void>(argc);
+    static_cast<void>(argv);
 
-    zoo::application::ExitStatus status = zoo::main(zoo::application::Settings{ argc, argv });
-    return status == zoo::application::ExitStatus::ok ? 0 : -1;
+    using namespace zoo;
+    core::attach_debug();
+
+    adapters::imgui::test();
+    // zoo::application::ExitStatus status = zoo::main(zoo::application::Settings{ argc, argv });
+    // return status == zoo::application::ExitStatus::ok ? 0 : -1;
 }
