@@ -4,7 +4,7 @@
 
 #include "Defines.hpp"
 
-#include "core/Query.hpp"
+#include "Query.hpp"
 #include "render/fwd.hpp"
 
 #include <optional>
@@ -13,8 +13,8 @@ namespace zoo::render {
 
 namespace {
 
-platform::render::Parameters params{ true };
-platform::render::Query query{ params };
+render::Parameters params{ true };
+render::Query query{ params };
 
 std::optional<size_t> get_queue_index_if_physical_device_is_chosen(
     const render::utils::PhysicalDevice& physical_device,
@@ -48,9 +48,9 @@ VkInstance create_instance() noexcept {
                                 .engineVersion      = get_version(),
                                 .apiVersion         = Defines::vk_version };
 
-    platform::render::Info query_info = query.get_info();
-    const auto& enabled_layers        = query_info.layers_;
-    const auto& enabled_extensions    = query_info.extensions_;
+    render::Info query_info = query.get_info();
+    const auto& enabled_layers        = query_info.layers;
+    const auto& enabled_extensions    = query_info.extensions;
 
     VkInstanceCreateInfo create_info{
         .sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,

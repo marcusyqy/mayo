@@ -16,7 +16,7 @@ Device_Context::Device_Context(
     [[maybe_unused]] VkInstance instance,
     utils::PhysicalDevice pdevice,
     const utils::QueueFamilyProperties& family_props,
-    const platform::render::Query& query) noexcept :
+    const render::Query& query) noexcept :
     physical_(pdevice),
     queue_properties_{ family_props } {
 
@@ -59,7 +59,7 @@ Device_Context::Device_Context(
     // TODO: remove this when proven not to be needed. (only need to be set in
     // VkInstance which is `engine.cpp`)
     const char* validation_layer = "VK_LAYER_KHRONOS_validation";
-    if (query.get_params().validation_) {
+    if (query.get_params().validation) {
         create_info.enabledLayerCount   = 1;
         create_info.ppEnabledLayerNames = std::addressof(validation_layer);
     } else {

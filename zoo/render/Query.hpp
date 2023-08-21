@@ -1,15 +1,15 @@
 #pragma once
 #include <vector>
 
-namespace zoo::platform::render {
+namespace zoo::render {
 
 struct Info {
-    std::vector<const char*> extensions_;
-    std::vector<const char*> layers_;
+    std::vector<const char*> extensions;
+    std::vector<const char*> layers;
 };
 
 struct Parameters {
-    bool validation_;
+    bool validation;
 };
 
 class Query {

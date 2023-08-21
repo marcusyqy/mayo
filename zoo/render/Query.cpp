@@ -6,14 +6,14 @@
 
 #include <iterator>
 
-namespace zoo::platform::render {
+namespace zoo::render {
 
 Query::Query(Parameters parameters) noexcept : parameters_{ parameters } {}
 
 Info Query::get_info() const noexcept {
     Info info{};
-    info.extensions_ = get_extensions();
-    info.layers_     = get_layers();
+    info.extensions = get_extensions();
+    info.layers     = get_layers();
     return info;
 }
 
@@ -24,7 +24,7 @@ std::vector<const char*> Query::get_extensions() const noexcept {
 
     std::copy(glfw_extensions, glfw_extensions + glfw_extensions_count, std::back_inserter(extensions));
 
-    if (parameters_.validation_) {
+    if (parameters_.validation) {
         extensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     }
 
@@ -32,7 +32,7 @@ std::vector<const char*> Query::get_extensions() const noexcept {
 }
 
 std::vector<const char*> Query::get_layers() const noexcept {
-    if (parameters_.validation_) {
+    if (parameters_.validation) {
         const char* validation_layer{ "VK_LAYER_KHRONOS_validation" };
         uint32_t layer_count;
         vkEnumerateInstanceLayerProperties(&layer_count, nullptr);

@@ -1,7 +1,7 @@
 #pragma once
 #include <tuple>
 
-namespace zoo::core::wrappers {
+namespace zoo::core {
 
 template <typename... Ts>
 class Initializer {

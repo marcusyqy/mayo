@@ -3,7 +3,7 @@
 
 #include "utils/PhysicalDevice.hpp"
 
-#include "core/Query.hpp"
+#include "Query.hpp"
 #include "fwd.hpp"
 #include "render/resources/Allocator.hpp"
 #include <memory>
@@ -16,7 +16,7 @@ public:
         VkInstance instance,
         utils::PhysicalDevice pdevice,
         const utils::QueueFamilyProperties& family_props,
-        const platform::render::Query& query) noexcept;
+        const render::Query& query) noexcept;
 
     ~Device_Context() noexcept;
 
