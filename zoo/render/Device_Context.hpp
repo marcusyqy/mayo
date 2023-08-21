@@ -1,7 +1,7 @@
 #pragma once
 #include "zoo.hpp"
 
-#include "utils/PhysicalDevice.hpp"
+#include "utils/Physical_Device.hpp"
 
 #include "Query.hpp"
 #include "fwd.hpp"
@@ -14,8 +14,8 @@ class Device_Context {
 public:
     Device_Context(
         VkInstance instance,
-        utils::PhysicalDevice pdevice,
-        const utils::QueueFamilyProperties& family_props,
+        utils::Physical_Device pdevice,
+        const utils::Queue_Family_Properties& family_props,
         const render::Query& query) noexcept;
 
     ~Device_Context() noexcept;
@@ -28,9 +28,9 @@ public:
 
     void reset() noexcept;
 
-    operator const utils::PhysicalDevice&() const noexcept { return physical(); }
+    operator const utils::Physical_Device&() const noexcept { return physical(); }
 
-    const utils::PhysicalDevice& physical() const noexcept { return physical_; }
+    const utils::Physical_Device& physical() const noexcept { return physical_; }
 
     operator const VkDevice&() const noexcept { return logical(); }
     const VkDevice& logical() const noexcept { return logical_; }
@@ -53,10 +53,10 @@ public:
     const resources::Allocator& allocator() const noexcept { return allocator_; }
 
 private:
-    utils::PhysicalDevice physical_ = nullptr;
-    VkDevice logical_               = nullptr;
-    VkQueue queue_                  = nullptr;
-    utils::QueueFamilyProperties queue_properties_;
+    utils::Physical_Device physical_ = nullptr;
+    VkDevice logical_                = nullptr;
+    VkQueue queue_                   = nullptr;
+    utils::Queue_Family_Properties queue_properties_;
     VkCommandPool command_pool_ = nullptr;
 
     resources::Allocator allocator_;

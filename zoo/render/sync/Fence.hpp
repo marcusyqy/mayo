@@ -30,7 +30,7 @@ public:
     bool valid() const noexcept;
 
 private:
-    Device_Context* context_     = nullptr;
+    Device_Context* context_    = nullptr;
     underlying_type underlying_ = VK_NULL_HANDLE;
 };
 

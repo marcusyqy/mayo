@@ -1,7 +1,7 @@
 #include "Device_Context.hpp"
 #include "core/fwd.hpp"
 #include "render/fwd.hpp"
-#include "scene/CommandBuffer.hpp"
+#include "scene/Command_Buffer.hpp"
 
 namespace zoo::render {
 namespace {
@@ -14,8 +14,8 @@ const char* device_extension{ VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 // is important to us?
 Device_Context::Device_Context(
     [[maybe_unused]] VkInstance instance,
-    utils::PhysicalDevice pdevice,
-    const utils::QueueFamilyProperties& family_props,
+    utils::Physical_Device pdevice,
+    const utils::Queue_Family_Properties& family_props,
     const render::Query& query) noexcept :
     physical_(pdevice),
     queue_properties_{ family_props } {

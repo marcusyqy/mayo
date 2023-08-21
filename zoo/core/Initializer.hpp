@@ -46,4 +46,4 @@ private:
     std::tuple<Ts...> data_{};
 };
 
-} // namespace zoo::core::wrappers
+} // namespace zoo::core

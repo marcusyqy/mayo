@@ -1,12 +1,12 @@
 #include "Layer.hpp"
 #include "adapters/imgui/Render.hpp"
 #include "adapters/imgui/Window.hpp"
-#include "adapters/tools/ShaderCompiler.hpp"
+#include "adapters/tools/Shader_Compiler.hpp"
 
 // Using a non hpp so that it doesn't kill lsp.
 #include "fonts/Roboto.embed"
 
-#include "render/scene/UploadContext.hpp"
+#include "render/scene/Upload_Context.hpp"
 
 namespace zoo::adapters::imgui {
 

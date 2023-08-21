@@ -6,7 +6,7 @@
 #include "core/fwd.hpp"
 #include "core/window/Detail.hpp"
 #include "fwd.hpp"
-#include "render/scene/CommandBuffer.hpp"
+#include "render/scene/Command_Buffer.hpp"
 #include <cstdint>
 
 #include "Render_Pass.hpp"
@@ -59,7 +59,7 @@ public:
 
     const resources::TextureView* get_image(s32 index) const noexcept;
 
-    scene::PresentContext current_present_context() const noexcept;
+    scene::Present_Context current_present_context() const noexcept;
 
 private:
     struct WindowSize {

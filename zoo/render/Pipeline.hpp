@@ -117,7 +117,7 @@ public:
     friend class Descriptor_Pool;
 
 private:
-    Device_Context* context_     = nullptr;
+    Device_Context* context_    = nullptr;
     underlying_type underlying_ = nullptr;
 
     VkPipelineLayout layout_ = nullptr;

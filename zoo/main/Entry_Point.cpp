@@ -2,24 +2,24 @@
 
 #include "core/Array.hpp"
 #include "core/Log.hpp"
-#include "core/Window.hpp"
 #include "core/Utils.hpp"
+#include "core/Window.hpp"
 
 #include "render/Descriptor_Pool.hpp"
 #include "render/Engine.hpp"
 #include "render/Framebuffer.hpp"
-#include "render/Swapchain.hpp"
 #include "render/Pipeline.hpp"
+#include "render/Swapchain.hpp"
 #include "render/resources/Buffer.hpp"
 #include "render/resources/Mesh.hpp"
-#include "render/scene/CommandBuffer.hpp"
-#include "render/scene/UploadContext.hpp"
+#include "render/scene/Command_Buffer.hpp"
+#include "render/scene/Upload_Context.hpp"
 #include "render/sync/Fence.hpp"
 
 #include "stdx/expected.hpp"
 
 #include "adapters/imgui/Layer.hpp"
-#include "adapters/tools/ShaderCompiler.hpp"
+#include "adapters/tools/Shader_Compiler.hpp"
 
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
@@ -51,7 +51,7 @@ struct FrameData {
     render::resources::Texture depth_buffer;
     render::Framebuffer render_target;
 
-    render::scene::CommandBuffer command_buffer;
+    render::scene::Command_Buffer command_buffer;
     render::sync::Fence in_flight_fence;
 };
 
@@ -95,14 +95,14 @@ render::resources::Texture create_depth_buffer(render::Device_Context& context, 
 
 Shaders read_shaders() noexcept {
 
-    adapters::tools::ShaderCompiler compiler;
+    adapters::tools::Shader_Compiler compiler;
     auto vertex_bytes = core::read_file("static/shaders/Test.vert");
     ZOO_ASSERT(vertex_bytes, "vertex shader must have value!");
     auto fragment_bytes = core::read_file("static/shaders/Test.frag");
     ZOO_ASSERT(fragment_bytes, "fragment shader must have value!");
 
-    adapters::tools::ShaderWork vertex_work{ shaderc_vertex_shader, "Test.vert", *vertex_bytes };
-    adapters::tools::ShaderWork fragment_work{ shaderc_fragment_shader, "Test.frag", *fragment_bytes };
+    adapters::tools::Shader_Work vertex_work{ shaderc_vertex_shader, "Test.vert", *vertex_bytes };
+    adapters::tools::Shader_Work fragment_work{ shaderc_fragment_shader, "Test.frag", *fragment_bytes };
 
     auto vertex_spirv   = compiler.compile(vertex_work);
     auto fragment_spirv = compiler.compile(fragment_work);
@@ -120,7 +120,7 @@ Shaders read_shaders() noexcept {
 
 render::resources::Texture load_image_from_file(
     render::Device_Context& context,
-    render::scene::UploadContext& upload_context,
+    render::scene::Upload_Context& upload_context,
     std::string_view file_name) {
 
     struct Texture_Load_Details {
@@ -211,7 +211,7 @@ void minecraft_world() noexcept {
     render::Shader vertex_shader{ context, vertex_bytes, "main" };
     render::Shader fragment_shader{ context, fragment_bytes, "main" };
 
-    render::scene::UploadContext upload_cmd_buffer{ context };
+    render::scene::Upload_Context upload_cmd_buffer{ context };
 
     // upload gpu memory
     render::resources::Mesh mesh{ context.allocator(), upload_cmd_buffer, "static/assets", "lost_empire.obj" };
@@ -254,8 +254,10 @@ void minecraft_world() noexcept {
     };
 
     render::Pipeline pipeline{ context,
-                               render::ShaderStagesSpecification{ vertex_shader, fragment_shader, vertex_description
-                               }, renderpass, binding_descriptors, { &push_constant, 1 } };
+                               render::ShaderStagesSpecification{ vertex_shader, fragment_shader, vertex_description },
+                               renderpass,
+                               binding_descriptors,
+                               { &push_constant, 1 } };
 
     render::Descriptor_Pool descriptor_pool{ context };
 
@@ -267,8 +269,8 @@ void minecraft_world() noexcept {
 
     render::resources::Buffer scene_data_buffer = render::resources::Buffer::start_build(
                                                       "SceneDataBuffer",
-                                                      MAX_FRAMES * pad_uniform_buffer_size(context,
-                                                      sizeof(SceneData))) .usage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
+                                                      MAX_FRAMES * pad_uniform_buffer_size(context, sizeof(SceneData)))
+                                                      .usage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
                                                       //.allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
                                                       .allocation_type(VMA_MEMORY_USAGE_AUTO)
                                                       .allocation_flag(VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT)
@@ -285,8 +287,7 @@ void minecraft_world() noexcept {
 
             const auto uniform_buffer_name = fmt::format("Uniform buffer : {}", i);
             const auto object_buffer_name  = fmt::format("Object buffer : {}", i);
-            frame_data.uniform_buffer =
-            render::resources::Buffer::start_build<UniformBufferData>(uniform_buffer_name)
+            frame_data.uniform_buffer = render::resources::Buffer::start_build<UniformBufferData>(uniform_buffer_name)
                                             .usage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
                                             .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
                                             .build(context.allocator());
@@ -308,12 +309,12 @@ void minecraft_world() noexcept {
                 .bind(2, 0, lost_empire, lost_empire_sampler)
                 .end_batch();
             // clang-format on
-            frame_data.command_buffer  = render::scene::CommandBuffer{ context, render::Operation::graphics };
+            frame_data.command_buffer  = render::scene::Command_Buffer{ context, render::Operation::graphics };
             frame_data.in_flight_fence = render::sync::Fence{ context, true };
 
             frame_data.depth_buffer                    = create_depth_buffer(context, x, y);
-            const render::resources::TextureView* tv[] = { swapchain.get_image(i), &(frame_data.depth_buffer.view())
-            }; frame_data.render_target                   = render::Framebuffer{ context, renderpass, tv, x, y };
+            const render::resources::TextureView* tv[] = { swapchain.get_image(i), &(frame_data.depth_buffer.view()) };
+            frame_data.render_target                   = render::Framebuffer{ context, renderpass, tv, x, y };
         }
     }
 
@@ -354,12 +355,12 @@ void minecraft_world() noexcept {
         });
 
         auto current_time = std::chrono::high_resolution_clock::now();
-        f32 time          = std::chrono::duration<f32, std::chrono::seconds::period>(current_time -
-        start_time).count(); f32 var           = time * glm::radians(360.0f);
+        f32 time          = std::chrono::duration<f32, std::chrono::seconds::period>(current_time - start_time).count();
+        f32 var           = time * glm::radians(360.0f);
 
         u32 offset = static_cast<u32>(current_idx * pad_uniform_buffer_size(context, sizeof(SceneData)));
-        render::resources::BufferView scene_data_buffer_view{ scene_data_buffer, offset, offset + sizeof(SceneData)
-        }; scene_data_buffer_view.map<SceneData>([&](SceneData* data) {
+        render::resources::BufferView scene_data_buffer_view{ scene_data_buffer, offset, offset + sizeof(SceneData) };
+        scene_data_buffer_view.map<SceneData>([&](SceneData* data) {
             if (data) data->ambient_color = { sin(var), 0, cos(var), 1 };
         });
 
@@ -402,6 +403,5 @@ void minecraft_world() noexcept {
     // resources to each frame.
     context.wait();
 }
-
 
 } // namespace zoo

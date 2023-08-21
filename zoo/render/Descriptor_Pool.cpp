@@ -44,7 +44,8 @@ Binding_Batch& Binding_Batch::bind(u32 binding, resources::BufferView& buffer, V
     return bind(0, binding, buffer.handle(), static_cast<u32>(start), static_cast<u32>(end - start), bind_type);
 }
 
-Binding_Batch& Binding_Batch::bind(u32 set, u32 binding, resources::Buffer& buffer, VkDescriptorType bind_type) noexcept {
+Binding_Batch&
+    Binding_Batch::bind(u32 set, u32 binding, resources::Buffer& buffer, VkDescriptorType bind_type) noexcept {
     return bind(set, binding, buffer.handle(), 0, static_cast<u32>(buffer.allocated_size()), bind_type);
 }
 
@@ -216,7 +217,7 @@ Resource_Bindings Descriptor_Pool::allocate(render::Pipeline& pipeline) noexcept
     ZOO_ASSERT(valid(), "Must be well defined!");
 
     VkDescriptorSet descriptor[Resource_Bindings::MAX_RESOURCE_SIZE] = {};
-    u32 count                                                       = 0;
+    u32 count                                                        = 0;
 
     for (; count < pipeline.set_layout_count_; ++count) {
 

@@ -6,8 +6,8 @@
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3native.h>
 
-#include "core/Window.hpp"
 #include "core/Initializer.hpp"
+#include "core/Window.hpp"
 
 namespace zoo {
 

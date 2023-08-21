@@ -17,7 +17,7 @@ render::Parameters params{ true };
 render::Query query{ params };
 
 std::optional<size_t> get_queue_index_if_physical_device_is_chosen(
-    const render::utils::PhysicalDevice& physical_device,
+    const render::utils::Physical_Device& physical_device,
     VkInstance instance) noexcept {
 
     if (!physical_device.has_geometry_shader() ||
@@ -35,9 +35,7 @@ std::optional<size_t> get_queue_index_if_physical_device_is_chosen(
     return std::nullopt;
 }
 
-uint32_t get_version() noexcept {
-    return VK_MAKE_VERSION(0, 0, 0);
-}
+uint32_t get_version() noexcept { return VK_MAKE_VERSION(0, 0, 0); }
 
 VkInstance create_instance() noexcept {
     VkApplicationInfo app_info{ .sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO,
@@ -48,9 +46,9 @@ VkInstance create_instance() noexcept {
                                 .engineVersion      = get_version(),
                                 .apiVersion         = Defines::vk_version };
 
-    render::Info query_info = query.get_info();
-    const auto& enabled_layers        = query_info.layers;
-    const auto& enabled_extensions    = query_info.extensions;
+    render::Info query_info        = query.get_info();
+    const auto& enabled_layers     = query_info.layers;
+    const auto& enabled_extensions = query_info.extensions;
 
     VkInstanceCreateInfo create_info{
         .sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
@@ -68,7 +66,7 @@ VkInstance create_instance() noexcept {
     return instance;
 }
 
-std::vector<utils::PhysicalDevice> populate_physical_devices(VkInstance instance) noexcept {
+std::vector<utils::Physical_Device> populate_physical_devices(VkInstance instance) noexcept {
     if (instance == nullptr) return {};
 
     u32 device_count = 0;
@@ -92,7 +90,7 @@ std::optional<debug::Messenger> create_debugger(VkInstance instance, const engin
     return instance != nullptr && info.debug_layer ? std::make_optional(instance) : std::nullopt;
 }
 
-Device_Context create_context(VkInstance instance, const std::vector<utils::PhysicalDevice>& physical_devices) {
+Device_Context create_context(VkInstance instance, const std::vector<utils::Physical_Device>& physical_devices) {
 
     for (const auto& pd : physical_devices) {
         auto optional_index = get_queue_index_if_physical_device_is_chosen(pd, instance);

@@ -25,4 +25,4 @@ private:
     Parameters parameters_;
 };
 
-} // namespace zoo::platform::render
+} // namespace zoo::render

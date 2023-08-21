@@ -10,10 +10,10 @@
 #include "render/Pipeline.hpp"
 #include "render/resources/Buffer.hpp"
 #include "render/resources/Texture.hpp"
-#include "render/scene/UploadContext.hpp"
+#include "render/scene/Upload_Context.hpp"
 #include "render/sync/Fence.hpp"
 
-#include "adapters/tools/ShaderCompiler.hpp"
+#include "adapters/tools/Shader_Compiler.hpp"
 
 #include "Window.hpp"
 #include "imgui.h"
@@ -38,7 +38,7 @@ struct PushConstantData {
 };
 
 struct Imgui_Frame_Data {
-    render::scene::CommandBuffer command_buffer; // this will probably not be needed as well.
+    render::scene::Command_Buffer command_buffer; // this will probably not be needed as well.
     render::Resource_Bindings bindings;
     render::sync::Fence fence;
     render::Framebuffer render_target;
@@ -66,7 +66,7 @@ struct Imgui_Viewport_Data {
 struct Imgui_Vulkan_Data {
     render::Engine& engine;
     render::Device_Context& context;
-    render::scene::UploadContext upload_context;
+    render::scene::Upload_Context upload_context;
 
     render::resources::Texture font_tex;
     render::resources::TextureSampler font_sampler;
@@ -112,7 +112,7 @@ Imgui_Frame_Data imgui_create_frame_data(
     Imgui_Frame_Data* old_data = nullptr) {
     auto& context       = vkdata.context;
     auto command_buffer = old_data ? std::move(old_data->command_buffer)
-                                   : render::scene::CommandBuffer{ context, render::Operation::graphics };
+                                   : render::scene::Command_Buffer{ context, render::Operation::graphics };
     auto bindings       = old_data ? std::move(old_data->bindings) : [&vkdata]() {
         auto b = vkdata.descriptor_pool.allocate(vkdata.pipeline);
         b.start_batch()
@@ -155,7 +155,7 @@ render::Pipeline imgui_create_pipeline(render::Device_Context& context, const re
         render::VertexInputDescription{ sizeof(ImDrawVert), buffer_description, VK_VERTEX_INPUT_RATE_VERTEX }
     };
 
-    tools::ShaderCompiler shader_compiler;
+    tools::Shader_Compiler shader_compiler;
     render::Shader vertex_shader{ context, __glsl_shader_vert_spv, "main" };
     render::Shader fragment_shader{ context, __glsl_shader_frag_spv, "main" };
 
@@ -183,7 +183,7 @@ void imgui_init_pipeline_and_descriptors(Imgui_Vulkan_Data& data, VkFormat forma
 }
 
 render::resources::Texture
-    init_font_textures(render::scene::UploadContext& upload_ctx, render::Device_Context& device_ctx) noexcept {
+    init_font_textures(render::scene::Upload_Context& upload_ctx, render::Device_Context& device_ctx) noexcept {
     ImGuiIO& io = ImGui::GetIO();
 
     unsigned char* pixels;

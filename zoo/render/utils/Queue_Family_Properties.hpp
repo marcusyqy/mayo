@@ -5,11 +5,11 @@
 
 namespace zoo::render::utils {
 
-class QueueFamilyProperties {
+class Queue_Family_Properties {
 public:
     using size_type = u32;
 
-    QueueFamilyProperties(uint32_t queue_index, VkQueueFamilyProperties properties) noexcept;
+    Queue_Family_Properties(uint32_t queue_index, VkQueueFamilyProperties properties) noexcept;
 
     [[nodiscard]] bool has_compute() const noexcept;
     [[nodiscard]] bool has_graphics() const noexcept;

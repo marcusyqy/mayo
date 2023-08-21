@@ -3,7 +3,7 @@
 #include "render/fwd.hpp"
 #include <tiny_obj_loader.h>
 
-#include "render/scene/UploadContext.hpp"
+#include "render/scene/Upload_Context.hpp"
 #include "render/sync/Fence.hpp"
 
 namespace zoo::render::resources {
@@ -81,7 +81,7 @@ std::array<VertexBufferDescription, 4> Vertex::describe() noexcept {
 template <typename T>
 render::resources::Buffer create_gpu_native_buffer(
     std::string_view name,
-    render::scene::UploadContext& upload_context,
+    render::scene::Upload_Context& upload_context,
     stdx::span<T> variable,
     Allocator& allocator,
     VkBufferUsageFlags usage) {
@@ -111,7 +111,7 @@ render::resources::Buffer create_gpu_native_buffer(
 
 Mesh::Mesh(
     Allocator& allocator,
-    scene::UploadContext& upload_context,
+    scene::Upload_Context& upload_context,
     MeshData mesh_data,
     std::string_view name) noexcept :
     buffer_(create_gpu_native_buffer<Vertex>(
@@ -130,7 +130,7 @@ Mesh::Mesh(
 
 Mesh::Mesh(
     Allocator& allocator,
-    scene::UploadContext& upload_context,
+    scene::Upload_Context& upload_context,
     std::string_view dir_name,
     std::string_view file_name) noexcept :
     Mesh(allocator, upload_context, load_mesh_data(dir_name, file_name), file_name) {}

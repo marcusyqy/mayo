@@ -32,7 +32,7 @@ public:
     u32 height() const noexcept { return height_; }
 
 private:
-    Device_Context* context_   = nullptr;
+    Device_Context* context_  = nullptr;
     VkFramebuffer underlying_ = nullptr;
     VkRenderPass renderpass_  = nullptr;
 

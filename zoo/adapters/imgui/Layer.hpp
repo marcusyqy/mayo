@@ -7,7 +7,6 @@
 
 #include "render/resources/Texture.hpp"
 
-
 namespace zoo::adapters::imgui {
 
 class Layer {

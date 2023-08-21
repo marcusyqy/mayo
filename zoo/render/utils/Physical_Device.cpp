@@ -1,4 +1,4 @@
-#include "PhysicalDevice.hpp"
+#include "Physical_Device.hpp"
 #include <algorithm>
 #include <iterator>
 
@@ -10,11 +10,11 @@
 
 namespace zoo::render::utils {
 
-PhysicalDevice::PhysicalDevice(underlying_type underlying) noexcept : underlying_{ underlying } {
+Physical_Device::Physical_Device(underlying_type underlying) noexcept : underlying_{ underlying } {
     query_properties_and_features();
 }
 
-void PhysicalDevice::query_properties_and_features() noexcept {
+void Physical_Device::query_properties_and_features() noexcept {
     vkGetPhysicalDeviceProperties(underlying_, &properties_);
 
     VkPhysicalDeviceShaderDrawParametersFeatures shader_draw_parameters_feature = {};
@@ -41,7 +41,7 @@ void PhysicalDevice::query_properties_and_features() noexcept {
             std::begin(queue_families),
             std::end(queue_families),
             std::back_inserter(queue_family_properties_),
-            [&idx](const VkQueueFamilyProperties& props) -> QueueFamilyProperties {
+            [&idx](const VkQueueFamilyProperties& props) -> Queue_Family_Properties {
                 return { idx++, props };
             });
     }
@@ -61,29 +61,29 @@ void PhysicalDevice::query_properties_and_features() noexcept {
     }
 }
 
-bool PhysicalDevice::is_discrete() const noexcept {
+bool Physical_Device::is_discrete() const noexcept {
     return properties_.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
 }
-bool PhysicalDevice::is_integrated() const noexcept {
+bool Physical_Device::is_integrated() const noexcept {
     return properties_.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU;
 }
-bool PhysicalDevice::is_virtual() const noexcept {
+bool Physical_Device::is_virtual() const noexcept {
     return properties_.deviceType == VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU;
 }
-bool PhysicalDevice::is_cpu() const noexcept { return properties_.deviceType == VK_PHYSICAL_DEVICE_TYPE_CPU; }
-bool PhysicalDevice::is_other() const noexcept { return properties_.deviceType == VK_PHYSICAL_DEVICE_TYPE_OTHER; }
+bool Physical_Device::is_cpu() const noexcept { return properties_.deviceType == VK_PHYSICAL_DEVICE_TYPE_CPU; }
+bool Physical_Device::is_other() const noexcept { return properties_.deviceType == VK_PHYSICAL_DEVICE_TYPE_OTHER; }
 
-const VkPhysicalDeviceFeatures& PhysicalDevice::features() const noexcept { return features_; }
+const VkPhysicalDeviceFeatures& Physical_Device::features() const noexcept { return features_; }
 
-std::string_view PhysicalDevice::name() const noexcept { return properties_.deviceName; }
+std::string_view Physical_Device::name() const noexcept { return properties_.deviceName; }
 
-PhysicalDevice::id_type PhysicalDevice::id() const noexcept { return properties_.deviceID; }
+Physical_Device::id_type Physical_Device::id() const noexcept { return properties_.deviceID; }
 
-VkPhysicalDeviceLimits PhysicalDevice::limits() const noexcept { return properties_.limits; }
+VkPhysicalDeviceLimits Physical_Device::limits() const noexcept { return properties_.limits; }
 
-bool PhysicalDevice::has_geometry_shader() const noexcept { return features_.geometryShader; }
+bool Physical_Device::has_geometry_shader() const noexcept { return features_.geometryShader; }
 
-bool PhysicalDevice::has_present(const QueueFamilyProperties& family_props, VkInstance instance) const noexcept {
+bool Physical_Device::has_present(const Queue_Family_Properties& family_props, VkInstance instance) const noexcept {
     // glfwGetPhysicalDevicePresentationSupport is merely an abstraction of the
     // corresponding platform-specific functions
     //
@@ -96,7 +96,7 @@ bool PhysicalDevice::has_present(const QueueFamilyProperties& family_props, VkIn
     return glfwGetPhysicalDevicePresentationSupport(instance, underlying_, family_props.index()) == GLFW_TRUE;
 }
 
-bool PhysicalDevice::has_required_extension(std::string_view extension_name) const noexcept {
+bool Physical_Device::has_required_extension(std::string_view extension_name) const noexcept {
     return device_extensions_.count(extension_name.data()) > 0;
 }
 } // namespace zoo::render::utils

@@ -80,7 +80,7 @@ private:
     void release_allocation() noexcept;
 
 private:
-    Device_Context* context_                 = nullptr;
+    Device_Context* context_                = nullptr;
     VkDescriptorPool pool_                  = nullptr;
     VkDescriptorSet set_[MAX_RESOURCE_SIZE] = {};
     u32 set_count_                          = {};
@@ -109,7 +109,7 @@ public:
 
 private:
     Device_Context* context_ = nullptr;
-    VkDescriptorPool pool_  = nullptr;
+    VkDescriptorPool pool_   = nullptr;
 };
 
 } // namespace zoo::render

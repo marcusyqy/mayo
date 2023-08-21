@@ -10,7 +10,7 @@
 #include "render/resources/Buffer.hpp"
 
 namespace zoo::render::scene {
-class UploadContext;
+class Upload_Context;
 }
 
 namespace zoo::render::resources {
@@ -34,18 +34,18 @@ class Mesh {
 public:
     Mesh(
         Allocator& allocator,
-        scene::UploadContext& upload_context,
+        scene::Upload_Context& upload_context,
         MeshData mesh_data,
         std::string_view name) noexcept;
 
     Mesh(
         Allocator& allocator,
-        scene::UploadContext& upload_context,
+        scene::Upload_Context& upload_context,
         std::string_view dir_name,
         std::string_view file_name) noexcept;
     Mesh(
         Allocator& allocator,
-        scene::UploadContext& upload_context,
+        scene::Upload_Context& upload_context,
         const char* dir_name,
         const char* file_name) noexcept :
         Mesh(allocator, upload_context, std::string_view(dir_name), std::string_view(file_name)){};

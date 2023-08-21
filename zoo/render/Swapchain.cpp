@@ -18,11 +18,11 @@ struct SwapchainSupportDetails {
     std::vector<VkSurfaceFormatKHR> formats;
     std::vector<VkPresentModeKHR> present_modes;
 
-    SwapchainSupportDetails(const utils::PhysicalDevice& physical_device, VkSurfaceKHR surface) noexcept;
+    SwapchainSupportDetails(const utils::Physical_Device& physical_device, VkSurfaceKHR surface) noexcept;
 };
 
 SwapchainSupportDetails::SwapchainSupportDetails(
-    const utils::PhysicalDevice& physical_device,
+    const utils::Physical_Device& physical_device,
     VkSurfaceKHR surface) noexcept {
 
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device, surface, &capabilities);
@@ -377,7 +377,7 @@ const resources::TextureView* Swapchain::get_image(s32 index) const noexcept {
 
 s32 Swapchain::num_images() const noexcept { return static_cast<s32>(images_.size()); }
 
-scene::PresentContext Swapchain::current_present_context() const noexcept {
+scene::Present_Context Swapchain::current_present_context() const noexcept {
     return { sync_objects_[current_sync_objects_index_].image_avail,
              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
              sync_objects_[current_sync_objects_index_].render_done };

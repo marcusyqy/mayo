@@ -51,4 +51,4 @@ std::vector<const char*> Query::get_layers() const noexcept {
 
 const Parameters& Query::get_params() const noexcept { return parameters_; }
 
-} // namespace zoo::platform::render
+} // namespace zoo::render

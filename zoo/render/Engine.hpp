@@ -4,7 +4,7 @@
 
 #include "Device_Context.hpp"
 #include "fwd.hpp"
-#include "utils/PhysicalDevice.hpp"
+#include "utils/Physical_Device.hpp"
 
 #include "render/debug/Messenger.hpp"
 
@@ -24,7 +24,7 @@ struct Info {
 class Engine {
 public:
     using Info                     = engine::Info;
-    using physical_device_iterator = typename std::vector<utils::PhysicalDevice>::const_iterator;
+    using physical_device_iterator = typename std::vector<utils::Physical_Device>::const_iterator;
 
     Engine(const Info& info) noexcept;
     ~Engine() noexcept;
@@ -34,7 +34,7 @@ public:
     Engine(Engine&&) noexcept                 = delete;
     Engine& operator=(Engine&&) noexcept      = delete;
 
-    const std::vector<utils::PhysicalDevice>& physical_devices() const noexcept { return physical_devices_; }
+    const std::vector<utils::Physical_Device>& physical_devices() const noexcept { return physical_devices_; }
 
     VkInstance vk_instance() const noexcept { return instance_; }
 
@@ -54,7 +54,7 @@ private:
     // stores all the physical devices.
     // could be stored in another class that can show more intent
     // and possibly have a better syntax as compared to this.
-    std::vector<utils::PhysicalDevice> physical_devices_{};
+    std::vector<utils::Physical_Device> physical_devices_{};
     Device_Context context_;
 
     // debugger may be named incorrectly

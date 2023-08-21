@@ -13,13 +13,13 @@
 
 namespace zoo::render::scene {
 
-struct PipelineBindContext {
+struct Pipeline_Bind_Context {
 public:
-    PipelineBindContext& push_constants(const PushConstant& constant, void* data) noexcept;
+    Pipeline_Bind_Context& push_constants(const PushConstant& constant, void* data) noexcept;
 
-    PipelineBindContext& bindings(const Resource_Bindings& binding, stdx::span<u32> offset = nullptr) noexcept;
+    Pipeline_Bind_Context& bindings(const Resource_Bindings& binding, stdx::span<u32> offset = nullptr) noexcept;
 
-    PipelineBindContext(VkCommandBuffer cmd_buffer, VkPipeline pipeline, VkPipelineLayout pipeline_layout) noexcept;
+    Pipeline_Bind_Context(VkCommandBuffer cmd_buffer, VkPipeline pipeline, VkPipelineLayout pipeline_layout) noexcept;
 
 private:
     VkCommandBuffer cmd_buffer_;
@@ -27,20 +27,20 @@ private:
     VkPipelineLayout pipeline_layout_;
 };
 
-struct PresentContext {
-    PresentContext(
+struct Present_Context {
+    Present_Context(
         VkSemaphore image_available,
         VkPipelineStageFlags pipeline_stage_flags,
         VkSemaphore render_done) noexcept;
 
 private:
-    friend class CommandBuffer;
+    friend class Command_Buffer;
     VkSemaphore image_available_;
     VkPipelineStageFlags pipeline_stage_flags_;
     VkSemaphore render_done_;
 };
 
-class CommandBuffer {
+class Command_Buffer {
 public:
     using underlying_type = VkCommandBuffer;
 
@@ -48,17 +48,17 @@ public:
     void reset() noexcept;
     void clear() noexcept;
 
-    CommandBuffer() noexcept = default;
-    CommandBuffer(Device_Context& context, Operation op_type) noexcept;
-    CommandBuffer(CommandBuffer&& other) noexcept;
-    CommandBuffer& operator=(CommandBuffer&& other) noexcept;
-    ~CommandBuffer() noexcept;
+    Command_Buffer() noexcept = default;
+    Command_Buffer(Device_Context& context, Operation op_type) noexcept;
+    Command_Buffer(Command_Buffer&& other) noexcept;
+    Command_Buffer& operator=(Command_Buffer&& other) noexcept;
+    ~Command_Buffer() noexcept;
 
     void set_viewport(const VkViewport& viewport) noexcept;
     void set_scissor(const VkRect2D& scissor) noexcept;
 
     // bindings
-    PipelineBindContext bind_pipeline(const render::Pipeline& pipeline) noexcept;
+    Pipeline_Bind_Context bind_pipeline(const render::Pipeline& pipeline) noexcept;
 
     void bind_vertex_buffers(stdx::span<const render::resources::Buffer> buffers) noexcept;
     void bind_index_buffer(const render::resources::Buffer& ib) noexcept;
@@ -86,7 +86,7 @@ public:
         stdx::span<VkSemaphore> signal_semaphores,
         VkFence fence) noexcept;
 
-    void submit(const PresentContext& present_context, VkFence fence) noexcept;
+    void submit(const Present_Context& present_context, VkFence fence) noexcept;
 
     // TODO: add range.
     void copy(const render::resources::Buffer& from, render::resources::Buffer& to) noexcept;
@@ -127,7 +127,7 @@ private:
     void assure_status(RecordStatus status);
 
 private:
-    Device_Context* context_     = nullptr;
+    Device_Context* context_    = nullptr;
     underlying_type underlying_ = nullptr;
 
     struct VertexBufferBindContext {

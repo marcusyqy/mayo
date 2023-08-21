@@ -8,22 +8,22 @@
 
 namespace zoo::adapters::tools {
 
-struct ShaderDefType {
+struct Shader_Def_Type {
     std::string name;
     std::string value;
 };
 
-struct ShaderWork {
+struct Shader_Work {
     shaderc_shader_kind kind;
     std::string name;
     std::string bytes;
-    stdx::span<ShaderDefType> defines = {};
+    stdx::span<Shader_Def_Type> defines = {};
 };
 
-class ShaderCompiler {
+class Shader_Compiler {
 public:
-    using define_type = ShaderDefType;
-    stdx::expected<std::vector<u32>, std::runtime_error> compile(const ShaderWork& work) noexcept;
+    using define_type = Shader_Def_Type;
+    stdx::expected<std::vector<u32>, std::runtime_error> compile(const Shader_Work& work) noexcept;
 
 private:
     shaderc::Compiler compiler_;
