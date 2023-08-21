@@ -7,9 +7,8 @@ int main(int argc, char* argv[]) { // NOLINT
     static_cast<void>(argv);
 
     using namespace zoo;
-    core::attach_debug();
 
+    core::attach_debug();
     adapters::imgui::test();
-    // zoo::application::ExitStatus status = zoo::main(zoo::application::Settings{ argc, argv });
-    // return status == zoo::application::ExitStatus::ok ? 0 : -1;
+    return 0;
 }
