@@ -7,8 +7,7 @@ int main(int argc, char* argv[]) { // NOLINT
     static_cast<void>(argv);
 
     using namespace zoo;
-
-    core::attach_debug();
+    core::check_memory();
     adapters::imgui::test();
     return 0;
 }

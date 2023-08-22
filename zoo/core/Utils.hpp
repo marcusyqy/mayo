@@ -19,7 +19,7 @@ T is_power_of_two(T v) noexcept {
 void* ptr_round_up_align(void* ptr, uintptr_t align) noexcept;
 void* ptr_round_down_align(void* ptr, uintptr_t align) noexcept;
 
-void attach_debug() noexcept;
+void check_memory() noexcept;
 
 stdx::expected<std::string, std::runtime_error> read_file(std::string_view filename) noexcept;
 

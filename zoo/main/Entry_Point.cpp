@@ -1,5 +1,3 @@
-
-
 #include "core/Array.hpp"
 #include "core/Log.hpp"
 #include "core/Utils.hpp"

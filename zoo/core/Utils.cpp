@@ -15,7 +15,7 @@ void* ptr_round_down_align(void* ptr, uintptr_t align) noexcept {
     return (void*)((uintptr_t)ptr & ~(align - 1));
 }
 
-void attach_debug() noexcept {
+void check_memory() noexcept {
 #if defined(WIN32)
 #if defined(DEBUG) | defined(_DEBUG)
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
