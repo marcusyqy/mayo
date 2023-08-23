@@ -1,4 +1,7 @@
 #include "Window.hpp"
+
+#define GLFW_INCLUDE_NONE
+#include <GLFW/glfw3.h>
 #include "core/Log.hpp"
 
 #include "render/Device_Context.hpp"
@@ -13,6 +16,7 @@ static void error_callback(int, [[maybe_unused]] const char* description) noexce
 }
 
 namespace detail {
+
 void construct() {
     glfwSetErrorCallback(error_callback);
     if (!glfwInit()) {

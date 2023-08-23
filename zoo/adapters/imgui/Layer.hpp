@@ -25,6 +25,4 @@ private:
     Window* window_;
 };
 
-void test();
-
 } // namespace zoo::adapters::imgui

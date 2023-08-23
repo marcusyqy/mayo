@@ -6,13 +6,18 @@
 
 #include "render/Engine.hpp"
 
-#define GLFW_INCLUDE_NONE
-#include <GLFW/glfw3.h>
-
 #include "render/Swapchain.hpp"
 #include <memory>
 
+struct GLFWwindow;
+
 namespace zoo {
+
+enum class Window_Event_Type { QUIT, KEY, RESIZE };
+
+struct Window_Event {
+    Window_Event_Type type;
+};
 
 class Window {
 public:
@@ -28,10 +33,9 @@ public:
 
     ~Window() noexcept;
 
-    Window(Window&& other) noexcept            = delete;
-    Window& operator=(Window&& other) noexcept = delete;
-
+    Window(Window&& other) noexcept                 = delete;
     Window(const Window& other) noexcept            = delete;
+    Window& operator=(Window&& other) noexcept      = delete;
     Window& operator=(const Window& other) noexcept = delete;
 
     [[nodiscard]] bool is_open() const noexcept;
