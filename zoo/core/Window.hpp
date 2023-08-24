@@ -9,6 +9,8 @@
 #include "render/Swapchain.hpp"
 #include <memory>
 
+#include "Array.hpp"
+
 struct GLFWwindow;
 
 namespace zoo {
@@ -21,15 +23,11 @@ struct Window_Event {
 
 class Window {
 public:
-    using InputCallback = std::function<void(Window&, input::KeyCode)>;
-
     explicit Window(
         render::Engine& engine,
         s32 width,
         s32 height,
-        std::string_view name,
-        // @TODO: maybe we don't need this as well.
-        InputCallback callback) noexcept;
+        std::string_view name) noexcept;
 
     ~Window() noexcept;
 
@@ -58,13 +56,14 @@ private:
     s32 width_;
     s32 height_;
     std::string name_;
-    InputCallback callback_;
-
     GLFWwindow* impl_;
 
     // I want to remove this.
     render::Swapchain swapchain_;
     friend class render::Swapchain;
+
+
+    Bucket_Array<Window_Event, 10> events_per_frame_;
 };
 
 } // namespace zoo

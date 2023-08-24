@@ -5,16 +5,9 @@
 #include <utility>
 
 #include "fwd.hpp"
+#include "detail/Singleton.hpp"
 
-namespace zoo::core {
-
-template <typename T>
-struct Singleton {
-    static T& get_instance() noexcept {
-        static T instance;
-        return instance;
-    }
-};
+namespace zoo {
 
 struct DefaultAllocator {
     void* alloc(s32 size, s32 alignment) noexcept;
@@ -61,7 +54,7 @@ struct Array : public Bucket<Type, N> {
             self::count <= N,
             "Seems like the current index has gone way past "
             "the storage size? If you require some sort of "
-            "dynamic array you consider BucketArray.");
+            "dynamic array you consider Bucket_Arra");
         new (self::storage + self::count++) Type{ std::forward<Args&&>(args)... };
     }
 
@@ -201,7 +194,7 @@ private:
 
 // Not ready for use.
 template <typename Type, s32 N>
-class BucketArray {
+class Bucket_Array {
     // use a linked list to make the bucket array
     using BucketT = Bucket<Type, N>;
     struct BucketNode {
@@ -228,7 +221,7 @@ public:
         (void)bucket;
     }
 
-    ~BucketArray() noexcept {
+    ~Bucket_Array() noexcept {
         auto bucket = head;
         while (bucket) {
             auto b_temp = bucket;
@@ -243,4 +236,4 @@ private:
     s32 count;
 };
 
-} // namespace zoo::core
+} // namespace zoo
