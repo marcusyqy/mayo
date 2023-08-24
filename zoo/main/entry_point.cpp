@@ -7,11 +7,11 @@
 #include "render/engine.hpp"
 #include "render/framebuffer.hpp"
 #include "render/pipeline.hpp"
-#include "render/swapchain.hpp"
 #include "render/resources/buffer.hpp"
 #include "render/resources/mesh.hpp"
 #include "render/scene/command_buffer.hpp"
 #include "render/scene/upload_context.hpp"
+#include "render/swapchain.hpp"
 #include "render/sync/fence.hpp"
 
 #include "stdx/expected.hpp"
@@ -186,220 +186,213 @@ size_t pad_uniform_buffer_size(const render::Device_Context& context, size_t ori
 }
 
 } // namespace
-
-void minecraft_world() noexcept {
-    const render::engine::Info render_engine_info{ true };
-
-    ZOO_LOG_INFO("Starting application");
-
-    render::Engine render_engine{ render_engine_info };
-    auto& context = render_engine.context();
-
-    // TODO: I think we should just merge swapchain and window
-    Window main_window{ render_engine,
-                        1280, 960, "Zoo",
-                        [](Window& win, input::KeyCode keycode) {
-                            if (keycode.key_ == input::Key::escape && keycode.action_ == input::Action::pressed) {
-                                win.close();
-                            }
-                        } };
-
-    auto [vertex_bytes, fragment_bytes] = read_shaders();
-
-    render::Shader vertex_shader{ context, vertex_bytes, "main" };
-    render::Shader fragment_shader{ context, fragment_bytes, "main" };
-
-    render::scene::Upload_Context upload_cmd_buffer{ context };
-
-    // upload gpu memory
-    render::resources::Mesh mesh{ context.allocator(), upload_cmd_buffer, "static/assets", "lost_empire.obj" };
-    render::resources::Texture lost_empire =
-        load_image_from_file(context, upload_cmd_buffer, "static/assets/lost_empire-RGBA.png");
-    render::resources::TextureSampler lost_empire_sampler = render::resources::TextureSampler::start_build()
-                                                                .mag_filter(VK_FILTER_NEAREST)
-                                                                .min_filter(VK_FILTER_NEAREST)
-                                                                .build(context);
-    upload_cmd_buffer.submit();
-
-    auto& swapchain   = main_window.swapchain();
-    auto image_format = swapchain.format();
-
-    render::AttachmentDescription attachments[] = { render::ColorAttachmentDescription(image_format),
-                                                    render::DepthAttachmentDescription() };
-
-    render::Render_Pass renderpass{ context, attachments };
-
-    auto buffer_description = render::resources::Vertex::describe();
-    std::array vertex_description{ render::VertexInputDescription{ sizeof(render::resources::Vertex),
-                                                                   buffer_description,
-                                                                   VK_VERTEX_INPUT_RATE_VERTEX } };
-
-    render::PushConstant push_constant{};
-    push_constant.size       = sizeof(PushConstantData);
-    push_constant.offset     = 0;
-    push_constant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-
-    render::BindingDescriptor binding_descriptors[] = {
-        { .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .count = 1, .stage = VK_SHADER_STAGE_VERTEX_BIT },
-        { .type  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
-          .count = 1,
-          .stage = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
-        { .type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, .count = 1, .stage = VK_SHADER_STAGE_VERTEX_BIT, .set = 1 },
-        { .type  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-          .count = 1,
-          .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
-          .set   = 2 }
-    };
-
-    render::Pipeline pipeline{ context,
-                               render::ShaderStagesSpecification{ vertex_shader, fragment_shader, vertex_description },
-                               renderpass,
-                               binding_descriptors,
-                               { &push_constant, 1 } };
-
-    render::Descriptor_Pool descriptor_pool{ context };
-
-    PushConstantData push_constant_data{};
-    auto start_time = std::chrono::high_resolution_clock::now();
-
-    // TODO: remove this laziness
-    FrameDatas frame_datas;
-
-    render::resources::Buffer scene_data_buffer = render::resources::Buffer::start_build(
-                                                      "SceneDataBuffer",
-                                                      MAX_FRAMES * pad_uniform_buffer_size(context, sizeof(SceneData)))
-                                                      .usage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
-                                                      //.allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
-                                                      .allocation_type(VMA_MEMORY_USAGE_AUTO)
-                                                      .allocation_flag(VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT)
-                                                      .build(context.allocator());
-
-    render::resources::BufferView buffer_view{ scene_data_buffer, 0, sizeof(SceneData) };
-
-    // initialize datas.
-    {
-        s32 num_images = swapchain.num_images();
-        auto [x, y]    = swapchain.extent();
-        for (s32 i = 0; i < num_images; ++i) {
-            auto& frame_data = frame_datas[i];
-
-            const auto uniform_buffer_name = fmt::format("Uniform buffer : {}", i);
-            const auto object_buffer_name  = fmt::format("Object buffer : {}", i);
-            frame_data.uniform_buffer = render::resources::Buffer::start_build<UniformBufferData>(uniform_buffer_name)
-                                            .usage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
-                                            .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
-                                            .build(context.allocator());
-
-            frame_data.object_storage_buffer = render::resources::Buffer::start_build<ObjectData>(object_buffer_name)
-                                                   .count(MAX_OBJECTS)
-                                                   .usage(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
-                                                   .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
-                                                   .build(context.allocator());
-
-            frame_data.bindings = descriptor_pool.allocate(pipeline);
-
-            // clang-format off
-            frame_data.bindings.start_batch()
-                .bind(0, frame_data.uniform_buffer,VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
-                .bind(1, buffer_view, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC)
-                // @EVALUATE : check if this good enough? { 1, 0 } maybe better.
-                .bind(1, 0 , frame_data.object_storage_buffer, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
-                .bind(2, 0, lost_empire, lost_empire_sampler)
-                .end_batch();
-            // clang-format on
-            frame_data.command_buffer  = render::scene::Command_Buffer{ context, render::Operation::graphics };
-            frame_data.in_flight_fence = render::sync::Fence{ context, true };
-
-            frame_data.depth_buffer                    = create_depth_buffer(context, x, y);
-            const render::resources::TextureView* tv[] = { swapchain.get_image(i), &(frame_data.depth_buffer.view()) };
-            frame_data.render_target                   = render::Framebuffer{ context, renderpass, tv, x, y };
-        }
-    }
-
-    auto resize_fn = [&frame_datas, &context, &renderpass](render::Swapchain& sc, u32 x, u32 y) {
-        auto num_images = sc.num_images();
-        for (s32 i = 0; i < num_images; ++i) {
-            auto& frame_data                           = frame_datas[i];
-            frame_data.depth_buffer                    = create_depth_buffer(context, x, y);
-            const render::resources::TextureView* tv[] = { sc.get_image(i), &(frame_data.depth_buffer.view()) };
-            frame_data.render_target                   = render::Framebuffer{ context, renderpass, tv, x, y };
-        }
-    };
-
-    swapchain.on_resize(resize_fn);
-
-    upload_cmd_buffer.wait();
-
-    while (main_window.is_open()) {
-        // TODO: add frame data in.
-        const auto current_idx = swapchain.current_image();
-        auto& frame_data       = frame_datas[current_idx];
-
-        // wait for frame to begin.
-        frame_data.in_flight_fence.wait();
-        frame_data.in_flight_fence.reset();
-
-        glm::vec3 cam_pos    = { 0.f, -6.f, -10.f };
-        glm::mat4 view       = glm::translate(glm::mat4(1.f), cam_pos);
-        glm::mat4 projection = glm::perspective(glm::radians(70.f), 1700.f / 900.f, 0.1f, 200.0f);
-        projection[1][1] *= -1;
-
-        frame_data.uniform_buffer.map<UniformBufferData>([&](UniformBufferData* data) {
-            if (data) {
-                data->view     = view;
-                data->proj     = projection;
-                data->viewproj = projection * view;
-            }
-        });
-
-        auto current_time = std::chrono::high_resolution_clock::now();
-        f32 time          = std::chrono::duration<f32, std::chrono::seconds::period>(current_time - start_time).count();
-        f32 var           = time * glm::radians(360.0f);
-
-        u32 offset = static_cast<u32>(current_idx * pad_uniform_buffer_size(context, sizeof(SceneData)));
-        render::resources::BufferView scene_data_buffer_view{ scene_data_buffer, offset, offset + sizeof(SceneData) };
-        scene_data_buffer_view.map<SceneData>([&](SceneData* data) {
-            if (data) data->ambient_color = { sin(var), 0, cos(var), 1 };
-        });
-
-        glm::mat4 model = // glm::mat4{ 1.0f };
-            glm::translate(glm::vec3{ 5, -10, 0 });
-
-        // glm::rotate(glm::mat4{ 1.0f }, time * glm::radians(90.0f), glm::vec3(0, 1, 0));
-        push_constant_data.render_matrix = model;
-        frame_data.object_storage_buffer.map<ObjectData>([&](ObjectData* data) {
-            if (data != nullptr) {
-                data[0].model_mat = model;
-            }
-        });
-
-        auto& command_context     = frame_data.command_buffer;
-        const auto& viewport_info = swapchain.get_viewport_info();
-        command_context.set_viewport(viewport_info.viewport);
-        command_context.set_scissor(viewport_info.scissor);
-
-        VkClearValue depth_clear{};
-        depth_clear.depthStencil.depth = 1.f;
-        VkClearValue clear_color[]     = { { { { 0.1f, 0.1f, 0.1f, 1.0f } } }, depth_clear };
-        command_context.begin_renderpass(frame_data.render_target, clear_color);
-
-        command_context.bind_pipeline(pipeline)
-            .push_constants(push_constant, &push_constant_data)
-            .bindings(frame_data.bindings, { &offset, 1 });
-
-        command_context.bind_mesh(mesh);
-        command_context.draw_indexed(1);
-
-        command_context.end_renderpass();
-        command_context.submit(swapchain.current_present_context(), frame_data.in_flight_fence);
-        swapchain.present();
-
-        Window::poll_events();
-    }
-
-    // TODO: we can remove this after we find out how to properly tie
-    // resources to each frame.
-    context.wait();
-}
+//
+// void minecraft_world() noexcept {
+//    const render::engine::Info render_engine_info{ true };
+//
+//    ZOO_LOG_INFO("Starting application");
+//
+//    render::Engine render_engine{ render_engine_info };
+//    auto& context = render_engine.context();
+//
+//    // TODO: I think we should just merge swapchain and window
+//    Window main_window{ render_engine,
+//                        1280, 960, "Zoo"};
+//
+//    auto [vertex_bytes, fragment_bytes] = read_shaders();
+//
+//    render::Shader vertex_shader{ context, vertex_bytes, "main" };
+//    render::Shader fragment_shader{ context, fragment_bytes, "main" };
+//
+//    render::scene::Upload_Context upload_cmd_buffer{ context };
+//
+//    // upload gpu memory
+//    render::resources::Mesh mesh{ context.allocator(), upload_cmd_buffer, "static/assets", "lost_empire.obj" };
+//    render::resources::Texture lost_empire =
+//        load_image_from_file(context, upload_cmd_buffer, "static/assets/lost_empire-RGBA.png");
+//    render::resources::TextureSampler lost_empire_sampler = render::resources::TextureSampler::start_build()
+//                                                                .mag_filter(VK_FILTER_NEAREST)
+//                                                                .min_filter(VK_FILTER_NEAREST)
+//                                                                .build(context);
+//    upload_cmd_buffer.submit();
+//
+//    auto& swapchain   = main_window.swapchain();
+//    auto image_format = swapchain.format();
+//
+//    render::AttachmentDescription attachments[] = { render::ColorAttachmentDescription(image_format),
+//                                                    render::DepthAttachmentDescription() };
+//
+//    render::Render_Pass renderpass{ context, attachments };
+//
+//    auto buffer_description = render::resources::Vertex::describe();
+//    std::array vertex_description{ render::VertexInputDescription{ sizeof(render::resources::Vertex),
+//                                                                   buffer_description,
+//                                                                   VK_VERTEX_INPUT_RATE_VERTEX } };
+//
+//    render::PushConstant push_constant{};
+//    push_constant.size       = sizeof(PushConstantData);
+//    push_constant.offset     = 0;
+//    push_constant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+//
+//    render::BindingDescriptor binding_descriptors[] = {
+//        { .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .count = 1, .stage = VK_SHADER_STAGE_VERTEX_BIT },
+//        { .type  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+//          .count = 1,
+//          .stage = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
+//        { .type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, .count = 1, .stage = VK_SHADER_STAGE_VERTEX_BIT, .set = 1 },
+//        { .type  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+//          .count = 1,
+//          .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
+//          .set   = 2 }
+//    };
+//
+//    render::Pipeline pipeline{ context,
+//                               render::ShaderStagesSpecification{ vertex_shader, fragment_shader, vertex_description
+//                               }, renderpass, binding_descriptors, { &push_constant, 1 } };
+//
+//    render::Descriptor_Pool descriptor_pool{ context };
+//
+//    PushConstantData push_constant_data{};
+//    auto start_time = std::chrono::high_resolution_clock::now();
+//
+//    // TODO: remove this laziness
+//    FrameDatas frame_datas;
+//
+//    render::resources::Buffer scene_data_buffer = render::resources::Buffer::start_build(
+//                                                      "SceneDataBuffer",
+//                                                      MAX_FRAMES * pad_uniform_buffer_size(context,
+//                                                      sizeof(SceneData))) .usage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
+//                                                      //.allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
+//                                                      .allocation_type(VMA_MEMORY_USAGE_AUTO)
+//                                                      .allocation_flag(VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT)
+//                                                      .build(context.allocator());
+//
+//    render::resources::BufferView buffer_view{ scene_data_buffer, 0, sizeof(SceneData) };
+//
+//    // initialize datas.
+//    {
+//        s32 num_images = swapchain.num_images();
+//        auto [x, y]    = swapchain.extent();
+//        for (s32 i = 0; i < num_images; ++i) {
+//            auto& frame_data = frame_datas[i];
+//
+//            const auto uniform_buffer_name = fmt::format("Uniform buffer : {}", i);
+//            const auto object_buffer_name  = fmt::format("Object buffer : {}", i);
+//            frame_data.uniform_buffer = render::resources::Buffer::start_build<UniformBufferData>(uniform_buffer_name)
+//                                            .usage(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT)
+//                                            .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
+//                                            .build(context.allocator());
+//
+//            frame_data.object_storage_buffer = render::resources::Buffer::start_build<ObjectData>(object_buffer_name)
+//                                                   .count(MAX_OBJECTS)
+//                                                   .usage(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT)
+//                                                   .allocation_type(VMA_MEMORY_USAGE_CPU_TO_GPU)
+//                                                   .build(context.allocator());
+//
+//            frame_data.bindings = descriptor_pool.allocate(pipeline);
+//
+//            // clang-format off
+//            frame_data.bindings.start_batch()
+//                .bind(0, frame_data.uniform_buffer,VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+//                .bind(1, buffer_view, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC)
+//                // @EVALUATE : check if this good enough? { 1, 0 } maybe better.
+//                .bind(1, 0 , frame_data.object_storage_buffer, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+//                .bind(2, 0, lost_empire, lost_empire_sampler)
+//                .end_batch();
+//            // clang-format on
+//            frame_data.command_buffer  = render::scene::Command_Buffer{ context, render::Operation::graphics };
+//            frame_data.in_flight_fence = render::sync::Fence{ context, true };
+//
+//            frame_data.depth_buffer                    = create_depth_buffer(context, x, y);
+//            const render::resources::TextureView* tv[] = { swapchain.get_image(i), &(frame_data.depth_buffer.view())
+//            }; frame_data.render_target                   = render::Framebuffer{ context, renderpass, tv, x, y };
+//        }
+//    }
+//
+//    auto resize_fn = [&frame_datas, &context, &renderpass](render::Swapchain& sc, u32 x, u32 y) {
+//        auto num_images = sc.num_images();
+//        for (s32 i = 0; i < num_images; ++i) {
+//            auto& frame_data                           = frame_datas[i];
+//            frame_data.depth_buffer                    = create_depth_buffer(context, x, y);
+//            const render::resources::TextureView* tv[] = { sc.get_image(i), &(frame_data.depth_buffer.view()) };
+//            frame_data.render_target                   = render::Framebuffer{ context, renderpass, tv, x, y };
+//        }
+//    };
+//
+//    swapchain.on_resize(resize_fn);
+//
+//    upload_cmd_buffer.wait();
+//
+//    while (main_window.is_open()) {
+//        // TODO: add frame data in.
+//        const auto current_idx = swapchain.current_image();
+//        auto& frame_data       = frame_datas[current_idx];
+//
+//        // wait for frame to begin.
+//        frame_data.in_flight_fence.wait();
+//        frame_data.in_flight_fence.reset();
+//
+//        glm::vec3 cam_pos    = { 0.f, -6.f, -10.f };
+//        glm::mat4 view       = glm::translate(glm::mat4(1.f), cam_pos);
+//        glm::mat4 projection = glm::perspective(glm::radians(70.f), 1700.f / 900.f, 0.1f, 200.0f);
+//        projection[1][1] *= -1;
+//
+//        frame_data.uniform_buffer.map<UniformBufferData>([&](UniformBufferData* data) {
+//            if (data) {
+//                data->view     = view;
+//                data->proj     = projection;
+//                data->viewproj = projection * view;
+//            }
+//        });
+//
+//        auto current_time = std::chrono::high_resolution_clock::now();
+//        f32 time          = std::chrono::duration<f32, std::chrono::seconds::period>(current_time -
+//        start_time).count(); f32 var           = time * glm::radians(360.0f);
+//
+//        u32 offset = static_cast<u32>(current_idx * pad_uniform_buffer_size(context, sizeof(SceneData)));
+//        render::resources::BufferView scene_data_buffer_view{ scene_data_buffer, offset, offset + sizeof(SceneData) };
+//        scene_data_buffer_view.map<SceneData>([&](SceneData* data) {
+//            if (data) data->ambient_color = { sin(var), 0, cos(var), 1 };
+//        });
+//
+//        glm::mat4 model = // glm::mat4{ 1.0f };
+//            glm::translate(glm::vec3{ 5, -10, 0 });
+//
+//        // glm::rotate(glm::mat4{ 1.0f }, time * glm::radians(90.0f), glm::vec3(0, 1, 0));
+//        push_constant_data.render_matrix = model;
+//        frame_data.object_storage_buffer.map<ObjectData>([&](ObjectData* data) {
+//            if (data != nullptr) {
+//                data[0].model_mat = model;
+//            }
+//        });
+//
+//        auto& command_context     = frame_data.command_buffer;
+//        const auto& viewport_info = swapchain.get_viewport_info();
+//        command_context.set_viewport(viewport_info.viewport);
+//        command_context.set_scissor(viewport_info.scissor);
+//
+//        VkClearValue depth_clear{};
+//        depth_clear.depthStencil.depth = 1.f;
+//        VkClearValue clear_color[]     = { { { { 0.1f, 0.1f, 0.1f, 1.0f } } }, depth_clear };
+//        command_context.begin_renderpass(frame_data.render_target, clear_color);
+//
+//        command_context.bind_pipeline(pipeline)
+//            .push_constants(push_constant, &push_constant_data)
+//            .bindings(frame_data.bindings, { &offset, 1 });
+//
+//        command_context.bind_mesh(mesh);
+//        command_context.draw_indexed(1);
+//
+//        command_context.end_renderpass();
+//        command_context.submit(swapchain.current_present_context(), frame_data.in_flight_fence);
+//        swapchain.present();
+//
+//        Window::poll_events();
+//    }
+//
+//    // TODO: we can remove this after we find out how to properly tie
+//    // resources to each frame.
+//    context.wait();
+//}
 
 } // namespace zoo

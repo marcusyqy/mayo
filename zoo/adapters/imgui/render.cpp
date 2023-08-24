@@ -15,8 +15,8 @@
 
 #include "adapters/tools/shader_compiler.hpp"
 
-#include "window.hpp"
 #include "imgui.h"
+#include "window.hpp"
 #include <stdio.h>
 
 // TODO: Determine if we need this.

@@ -3,8 +3,8 @@
 
 #include "utils/physical_device.hpp"
 
-#include "query.hpp"
 #include "fwd.hpp"
+#include "query.hpp"
 #include "render/resources/allocator.hpp"
 #include <memory>
 

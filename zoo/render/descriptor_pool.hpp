@@ -1,7 +1,7 @@
 #pragma once
 
-#include "pipeline.hpp"
 #include "fwd.hpp"
+#include "pipeline.hpp"
 #include "resources/buffer.hpp"
 #include "resources/texture.hpp"
 

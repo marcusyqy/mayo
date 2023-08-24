@@ -127,5 +127,4 @@ void Layer::render() noexcept {
     imgui_render_present();
 }
 
-
 } // namespace zoo::adapters::imgui

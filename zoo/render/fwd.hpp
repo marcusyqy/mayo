@@ -1,6 +1,6 @@
 #pragma once
-#include "core/log.hpp"
 #include "core/fwd.hpp"
+#include "core/log.hpp"
 #include "stdx/span.hpp"
 #include "vma/vk_mem_alloc.h"
 #include <vulkan/vk_enum_string_helper.h>

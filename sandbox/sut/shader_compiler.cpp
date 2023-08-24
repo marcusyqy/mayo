@@ -1,4 +1,4 @@
-#include "ShaderCompiler.hpp"
+#include "shader_compiler.hpp"
 #include "spdlog/spdlog.h"
 
 namespace sut {

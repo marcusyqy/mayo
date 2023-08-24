@@ -1,12 +1,12 @@
 #include "window.hpp"
 
 #define GLFW_INCLUDE_NONE
+#include "core/log.hpp"
 #include <GLFW/glfw3.h>
-#include "core/Log.hpp"
 
+#include "core/detail/initializer.hpp"
 #include "render/device_context.hpp"
 #include "render/fwd.hpp"
-#include "core/detail/initializer.hpp"
 
 namespace zoo {
 
@@ -26,8 +26,6 @@ void construct() {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-
-    // disable resizing for now
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 }
 
@@ -38,14 +36,8 @@ const core::Initializer<> initializer{ detail::construct, detail::destruct };
 
 } // namespace
 
-Window::Window(
-    render::Engine& engine,
-    s32 width,
-    s32 height,
-    std::string_view name,
-    InputCallback callback) noexcept :
-    width_{ width },
-    height_{ height }, name_{ name }, callback_{ std::move(callback) },
+Window::Window(render::Engine& engine, s32 width, s32 height, std::string_view name, InputCallback callback) noexcept :
+    width_{ width }, height_{ height }, name_{ name }, callback_{ std::move(callback) },
     impl_{ glfwCreateWindow(width_, height_, name_.c_str(), NULL, NULL) }, swapchain_(engine, impl_, width_, height_) {
 
     glfwSetWindowUserPointer(impl_, this);

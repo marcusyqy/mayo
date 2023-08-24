@@ -1,6 +1,6 @@
 #include "render/engine.hpp"
-#include "core/log.hpp"
 #include "core/fwd.hpp"
+#include "core/log.hpp"
 
 #include "defines.hpp"
 

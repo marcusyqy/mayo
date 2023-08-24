@@ -4,7 +4,7 @@
 #include <optional>
 
 #include "spdlog/spdlog.h"
-#include "sut/ShaderCompiler.hpp"
+#include "sut/shader_compiler.hpp"
 
 stdx::expected<std::string, std::runtime_error> read_file(std::string_view filename) noexcept {
     std::ifstream file{ filename.data(), std::ios::ate | std::ios::binary };
