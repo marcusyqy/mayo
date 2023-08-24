@@ -1,6 +1,6 @@
 #pragma once
 
-namespace zoo::detail {
+namespace zoo::utils {
 
 template <typename T>
 struct Singleton {

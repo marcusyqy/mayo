@@ -1,4 +1,3 @@
-#include "core/array.hpp"
 #include "core/log.hpp"
 #include "core/utils.hpp"
 #include "core/window.hpp"

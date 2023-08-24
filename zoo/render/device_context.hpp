@@ -1,6 +1,4 @@
 #pragma once
-#include "zoo.hpp"
-
 #include "utils/physical_device.hpp"
 
 #include "fwd.hpp"

@@ -4,7 +4,7 @@
 #include "core/log.hpp"
 #include <GLFW/glfw3.h>
 
-#include "core/detail/initializer.hpp"
+#include "utility/detail/initializer.hpp"
 #include "render/device_context.hpp"
 #include "render/fwd.hpp"
 
@@ -32,7 +32,7 @@ void construct() {
 void destruct() { glfwTerminate(); }
 } // namespace detail
 
-const core::Initializer<> initializer{ detail::construct, detail::destruct };
+const utils::Initializer<> initializer{ detail::construct, detail::destruct };
 
 } // namespace
 

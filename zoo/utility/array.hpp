@@ -1,10 +1,10 @@
 #pragma once
 
-#include "utility/aligned_storage.hpp"
+#include "aligned_storage.hpp"
+#include "detail/singleton.hpp"
 #include <utility>
 
-#include "detail/singleton.hpp"
-#include "fwd.hpp"
+#include "core/fwd.hpp"
 
 namespace zoo {
 
@@ -177,14 +177,9 @@ public:
         data_(new(allocator_->allocate(sizeof(T) * size, alignof(T))) T{ std::forward<Args&&>(args)... }), size_(size) {
     }
 
-    // this should not be called and compiled if not intended.
     template <typename... Args>
     Allocated_Array(s32 size, Args&&... args) noexcept :
-        Allocated_Array(
-            // TODO: check if this is created when compiled.
-            size,
-            detail::Singleton<Allocator>::get_instance(),
-            std::forward<Args&&>(args)...) {}
+        Allocated_Array(size, utils::Singleton<Allocator>::get_instance(), std::forward<Args&&>(args)...) {}
 
     ~Allocated_Array() noexcept {
         if (data_ != nullptr && size_ != 0) allocator_->free(data_);
@@ -207,9 +202,11 @@ template <typename Type, s32 N>
 class Bucket_Array {
     // use a linked list to make the bucket array
     using Bucket_Type = Bucket<Type, N>;
-    struct BucketNode {
+
+    struct Bucket_Node {
         Bucket_Type data;
-        BucketNode* next;
+        Bucket_Node* next;
+        Bucket_Node* prev;
     };
 
 public:
@@ -242,7 +239,7 @@ public:
     }
 
 private:
-    BucketNode* head;
+    Bucket_Node* head;
     s32 count;
 };
 

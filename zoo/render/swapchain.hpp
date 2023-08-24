@@ -1,5 +1,4 @@
 #pragma once
-#include "zoo.hpp"
 
 #include "core/fwd.hpp"
 #include "device_context.hpp"
@@ -44,7 +43,6 @@ public:
 
     void present() noexcept;
 
-    // TODO: remove when "abstracted"
     struct FrameInfo {
         s32 current;
         s32 count;

@@ -2,6 +2,7 @@
 #include "core/utils.hpp"
 
 #include "core/window.hpp"
+#include "utility/array.hpp"
 #include "render/engine.hpp"
 
 void test() {
