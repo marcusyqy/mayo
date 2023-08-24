@@ -1,6 +1,6 @@
-#include "Utils.hpp"
+#include "utils.hpp"
 #include "core/fwd.hpp"
-#include "render/resources/Mesh.hpp"
+#include "render/resources/mesh.hpp"
 #include <fstream>
 
 namespace zoo::core {

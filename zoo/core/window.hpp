@@ -2,14 +2,14 @@
 #include <functional>
 #include <string_view>
 
-#include "Input.hpp"
+#include "input.hpp"
 
-#include "render/Engine.hpp"
+#include "render/engine.hpp"
 
-#include "render/Swapchain.hpp"
+#include "render/swapchain.hpp"
 #include <memory>
 
-#include "Array.hpp"
+#include "array.hpp"
 
 struct GLFWwindow;
 

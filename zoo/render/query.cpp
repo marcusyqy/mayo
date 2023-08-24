@@ -1,4 +1,4 @@
-#include "Query.hpp"
+#include "query.hpp"
 #include <cstring>
 
 #define GLFW_INCLUDE_VULKAN

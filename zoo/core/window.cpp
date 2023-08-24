@@ -1,12 +1,12 @@
-#include "Window.hpp"
+#include "window.hpp"
 
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include "core/Log.hpp"
 
-#include "render/Device_Context.hpp"
+#include "render/device_context.hpp"
 #include "render/fwd.hpp"
-#include "core/Initializer.hpp"
+#include "core/detail/initializer.hpp"
 
 namespace zoo {
 

@@ -1,13 +1,13 @@
 #pragma once
 
 #include <glm/glm.hpp>
-#include <glm/vec2.hpp> //now needed for the Vertex struct
+#include <glm/vec2.hpp> //now needed for the vertex struct
 #include <stdx/span.hpp>
 #include <string_view>
 
-#include "render/Pipeline.hpp"
-#include "render/resources/Allocator.hpp"
-#include "render/resources/Buffer.hpp"
+#include "render/pipeline.hpp"
+#include "render/resources/allocator.hpp"
+#include "render/resources/buffer.hpp"
 
 namespace zoo::render::scene {
 class Upload_Context;

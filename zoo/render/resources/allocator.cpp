@@ -1,5 +1,5 @@
-#include "Allocator.hpp"
-#include "render/Defines.hpp"
+#include "allocator.hpp"
+#include "render/defines.hpp"
 #include "render/fwd.hpp"
 
 namespace zoo::render::resources {

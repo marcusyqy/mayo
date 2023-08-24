@@ -1,5 +1,5 @@
 #pragma once
-#include "core/Log.hpp"
+#include "core/log.hpp"
 #include "core/fwd.hpp"
 #include "stdx/span.hpp"
 #include "vma/vk_mem_alloc.h"

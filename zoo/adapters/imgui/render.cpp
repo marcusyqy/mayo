@@ -1,21 +1,21 @@
-#include "Render.hpp"
+#include "render.hpp"
 
-#include "Defines.hpp"
+#include "defines.hpp"
 #include "render/fwd.hpp"
 
 // Our renderer contexts.
-#include "render/Descriptor_Pool.hpp"
-#include "render/Device_Context.hpp"
-#include "render/Engine.hpp"
-#include "render/Pipeline.hpp"
-#include "render/resources/Buffer.hpp"
-#include "render/resources/Texture.hpp"
-#include "render/scene/Upload_Context.hpp"
-#include "render/sync/Fence.hpp"
+#include "render/descriptor_pool.hpp"
+#include "render/device_context.hpp"
+#include "render/engine.hpp"
+#include "render/pipeline.hpp"
+#include "render/resources/buffer.hpp"
+#include "render/resources/texture.hpp"
+#include "render/scene/upload_context.hpp"
+#include "render/sync/fence.hpp"
 
-#include "adapters/tools/Shader_Compiler.hpp"
+#include "adapters/tools/shader_compiler.hpp"
 
-#include "Window.hpp"
+#include "window.hpp"
 #include "imgui.h"
 #include <stdio.h>
 

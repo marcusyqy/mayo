@@ -1,11 +1,11 @@
 #pragma once
 #include "imgui.h"
 
-#include "core/Window.hpp"
-#include "render/Descriptor_Pool.hpp"
-#include "render/Engine.hpp"
+#include "core/window.hpp"
+#include "render/descriptor_pool.hpp"
+#include "render/engine.hpp"
 
-#include "render/resources/Texture.hpp"
+#include "render/resources/texture.hpp"
 
 namespace zoo::adapters::imgui {
 

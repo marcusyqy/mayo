@@ -1,10 +1,10 @@
-#include "render/Engine.hpp"
-#include "core/Log.hpp"
+#include "render/engine.hpp"
+#include "core/log.hpp"
 #include "core/fwd.hpp"
 
-#include "Defines.hpp"
+#include "defines.hpp"
 
-#include "Query.hpp"
+#include "query.hpp"
 #include "render/fwd.hpp"
 
 #include <optional>

@@ -1,11 +1,11 @@
 #pragma once
 #include "zoo.hpp"
 
-#include "utils/Physical_Device.hpp"
+#include "utils/physical_device.hpp"
 
-#include "Query.hpp"
+#include "query.hpp"
 #include "fwd.hpp"
-#include "render/resources/Allocator.hpp"
+#include "render/resources/allocator.hpp"
 #include <memory>
 
 namespace zoo::render {

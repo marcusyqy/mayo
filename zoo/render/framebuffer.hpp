@@ -1,7 +1,7 @@
 
 #pragma once
-#include "Render_Pass.hpp"
-#include "resources/Texture.hpp"
+#include "render_pass.hpp"
+#include "resources/texture.hpp"
 #include <stdx/span.hpp>
 
 namespace zoo::render {

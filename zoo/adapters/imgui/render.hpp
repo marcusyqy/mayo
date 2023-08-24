@@ -1,12 +1,12 @@
 #pragma once
 #include "imgui.h"
 
-#include "render/Pipeline.hpp"
-#include "render/scene/Command_Buffer.hpp"
+#include "render/pipeline.hpp"
+#include "render/scene/command_buffer.hpp"
 
-#include "render/Device_Context.hpp"
-#include "render/Engine.hpp"
-#include "render/Swapchain.hpp"
+#include "render/device_context.hpp"
+#include "render/engine.hpp"
+#include "render/swapchain.hpp"
 
 namespace zoo::adapters::imgui {
 

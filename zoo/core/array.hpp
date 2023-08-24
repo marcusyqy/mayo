@@ -5,7 +5,7 @@
 #include <utility>
 
 #include "fwd.hpp"
-#include "detail/Singleton.hpp"
+#include "detail/singleton.hpp"
 
 namespace zoo {
 

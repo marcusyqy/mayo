@@ -1,5 +1,5 @@
 #pragma once
-#include "core/Log.hpp"
+#include "core/log.hpp"
 #include <functional>
 #include <vulkan/vulkan.h>
 

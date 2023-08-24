@@ -1,8 +1,8 @@
 
 #pragma once
-#include "render/resources/Buffer.hpp"
-#include "render/scene/Command_Buffer.hpp"
-#include "render/sync/Fence.hpp"
+#include "render/resources/buffer.hpp"
+#include "render/scene/command_buffer.hpp"
+#include "render/sync/fence.hpp"
 
 namespace zoo::render::scene {
 

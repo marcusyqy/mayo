@@ -1,4 +1,4 @@
-#include "Shader_Compiler.hpp"
+#include "shader_compiler.hpp"
 #include "core/fwd.hpp"
 #include "spdlog/spdlog.h"
 

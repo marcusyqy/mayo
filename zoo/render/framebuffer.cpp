@@ -1,4 +1,4 @@
-#include "Framebuffer.hpp"
+#include "framebuffer.hpp"
 
 namespace zoo::render {
 

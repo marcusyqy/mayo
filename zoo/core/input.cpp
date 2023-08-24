@@ -1,4 +1,4 @@
-#include "Input.hpp"
+#include "input.hpp"
 #include "core/Log.hpp"
 
 #define GLFW_INCLUDE_NONE

@@ -1,4 +1,4 @@
-#include "Texture.hpp"
+#include "texture.hpp"
 #include "core/fwd.hpp"
 
 namespace zoo::render::resources {

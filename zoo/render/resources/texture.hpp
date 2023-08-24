@@ -2,8 +2,8 @@
 #include "core/fwd.hpp"
 #include "render/fwd.hpp"
 
-#include "Allocator.hpp"
-#include "render/Device_Context.hpp"
+#include "allocator.hpp"
+#include "render/device_context.hpp"
 #include <stdx/function_ref.hpp>
 
 namespace zoo::render::resources {

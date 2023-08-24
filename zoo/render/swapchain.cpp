@@ -1,6 +1,6 @@
 #include "render/fwd.hpp"
 
-#include "Swapchain.hpp"
+#include "swapchain.hpp"
 
 // #define VK_USE_PLATFORM_WIN32_KHR
 #define GLFW_INCLUDE_VULKAN

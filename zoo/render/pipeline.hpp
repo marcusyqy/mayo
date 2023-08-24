@@ -1,6 +1,6 @@
 #pragma once
-#include "Device_Context.hpp"
-#include "Render_Pass.hpp"
+#include "device_context.hpp"
+#include "render_pass.hpp"
 #include "core/fwd.hpp"
 #include "fwd.hpp"
 #include "stdx/span.hpp"

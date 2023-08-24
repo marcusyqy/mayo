@@ -1,5 +1,5 @@
 #pragma once
-#include "Allocator.hpp"
+#include "allocator.hpp"
 #include "render/fwd.hpp"
 
 #include <stdx/function_ref.hpp>

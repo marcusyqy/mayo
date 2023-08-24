@@ -1,7 +1,7 @@
-#include "Device_Context.hpp"
+#include "device_context.hpp"
 #include "core/fwd.hpp"
 #include "render/fwd.hpp"
-#include "scene/Command_Buffer.hpp"
+#include "scene/command_buffer.hpp"
 
 namespace zoo::render {
 namespace {

@@ -1,4 +1,4 @@
-#include "Buffer.hpp"
+#include "buffer.hpp"
 
 namespace zoo::render::resources {
 

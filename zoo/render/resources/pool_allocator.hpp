@@ -1,5 +1,5 @@
 #pragma once
-#include "Allocator.hpp"
+#include "allocator.hpp"
 #include "vma/vk_mem_alloc.h"
 
 namespace zoo::render::resources {

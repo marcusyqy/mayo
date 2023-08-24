@@ -1,18 +1,18 @@
 #pragma once
 #include "zoo.hpp"
 
-#include "Device_Context.hpp"
-#include "Engine.hpp"
+#include "device_context.hpp"
+#include "engine.hpp"
 #include "core/fwd.hpp"
 #include "fwd.hpp"
-#include "render/scene/Command_Buffer.hpp"
+#include "render/scene/command_buffer.hpp"
 #include <cstdint>
 
-#include "Render_Pass.hpp"
+#include "render_pass.hpp"
 #include "core/fwd.hpp"
-#include "resources/Texture.hpp"
-#include "sync/Fence.hpp"
-#include "sync/Semaphore.hpp"
+#include "resources/texture.hpp"
+#include "sync/fence.hpp"
+#include "sync/semaphore.hpp"
 
 
 // forward declare

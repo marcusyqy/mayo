@@ -1,4 +1,4 @@
-#include "Descriptor_Pool.hpp"
+#include "descriptor_pool.hpp"
 
 namespace zoo::render {
 

@@ -1,9 +1,8 @@
+#include "adapters/imgui/layer.hpp"
+#include "core/utils.hpp"
 
-#include "adapters/imgui/Layer.hpp"
-#include "core/Utils.hpp"
-
-#include "core/Window.hpp"
-#include "render/Engine.hpp"
+#include "core/window.hpp"
+#include "render/engine.hpp"
 
 void test() {
     using namespace zoo;

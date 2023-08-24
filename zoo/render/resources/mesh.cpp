@@ -1,10 +1,10 @@
-#include "Mesh.hpp"
+#include "mesh.hpp"
 
 #include "render/fwd.hpp"
 #include <tiny_obj_loader.h>
 
-#include "render/scene/Upload_Context.hpp"
-#include "render/sync/Fence.hpp"
+#include "render/scene/upload_context.hpp"
+#include "render/sync/fence.hpp"
 
 namespace zoo::render::resources {
 

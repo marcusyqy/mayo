@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Pipeline.hpp"
+#include "pipeline.hpp"
 #include "fwd.hpp"
-#include "resources/Buffer.hpp"
-#include "resources/Texture.hpp"
+#include "resources/buffer.hpp"
+#include "resources/texture.hpp"
 
 namespace zoo::render {
 

@@ -1,15 +1,15 @@
 #pragma once
-#include "render/Descriptor_Pool.hpp"
-#include "render/Device_Context.hpp"
-#include "render/Framebuffer.hpp"
-#include "render/Pipeline.hpp"
-#include "render/Render_Pass.hpp"
+#include "render/descriptor_pool.hpp"
+#include "render/device_context.hpp"
+#include "render/framebuffer.hpp"
+#include "render/pipeline.hpp"
+#include "render/render_pass.hpp"
 #include "render/fwd.hpp"
-#include "render/resources/Buffer.hpp"
-#include "render/resources/Mesh.hpp"
-#include "render/resources/Texture.hpp"
+#include "render/resources/buffer.hpp"
+#include "render/resources/mesh.hpp"
+#include "render/resources/texture.hpp"
 #include "stdx/function_ref.hpp"
-#include "zoo.hpp"
+
 
 namespace zoo::render::scene {
 

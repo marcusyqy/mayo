@@ -2,11 +2,11 @@
 
 #include <optional>
 
-#include "Device_Context.hpp"
+#include "device_context.hpp"
 #include "fwd.hpp"
-#include "utils/Physical_Device.hpp"
+#include "utils/physical_device.hpp"
 
-#include "render/debug/Messenger.hpp"
+#include "render/debug/messenger.hpp"
 
 namespace zoo::render {
 
