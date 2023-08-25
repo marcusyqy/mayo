@@ -30,6 +30,7 @@ void construct() {
 }
 
 void destruct() { glfwTerminate(); }
+
 } // namespace detail
 
 const utils::Initializer<> initializer{ detail::construct, detail::destruct };
@@ -37,8 +38,11 @@ const utils::Initializer<> initializer{ detail::construct, detail::destruct };
 } // namespace
 
 Window::Window(render::Engine& engine, s32 width, s32 height, std::string_view name) noexcept :
-    width_{ width }, height_{ height }, name_{ name }, events_{},
+    width_{ width }, height_{ height }, name_{ name },
     impl_{ glfwCreateWindow(width_, height_, name_.c_str(), NULL, NULL) }, swapchain_(engine, impl_, width_, height_) {
+
+    // Keep quit here so that when we eventually need quit it will be at the front of the queue.
+    events_.emplace_back(Quit_Event());
 
     glfwSetWindowUserPointer(impl_, this);
     glfwSetKeyCallback(impl_, [](GLFWwindow* glfw_window, int key, int scancode, int action, int mods) {
@@ -52,14 +56,9 @@ Window::Window(render::Engine& engine, s32 width, s32 height, std::string_view n
         self->swapchain_.resize(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
         self->events_.emplace_back(Resize_Event(width, height));
     });
-    events_.emplace_back(Quit_Event());
 }
 
-Window::~Window() noexcept { close(); }
-
-bool Window::is_open() const noexcept { return impl_ != nullptr && !glfwWindowShouldClose(impl_); }
-
-void Window::close() noexcept {
+Window::~Window() noexcept {
     if (impl_ != nullptr) {
         glfwDestroyWindow(impl_);
         impl_ = nullptr;
@@ -70,18 +69,18 @@ void Window::swap_buffers() noexcept {
     // swap buffer for vulkan here.
     swapchain_.present();
 
-    // always place a quit_event infront
-    events_.clear();
-    events_.emplace_back(Quit_Event());
+    // Retain the quit event.
+    events_.resize(1);
 }
 
 void Window::poll_events() noexcept {
-    // clear all the windows events.
+    // Clear all the windows events.
     glfwPollEvents();
 }
 
 stdx::span<const Window_Event> Window::events_this_frame() const noexcept {
     if (!glfwWindowShouldClose(impl_)) {
+        // Don't put quit into the span.
         return { events_.data() + 1, events_.size() - 1 };
     }
     return events_;

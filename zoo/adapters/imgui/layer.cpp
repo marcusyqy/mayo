@@ -58,7 +58,6 @@ void Layer::update() noexcept {
     ImGui::NewFrame();
     // Here is an example of some drawing needed.]
     static bool show_demo_window = true;
-
     {
         static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
 
