@@ -4,9 +4,9 @@
 #include "core/log.hpp"
 #include <GLFW/glfw3.h>
 
-#include "utility/detail/initializer.hpp"
 #include "render/device_context.hpp"
 #include "render/fwd.hpp"
+#include "utility/detail/initializer.hpp"
 
 namespace zoo {
 
@@ -36,20 +36,23 @@ const utils::Initializer<> initializer{ detail::construct, detail::destruct };
 
 } // namespace
 
-Window::Window(render::Engine& engine, s32 width, s32 height, std::string_view name, InputCallback callback) noexcept :
-    width_{ width }, height_{ height }, name_{ name }, callback_{ std::move(callback) },
+Window::Window(render::Engine& engine, s32 width, s32 height, std::string_view name) noexcept :
+    width_{ width }, height_{ height }, name_{ name }, events_{},
     impl_{ glfwCreateWindow(width_, height_, name_.c_str(), NULL, NULL) }, swapchain_(engine, impl_, width_, height_) {
 
     glfwSetWindowUserPointer(impl_, this);
     glfwSetKeyCallback(impl_, [](GLFWwindow* glfw_window, int key, int scancode, int action, int mods) {
         Window* self = static_cast<Window*>(glfwGetWindowUserPointer(glfw_window));
-        self->callback_(*self, input::glfw_layer::convert(input::glfw_layer::KeyCode{ key, scancode, action, mods }));
+        auto keycode = glfw_layer::convert(glfw_layer::Glfw_Key_Code{ key, scancode, action, mods });
+        self->events_.emplace_back(Input_Event(keycode));
     });
 
     glfwSetFramebufferSizeCallback(impl_, []([[maybe_unused]] GLFWwindow* glfw_window, int width, int height) {
         Window* self = static_cast<Window*>(glfwGetWindowUserPointer(glfw_window));
         self->swapchain_.resize(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+        self->events_.emplace_back(Resize_Event(width, height));
     });
+    events_.emplace_back(Quit_Event());
 }
 
 Window::~Window() noexcept { close(); }
@@ -66,8 +69,22 @@ void Window::close() noexcept {
 void Window::swap_buffers() noexcept {
     // swap buffer for vulkan here.
     swapchain_.present();
+
+    // always place a quit_event infront
+    events_.clear();
+    events_.emplace_back(Quit_Event());
 }
 
-void Window::poll_events() noexcept { glfwPollEvents(); }
+void Window::poll_events() noexcept {
+    // clear all the windows events.
+    glfwPollEvents();
+}
+
+stdx::span<const Window_Event> Window::events_this_frame() const noexcept {
+    if (!glfwWindowShouldClose(impl_)) {
+        return { events_.data() + 1, events_.size() - 1 };
+    }
+    return events_;
+}
 
 } // namespace zoo

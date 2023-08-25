@@ -8,28 +8,45 @@
 
 #include "render/swapchain.hpp"
 #include <memory>
+#include <stdx/span.hpp>
+#include <vector>
 
 struct GLFWwindow;
 
 namespace zoo {
 
-enum class Window_Event_Type { QUIT, KEY, RESIZE };
+enum class Window_Event_Type { QUIT, KEY, RESIZE, UNKNOWN };
 
 struct Window_Event {
-    Window_Event_Type type;
+    Window_Event_Type type = Window_Event_Type::UNKNOWN;
+
+    // Input event data
+    Key_Code key_code = {};
+
+    // Resize event data
+    s32 width  = -1;
+    s32 height = -1;
+};
+
+struct Quit_Event : Window_Event {
+    Quit_Event() : Window_Event{ Window_Event_Type::QUIT } {}
+};
+
+struct Input_Event : Window_Event {
+    Input_Event(Key_Code kc) : Window_Event{ Window_Event_Type::KEY, kc } {}
+};
+
+struct Resize_Event : Window_Event {
+    Resize_Event(s32 width, s32 height) : Window_Event{ Window_Event_Type::RESIZE, {}, width, height } {}
 };
 
 class Window {
 public:
-    using InputCallback = std::function<void(Window&, input::KeyCode)>;
-
     explicit Window(
         render::Engine& engine,
         s32 width,
         s32 height,
-        std::string_view name,
-        // @TODO: maybe we don't need this as well.
-        InputCallback callback) noexcept;
+        std::string_view name) noexcept;
 
     ~Window() noexcept;
 
@@ -54,11 +71,14 @@ public:
 
     static void poll_events() noexcept;
 
+    stdx::span<const Window_Event> events_this_frame() const noexcept;
+
 private:
     s32 width_;
     s32 height_;
     std::string name_;
-    InputCallback callback_;
+
+    std::vector<Window_Event> events_;
 
     GLFWwindow* impl_;
 

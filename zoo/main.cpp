@@ -2,8 +2,8 @@
 #include "core/utils.hpp"
 
 #include "core/window.hpp"
-#include "utility/array.hpp"
 #include "render/engine.hpp"
+#include "utility/array.hpp"
 
 void test() {
     using namespace zoo;
@@ -13,23 +13,22 @@ void test() {
 
     render::Engine render_engine{ render_engine_info };
 
-    auto input_callback = [](Window& win, input::KeyCode keycode) {
-        if (keycode.key_ == input::Key::escape && keycode.action_ == input::Action::pressed) {
-            win.close();
-        }
-    };
-
-    // TODO: I think we should just merge swapchain and window
-    Window main_window{ render_engine, 1280, 960, "Zoo", input_callback };
+    Window main_window{ render_engine, 1280, 960, "Zoo" };
 
     adapters::imgui::Layer layer{ render_engine, main_window };
-
     layer.init();
 
-    while (main_window.is_open()) {
+    for (bool is_window_open = true; is_window_open; Window::poll_events()) {
+        for (auto event : main_window.events_this_frame()) {
+            if (event.type == Window_Event_Type::QUIT) is_window_open = false;
+            else if (
+                event.type == Window_Event_Type::KEY && event.key_code.key == Key::escape &&
+                event.key_code.action == Action::pressed)
+                is_window_open = false;
+        }
+
         layer.update();
         layer.render();
-        Window::poll_events();
     }
 
     layer.exit();
@@ -42,5 +41,6 @@ int main(int argc, char* argv[]) { // NOLINT
     using namespace zoo;
     core::check_memory();
     test();
+
     return 0;
 }

@@ -1,6 +1,6 @@
 #pragma once
 
-namespace zoo::input {
+namespace zoo {
 
 enum class Key {
     // clang-format off
@@ -65,24 +65,24 @@ enum class Mod { none, l_shift, l_control, l_alt, l_super, r_shift, r_control, r
 
 enum class Action { pressed, released, repeat, none, MAX_COUNT };
 
-struct KeyCode {
-    Key key_;
-    Action action_;
-    Mod mod_ = Mod::none;
+struct Key_Code {
+    Key key;
+    Action action;
+    Mod mod = Mod::none;
 };
 
 namespace glfw_layer {
 
-struct KeyCode {
-    int key_;
-    int scancode_;
-    int action_;
-    int mods_;
+struct Glfw_Key_Code {
+    int key;
+    int scancode;
+    int action;
+    int mods;
 };
 
-KeyCode convert(input::KeyCode value) noexcept;
-input::KeyCode convert(KeyCode value) noexcept;
+Glfw_Key_Code convert(Key_Code value) noexcept;
+Key_Code convert(Glfw_Key_Code value) noexcept;
 
 } // namespace glfw_layer
 
-} // namespace zoo::input
+} // namespace zoo

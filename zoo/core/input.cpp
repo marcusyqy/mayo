@@ -4,7 +4,7 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 
-namespace zoo::input::glfw_layer {
+namespace zoo::glfw_layer {
 
 namespace {
 template <Key key>
@@ -161,17 +161,17 @@ INPUT_PAIR(Key::kp_equal, GLFW_KEY_KP_EQUAL)
 
 } // namespace
 
-KeyCode convert(input::KeyCode) noexcept {
+Glfw_Key_Code convert(Key_Code) noexcept {
     ZOO_LOG_ERROR("convert function for glfw key code not implemented yet!");
     return {};
 }
 
-input::KeyCode convert(KeyCode value) noexcept {
+Key_Code convert(Glfw_Key_Code value) noexcept {
     Key key       = Key::none;
     Action action = Action::none;
     Mod mod       = Mod::none;
 
-    switch (value.key_) {
+    switch (value.key) {
 #define SWITCH_KEY(xkey)                                                                                               \
     case xkey: key = glfw_to_zoo_v<xkey>; break;
         SWITCH_KEY(GLFW_KEY_UNKNOWN)
@@ -298,14 +298,14 @@ input::KeyCode convert(KeyCode value) noexcept {
 #undef SWITCH_KEY
     }
 
-    switch (value.action_) {
+    switch (value.action) {
         case GLFW_PRESS: action = Action::pressed; break;
         case GLFW_RELEASE: action = Action::released; break;
         case GLFW_REPEAT: action = Action::repeat; break;
         default: action = Action::none; break;
     }
 
-    return input::KeyCode{ key, action, mod };
+    return Key_Code{ key, action, mod };
 }
 
-} // namespace zoo::input::glfw_layer
+} // namespace zoo::glfw_layer
