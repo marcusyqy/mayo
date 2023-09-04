@@ -7,7 +7,7 @@
 
 #include "render/resources/texture.hpp"
 
-namespace zoo::adapters::imgui {
+namespace zoo::imgui {
 
 class Layer {
 public:

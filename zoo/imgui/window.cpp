@@ -1226,7 +1226,7 @@ static void ImGui_ImplGlfw_InitPlatformInterface() {
 
 static void ImGui_ImplGlfw_ShutdownPlatformInterface() { ImGui::DestroyPlatformWindows(); }
 
-namespace zoo::adapters::imgui {
+namespace zoo::imgui {
 
 bool imgui_window_init(GLFWwindow* window, bool install_callbacks) {
     return ImGui_ImplGlfw_InitForVulkan(window, install_callbacks);

@@ -27,7 +27,7 @@
 
 #include <GLFW/glfw3.h>
 
-namespace zoo::adapters::imgui {
+namespace zoo::imgui {
 
 namespace {
 

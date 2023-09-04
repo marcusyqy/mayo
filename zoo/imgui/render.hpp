@@ -9,7 +9,7 @@
 #include "render/engine.hpp"
 #include "render/swapchain.hpp"
 
-namespace zoo::adapters::imgui {
+namespace zoo::imgui {
 
 // @TODO: Need to refine these adapters.
 void imgui_render_init(render::Engine& engine, render::Device_Context& context, const Window& main_window);

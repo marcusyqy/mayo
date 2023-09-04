@@ -15,7 +15,7 @@ void test() {
     Window main_window{ 1280, 960, "Zoo" };
 
     // remove namespaces
-    adapters::imgui::Layer layer{ render_engine, main_window };
+    imgui::Layer layer{ render_engine, main_window };
     layer.init();
 
     for (bool is_window_open = true; is_window_open; Window::poll_events()) {

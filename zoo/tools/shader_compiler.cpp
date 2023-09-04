@@ -2,7 +2,7 @@
 #include "core/fwd.hpp"
 #include "spdlog/spdlog.h"
 
-namespace zoo::adapters::tools {
+namespace zoo::tools {
 
 stdx::expected<std::vector<u32>, std::runtime_error> Shader_Compiler::compile(const Shader_Work& work) noexcept {
     shaderc::CompileOptions options;

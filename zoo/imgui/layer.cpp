@@ -8,7 +8,7 @@
 
 #include "render/scene/upload_context.hpp"
 
-namespace zoo::adapters::imgui {
+namespace zoo::imgui {
 
 Layer::Layer(render::Engine& engine, Window& window) noexcept : engine_(&engine), window_(&window) {}
 
@@ -39,7 +39,7 @@ void Layer::init() noexcept {
     // Load default font
     ImFontConfig font_config;
     font_config.FontDataOwnedByAtlas = false;
-    ImFont* font   = io.Fonts->AddFontFromMemoryTTF((void*)roboto_font, sizeof(roboto_font), 15.0f, &font_config);
+    ImFont* font   = io.Fonts->AddFontFromMemoryTTF((void*)embed::roboto_font, sizeof(embed::roboto_font), 15.0f, &font_config);
     io.FontDefault = font;
 
     // Probably Okay.
