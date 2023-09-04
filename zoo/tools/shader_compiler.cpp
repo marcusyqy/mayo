@@ -21,4 +21,4 @@ stdx::expected<std::vector<u32>, std::runtime_error> Shader_Compiler::compile(co
 
     return std::vector<uint32_t>{ module.cbegin(), module.cend() };
 }
-} // namespace zoo::adapters::tools
+} // namespace zoo::tools

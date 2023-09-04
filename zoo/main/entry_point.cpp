@@ -15,8 +15,8 @@
 
 #include "stdx/expected.hpp"
 
-#include "adapters/imgui/layer.hpp"
-#include "adapters/tools/shader_compiler.hpp"
+#include "imgui/layer.hpp"
+#include "tools/shader_compiler.hpp"
 
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
@@ -92,14 +92,14 @@ render::resources::Texture create_depth_buffer(render::Device_Context& context, 
 
 Shaders read_shaders() noexcept {
 
-    adapters::tools::Shader_Compiler compiler;
+    tools::Shader_Compiler compiler;
     auto vertex_bytes = core::read_file("static/shaders/Test.vert");
     ZOO_ASSERT(vertex_bytes, "vertex shader must have value!");
     auto fragment_bytes = core::read_file("static/shaders/Test.frag");
     ZOO_ASSERT(fragment_bytes, "fragment shader must have value!");
 
-    adapters::tools::Shader_Work vertex_work{ shaderc_vertex_shader, "Test.vert", *vertex_bytes };
-    adapters::tools::Shader_Work fragment_work{ shaderc_fragment_shader, "Test.frag", *fragment_bytes };
+    tools::Shader_Work vertex_work{ shaderc_vertex_shader, "Test.vert", *vertex_bytes };
+    tools::Shader_Work fragment_work{ shaderc_fragment_shader, "Test.frag", *fragment_bytes };
 
     auto vertex_spirv   = compiler.compile(vertex_work);
     auto fragment_spirv = compiler.compile(fragment_work);

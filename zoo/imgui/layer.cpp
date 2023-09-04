@@ -1,7 +1,7 @@
 #include "layer.hpp"
-#include "adapters/imgui/render.hpp"
-#include "adapters/imgui/window.hpp"
-#include "adapters/tools/shader_compiler.hpp"
+#include "imgui/render.hpp"
+#include "imgui/window.hpp"
+#include "tools/shader_compiler.hpp"
 
 // Using a non hpp so that it doesn't kill lsp.
 #include "fonts/roboto.embed"
@@ -39,7 +39,8 @@ void Layer::init() noexcept {
     // Load default font
     ImFontConfig font_config;
     font_config.FontDataOwnedByAtlas = false;
-    ImFont* font   = io.Fonts->AddFontFromMemoryTTF((void*)embed::roboto_font, sizeof(embed::roboto_font), 15.0f, &font_config);
+    ImFont* font =
+        io.Fonts->AddFontFromMemoryTTF((void*)embed::roboto_font, sizeof(embed::roboto_font), 15.0f, &font_config);
     io.FontDefault = font;
 
     // Probably Okay.
@@ -127,4 +128,4 @@ void Layer::render() noexcept {
     window_->swap_buffers();
 }
 
-} // namespace zoo::adapters::imgui
+} // namespace zoo::imgui

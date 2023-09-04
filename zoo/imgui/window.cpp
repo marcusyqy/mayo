@@ -1244,6 +1244,6 @@ GLFWwindow* imgui_window_handle_from_viewport(ImGuiViewport* viewport) {
     return vd->Window;
 }
 
-} // namespace zoo::adapters::imgui
+} // namespace zoo::imgui
 
 #endif

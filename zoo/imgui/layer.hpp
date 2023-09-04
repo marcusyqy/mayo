@@ -25,4 +25,4 @@ private:
     Window* window_;
 };
 
-} // namespace zoo::adapters::imgui
+} // namespace zoo::imgui

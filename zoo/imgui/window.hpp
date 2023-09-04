@@ -13,4 +13,4 @@ void imgui_window_new_frame();
 void imgui_window_exit();
 GLFWwindow* imgui_window_handle_from_viewport(ImGuiViewport* viewport);
 
-} // namespace zoo::adapters::imgui
+} // namespace zoo::imgui

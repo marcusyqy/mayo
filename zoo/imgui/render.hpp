@@ -17,4 +17,4 @@ void imgui_render_exit();
 void imgui_render_frame_render();
 void imgui_render_present();
 
-} // namespace zoo::adapters::imgui
+} // namespace zoo::imgui

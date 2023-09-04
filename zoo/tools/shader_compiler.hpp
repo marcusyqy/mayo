@@ -6,7 +6,7 @@
 #include <shaderc/shaderc.hpp>
 #include <string_view>
 
-namespace zoo::adapters::tools {
+namespace zoo::tools {
 
 struct Shader_Def_Type {
     std::string name;
@@ -28,4 +28,4 @@ public:
 private:
     shaderc::Compiler compiler_;
 };
-} // namespace zoo::adapters::tools
+} // namespace zoo::tools

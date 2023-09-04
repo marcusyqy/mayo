@@ -13,7 +13,7 @@
 #include "render/scene/upload_context.hpp"
 #include "render/sync/fence.hpp"
 
-#include "adapters/tools/shader_compiler.hpp"
+#include "tools/shader_compiler.hpp"
 
 #include "imgui.h"
 #include "window.hpp"
@@ -626,4 +626,4 @@ void imgui_render_present() {
     if (imgui_should_render(*main_draw_data)) vd.main_window_data->swapchain->present();
 }
 
-} // namespace zoo::adapters::imgui
+} // namespace zoo::imgui
