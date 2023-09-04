@@ -85,7 +85,7 @@ void Shader::reset() noexcept {
     module_ = nullptr;
 }
 
-Shader::Shader(Device_Context& context, stdx::span<uint32_t> code, std::string_view entry_point) noexcept :
+Shader::Shader(Device_Context& context, stdx::span<const uint32_t> code, std::string_view entry_point) noexcept :
     context_(&context), module_(nullptr), entry_point_(entry_point) {
     VkShaderModuleCreateInfo create_info{};
     create_info.sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;

@@ -18,7 +18,7 @@ public:
 
     void reset() noexcept;
 
-    Shader(Device_Context& context, stdx::span<uint32_t> code, std::string_view entry_point) noexcept;
+    Shader(Device_Context& context, stdx::span<const uint32_t> code, std::string_view entry_point) noexcept;
 
     Shader() noexcept;
     ~Shader() noexcept;
