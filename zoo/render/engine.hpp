@@ -26,7 +26,7 @@ public:
     using Info                     = engine::Info;
     using physical_device_iterator = typename std::vector<utils::Physical_Device>::const_iterator;
 
-    Engine(const Info& info) noexcept;
+    Engine(const Info& info = { .debug_layer = true }) noexcept;
     ~Engine() noexcept;
 
     Engine(const Engine&) noexcept            = delete;
@@ -59,7 +59,7 @@ private:
 
     // debugger may be named incorrectly
     // TODO: change this name to something that is more correct
-    std::optional<debug::Messenger> debugger_ = std::nullopt;
+    std::optional<debug::Messenger> reporter_ = std::nullopt;
 
     std::optional<VkAllocationCallbacks> callbacks_ = std::nullopt;
 };

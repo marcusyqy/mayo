@@ -10,5 +10,4 @@ struct Simp {
     static void swap_buffers(Window& window) noexcept;
 };
 
-}
-
+} // namespace zoo

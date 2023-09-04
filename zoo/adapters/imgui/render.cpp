@@ -59,7 +59,7 @@ struct Imgui_Viewport_Data {
     static constexpr auto MAX_FRAMES = 3;
     // the destructor will take care of the deallocation for the reference we will pass in something that doesn't
     // deallocate.
-    std::unique_ptr<render::Swapchain, Imgui_Deleter> swapchain;
+    std::unique_ptr<render::Swapchain> swapchain;
     Imgui_Frame_Data frame[MAX_FRAMES];
 };
 
@@ -405,9 +405,12 @@ void imgui_create_window(ImGuiViewport* viewport) {
     // Create surface
     GLFWwindow* window = imgui_window_handle_from_viewport(viewport);
 
-    auto swapchain = new render::Swapchain(bd.engine, window, (s32)viewport->Size.x, (s32)viewport->Size.y);
+    Imgui_Viewport_Data* vd = new Imgui_Viewport_Data{
+        .swapchain =
+            std::make_unique<render::Swapchain>(bd.engine, window, (s32)viewport->Size.x, (s32)viewport->Size.y)
+    };
 
-    Imgui_Viewport_Data* vd = new Imgui_Viewport_Data{ .swapchain = { swapchain, Imgui_Deleter{ true } } };
+    auto& swapchain = *vd->swapchain;
 
     // this will not be null.
     auto populate_or_repopulate_frame_data = [vd](bool use_old_data) {
@@ -425,9 +428,9 @@ void imgui_create_window(ImGuiViewport* viewport) {
         };
     };
 
-    auto [x, y] = swapchain->extent();
-    populate_or_repopulate_frame_data(false)(*swapchain, x, y);
-    swapchain->on_resize(populate_or_repopulate_frame_data(true));
+    auto [x, y] = swapchain.extent();
+    populate_or_repopulate_frame_data(false)(swapchain, x, y);
+    swapchain.on_resize(populate_or_repopulate_frame_data(true));
     viewport->RendererUserData = vd;
 }
 
@@ -509,7 +512,7 @@ void imgui_init_static_render_objects(Imgui_Vulkan_Data& vk_data, VkFormat image
 
 } // namespace
 
-void imgui_render_init(render::Engine& engine, render::Device_Context& context, render::Swapchain& main_swapchain) {
+void imgui_render_init(render::Engine& engine, render::Device_Context& context, const Window& main_window) {
 
     ImGuiIO& io = ImGui::GetIO();
     IM_ASSERT(io.BackendRendererUserData == nullptr && "Already initialized a renderer backend!");
@@ -525,17 +528,19 @@ void imgui_render_init(render::Engine& engine, render::Device_Context& context, 
     io.BackendFlags |=
         ImGuiBackendFlags_RendererHasViewports; // We can create multi-viewports on the Renderer side (optional)
 
-    imgui_init_static_render_objects(*vk_data, main_swapchain.format());
+    auto [width, height] = main_window.size();
+    auto main_swapchain  = std::make_unique<render::Swapchain>(engine, main_window.impl(), width, height);
+
+    imgui_init_static_render_objects(*vk_data, main_swapchain->format());
 
     // Creation of initial main window.
     ImGuiViewport* main_viewport    = ImGui::GetMainViewport();
     main_viewport->RendererUserData = vk_data->main_window_data =
-        new Imgui_Viewport_Data{ .swapchain = { &main_swapchain, Imgui_Deleter{ false } } };
+        new Imgui_Viewport_Data{ .swapchain = std::move(main_swapchain) };
 
     // this will not be null.
     auto& main_window_data = *vk_data->main_window_data;
-
-    auto& swapchain = *main_window_data.swapchain;
+    auto& swapchain        = *main_window_data.swapchain;
 
     auto populate_or_repopulate_frame_data = [](bool use_old_data) {
         return [use_old_data](render::Swapchain& swapchain, s32 x, s32 y) {

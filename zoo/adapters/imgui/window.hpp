@@ -7,6 +7,7 @@ struct GLFWmonitor;
 
 namespace zoo::adapters::imgui {
 
+// @TODO: use windows appropriately here
 bool imgui_window_init(GLFWwindow* window, bool install_callbacks);
 void imgui_window_new_frame();
 void imgui_window_exit();

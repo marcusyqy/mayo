@@ -109,10 +109,10 @@ Device_Context create_context(VkInstance instance, const std::vector<utils::Phys
 
 Engine::Engine(const Info& info) noexcept :
     info_(info), instance_(create_instance()), physical_devices_(populate_physical_devices(instance_)),
-    context_(create_context(instance_, physical_devices_)), debugger_(create_debugger(instance_, info)) {}
+    context_(create_context(instance_, physical_devices_)), reporter_(create_debugger(instance_, info)) {}
 
 Engine::~Engine() noexcept {
-    debugger_.reset();
+    reporter_.reset();
     context_.reset();
     if (instance_ != nullptr) {
         instance_ = nullptr;

@@ -2,11 +2,10 @@
 #include <functional>
 #include <string_view>
 
+#include "core/fwd.hpp"
+
 #include "input.hpp"
 
-#include "render/engine.hpp"
-
-#include "render/swapchain.hpp"
 #include <memory>
 #include <stdx/span.hpp>
 #include <vector>
@@ -44,7 +43,7 @@ struct Resize_Event : Window_Event {
 
 class Window {
 public:
-    explicit Window(render::Engine& engine, s32 width, s32 height, std::string_view name) noexcept;
+    explicit Window(s32 width, s32 height, std::string_view name) noexcept;
     ~Window() noexcept;
 
     Window(Window&& other) noexcept                 = delete;
@@ -56,16 +55,14 @@ public:
     bool valid() const noexcept { return impl_ != nullptr; }
     operator bool() const noexcept { return valid(); }
 
-    render::Swapchain& swapchain() noexcept { return swapchain_; }
-    const render::Swapchain& swapchain() const noexcept { return swapchain_; }
-
     // We need this now for ImGui. (remove after swapping to some different API for windows).
-    GLFWwindow* impl() noexcept { return impl_; }
-    const GLFWwindow* impl() const noexcept { return impl_; }
+    GLFWwindow* impl() const noexcept { return impl_; }
 
     stdx::span<const Window_Event> events_this_frame() const noexcept;
 
     static void poll_events() noexcept;
+
+    std::pair<s32, s32> size() const noexcept { return std::make_pair(width_, height_); }
 
 private:
     s32 width_;
@@ -73,8 +70,6 @@ private:
     std::string name_;
 
     GLFWwindow* impl_;
-
-    render::Swapchain swapchain_;
     std::vector<Window_Event> events_;
 };
 

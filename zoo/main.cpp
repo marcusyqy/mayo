@@ -12,8 +12,9 @@ void test() {
     ZOO_LOG_INFO("Starting application");
 
     render::Engine render_engine{ render_engine_info };
-    Window main_window{ render_engine, 1280, 960, "Zoo" };
+    Window main_window{ 1280, 960, "Zoo" };
 
+    // remove namespaces
     adapters::imgui::Layer layer{ render_engine, main_window };
     layer.init();
 

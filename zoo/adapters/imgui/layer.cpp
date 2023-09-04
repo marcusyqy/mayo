@@ -44,7 +44,7 @@ void Layer::init() noexcept {
 
     // Probably Okay.
     imgui_window_init(window_->impl(), true);
-    imgui_render_init(*engine_, engine_->context(), window_->swapchain());
+    imgui_render_init(*engine_, engine_->context(), *window_);
 }
 
 void Layer::exit() noexcept {
@@ -124,6 +124,7 @@ void Layer::render() noexcept {
     }
 
     imgui_render_present();
+    window_->swap_buffers();
 }
 
 } // namespace zoo::adapters::imgui
