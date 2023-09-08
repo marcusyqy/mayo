@@ -38,9 +38,8 @@ const utils::Initializer<> initializer{ detail::construct, detail::destruct };
 // We want to eventually move away from using GLFW so we will need to implement our own windows abstraction for cross
 // platform-ness?
 Window::Window(s32 width, s32 height, std::string_view name) noexcept :
-    width_{ width }, height_{ height }, name_{ name }, impl_{
-        glfwCreateWindow(width_, height_, name_.c_str(), NULL, NULL)
-    } {
+    width_{ width }, height_{ height }, name_{ name },
+    impl_{ glfwCreateWindow(width_, height_, name_.c_str(), NULL, NULL) } {
 
     // Keep quit here so that when we eventually need quit it will be at the front of the queue.
     events_.emplace_back(Quit_Event());

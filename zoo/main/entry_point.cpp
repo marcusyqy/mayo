@@ -33,8 +33,8 @@ namespace zoo {
 namespace {
 
 struct SceneData {
-    glm::vec4 fog_color;    // w is for exponent
-    glm::vec4 fog_distance; // x for min, y for max, zw unused
+    glm::vec4 fog_color;          // w is for exponent
+    glm::vec4 fog_distance;       // x for min, y for max, zw unused
     glm::vec4 ambient_color;
     glm::vec4 sunlight_direction; // w for sunpower
     glm::vec4 sunlight_color;
