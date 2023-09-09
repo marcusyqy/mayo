@@ -135,8 +135,7 @@ void Resource_Bindings::reset_members() noexcept {
 }
 
 void Resource_Bindings::release_allocation() noexcept {
-
-    // BUG: Since we don't call
+    // @BUG: Since we don't call
     // `VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT` we cannot free. For
     // now we will simply take this overhead but it is very unnecessary.
     if (context_ != nullptr && pool_ != nullptr) {

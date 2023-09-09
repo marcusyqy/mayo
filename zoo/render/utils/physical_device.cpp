@@ -3,10 +3,11 @@
 #include <iterator>
 
 // #define VK_USE_PLATFORM_WIN32_KHR
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
 // #define GLFW_EXPOSE_NATIVE_WIN32
 // #include <GLFW/glfw3native.h>
+
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
 
 namespace zoo::render::utils {
 
@@ -34,6 +35,7 @@ void Physical_Device::query_properties_and_features() noexcept {
         uint32_t queue_family_count = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(underlying_, &queue_family_count, nullptr);
 
+        // @Heap
         std::vector<VkQueueFamilyProperties> queue_families(queue_family_count);
         vkGetPhysicalDeviceQueueFamilyProperties(underlying_, &queue_family_count, queue_families.data());
         uint32_t idx{};
@@ -49,10 +51,10 @@ void Physical_Device::query_properties_and_features() noexcept {
         uint32_t extension_count{};
         vkEnumerateDeviceExtensionProperties(underlying_, nullptr, &extension_count, nullptr);
 
+        // @Heap
         std::vector<VkExtensionProperties> available_extensions(extension_count);
 
         vkEnumerateDeviceExtensionProperties(underlying_, nullptr, &extension_count, available_extensions.data());
-
         std::transform(
             std::begin(available_extensions),
             std::end(available_extensions),
@@ -92,7 +94,6 @@ bool Physical_Device::has_present(const Queue_Family_Properties& family_props, V
     // - vkGetPhysicalDeviceWaylandPresentationSupportKHR and
     // - vkGetPhysicalDeviceMirPresentationSupportKHR and is meant for use
     // before surface creation.
-    //
     return glfwGetPhysicalDevicePresentationSupport(instance, underlying_, family_props.index()) == GLFW_TRUE;
 }
 

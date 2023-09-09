@@ -1,7 +1,7 @@
 #pragma once
 
 #include "aligned_storage.hpp"
-#include "detail/singleton.hpp"
+#include "singleton.hpp"
 #include <utility>
 
 #include "core/fwd.hpp"

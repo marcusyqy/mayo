@@ -4,7 +4,7 @@
 #include "core/log.hpp"
 #include <GLFW/glfw3.h>
 
-#include "utility/detail/initializer.hpp"
+#include "utility/initializer.hpp"
 
 namespace zoo {
 

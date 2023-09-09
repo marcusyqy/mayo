@@ -1,5 +1,6 @@
 #include "simp.hpp"
 #include "render/engine.hpp"
+#include "utility/singleton.hpp"
 #include <memory>
 
 namespace zoo {
@@ -12,8 +13,9 @@ struct Impl {
     ~Impl() noexcept {}
 };
 
-// For RAII
-std::unique_ptr<Impl> impl;
+
+
+utils::Singleton<Impl> impl;
 
 } // namespace
 
