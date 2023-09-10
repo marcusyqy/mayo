@@ -1,4 +1,4 @@
-group "xtr"
+group "mods"
 
 project "refl"
     language "C++"

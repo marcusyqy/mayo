@@ -11,15 +11,20 @@ namespace zoo::imgui {
 
 class Layer {
 public:
-    void init() noexcept;
-    void exit() noexcept;
-
     void update() noexcept;
     void render() noexcept;
+
+    Layer(const Layer&)            = delete;
+    Layer(Layer&&)                 = delete;
+    Layer& operator=(const Layer&) = delete;
+    Layer& operator=(Layer&&)      = delete;
 
     Layer(render::Engine& engine, Window& window) noexcept;
     ~Layer() noexcept;
 
+private:
+    void init() noexcept;
+    void exit() noexcept;
 private:
     render::Engine* engine_;
     Window* window_;

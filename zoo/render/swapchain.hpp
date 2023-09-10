@@ -18,7 +18,6 @@ struct GLFWwindow;
 
 namespace zoo::render {
 
-//@TODO: remove Renderpass from Swapchain.
 class Swapchain {
 public:
     using underlying_type        = VkSwapchainKHR;
@@ -53,7 +52,7 @@ public:
     s32 num_images() const noexcept;
     s32 current_image() const noexcept;
 
-    // @TODO-EVENT_SYSTEM : fix this to become some proper event system
+    // @TODO -EVENT_SYSTEM : fix this to become some proper event system
 
     void on_resize(std::function<void(Swapchain&, u32, u32)> resize) noexcept;
 
@@ -102,7 +101,6 @@ private:
     };
 
     // @TODO: change these all to arrays.
-    // frame specific stuff
     std::vector<VkImage> images_;
     std::vector<SyncObjects> sync_objects_;
     size_t current_sync_objects_index_ = {};

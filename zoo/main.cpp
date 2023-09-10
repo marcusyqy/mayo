@@ -5,17 +5,12 @@
 #include "render/engine.hpp"
 #include "utility/array.hpp"
 
-void test() {
+void demo() {
     using namespace zoo;
     const render::engine::Info render_engine_info{ true };
 
-    ZOO_LOG_INFO("Starting application");
-
-    render::Engine render_engine{ render_engine_info };
-    Window main_window{ 1280, 960, "Zoo" };
-
+    ZOO_LOG_INFO("Starting application");C:\Users\Marcus\Desktop\work\zoo\mods\premake5.lua
     imgui::Layer layer{ render_engine, main_window };
-    layer.init();
 
     for (bool is_window_open = true; is_window_open; Window::poll_events()) {
         for (auto event : main_window.events_this_frame()) {
@@ -25,23 +20,25 @@ void test() {
                     if (event.key_code.key == Key::escape && event.key_code.action == Action::pressed)
                         is_window_open = false;
                     break;
+                // So that it doesn't complain lol.
+                case zoo::Window_Event_Type::RESIZE: [[fallthrough]];
+                default: break;
             }
         }
 
         layer.update();
         layer.render();
     }
-
-    layer.exit();
 }
 
+// @TODO: change this to WinMain
 int main(int argc, char* argv[]) { // NOLINT
     static_cast<void>(argc);
     static_cast<void>(argv);
 
     using namespace zoo;
     core::check_memory();
-    test();
+    demo();
 
     return 0;
 }

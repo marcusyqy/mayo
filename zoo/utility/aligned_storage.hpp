@@ -1,10 +1,11 @@
 #pragma once
 
 #include <cstddef>
+#include "core/fwd.hpp"
 
 namespace zoo {
 
-using byte = unsigned char;
+using byte = u8;
 
 template <std::size_t Len, std::size_t Align>
 struct aligned_storage {

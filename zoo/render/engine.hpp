@@ -21,7 +21,7 @@ struct Info {
 // this class should be just to query for properties that are related to
 // rendering.
 // all other rendering logic should be in `Device_Context`
-class Engine {
+class Engine { // @TODO: we should probably think about whether we want to group this with `Device_Context`
 public:
     using Info                     = engine::Info;
     using physical_device_iterator = typename std::vector<utils::Physical_Device>::const_iterator;

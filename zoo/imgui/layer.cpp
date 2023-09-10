@@ -10,9 +10,9 @@
 
 namespace zoo::imgui {
 
-Layer::Layer(render::Engine& engine, Window& window) noexcept : engine_(&engine), window_(&window) {}
+Layer::Layer(render::Engine& engine, Window& window) noexcept : engine_(&engine), window_(&window) { init(); }
 
-Layer::~Layer() noexcept {}
+Layer::~Layer() noexcept { exit(); }
 
 void Layer::init() noexcept {
     IMGUI_CHECKVERSION();
