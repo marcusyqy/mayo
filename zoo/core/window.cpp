@@ -5,6 +5,7 @@
 #include <GLFW/glfw3.h>
 
 #include "utility/initializer.hpp"
+#include "utility/singleton.hpp"
 
 namespace zoo {
 
@@ -28,6 +29,26 @@ void construct() {
 }
 
 void destruct() { glfwTerminate(); }
+
+struct Window_Registry : utils::Singleton<Window_Registry> {
+
+    Window_Registry() {
+        glfwSetErrorCallback(error_callback);
+        if (!glfwInit()) {
+            ZOO_LOG_ERROR("Something went wrong when initializing glfw");
+            std::abort();
+        }
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+    }
+
+    ~Window_Registry() { glfwTerminate(); }
+
+    u32 create_window();
+    void delete_window();
+};
 
 } // namespace detail
 

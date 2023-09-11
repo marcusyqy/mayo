@@ -1,7 +1,7 @@
 #pragma once
 
-#include <cstddef>
 #include "core/fwd.hpp"
+#include <cstddef>
 
 namespace zoo {
 

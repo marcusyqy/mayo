@@ -17,7 +17,7 @@ project "sandbox"
         "%{include_dir.spdlog}",
         "%{include_dir.vulkan}",
         "%{include_dir.glm}",
-        "%{include_dir.xtr}",
+        "%{include_dir.mods}",
         "."
     }
 

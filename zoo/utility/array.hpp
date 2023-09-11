@@ -64,7 +64,7 @@ struct Array : public Bucket<Type, N> {
             Self::count <= N,
             "Seems like the current index has gone way past "
             "the storage size? If you require some sort of "
-            "dynamic array you consider Bucket_Arra");
+            "dynamic array you consider Bucket_Array");
         new (Self::storage + Self::count++) Type{ std::forward<Args&&>(args)... };
     }
 

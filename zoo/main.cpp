@@ -7,9 +7,10 @@
 
 void demo() {
     using namespace zoo;
-    const render::engine::Info render_engine_info{ true };
 
-    ZOO_LOG_INFO("Starting application");C:\Users\Marcus\Desktop\work\zoo\mods\premake5.lua
+    ZOO_LOG_INFO("Starting application");
+    render::Engine render_engine{};
+    Window main_window{ 1280, 960, "Zoo" };
     imgui::Layer layer{ render_engine, main_window };
 
     for (bool is_window_open = true; is_window_open; Window::poll_events()) {

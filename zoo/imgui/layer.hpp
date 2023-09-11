@@ -25,6 +25,7 @@ public:
 private:
     void init() noexcept;
     void exit() noexcept;
+
 private:
     render::Engine* engine_;
     Window* window_;

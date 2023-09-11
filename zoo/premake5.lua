@@ -20,7 +20,7 @@ project "zoo"
         "%{include_dir.vma}",
         "%{include_dir.tinyobj}",
         "%{include_dir.stb}",
-        "%{include_dir.xtr}",
+        "%{include_dir.mods}",
         "%{include_dir.vulkan}",
         "%{include_dir.glm}",
         "."

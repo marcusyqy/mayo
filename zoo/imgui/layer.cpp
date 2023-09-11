@@ -28,6 +28,7 @@ void Layer::init() noexcept {
 
     // Setup Dear ImGui style
 
+    // @TODO: change the theme to make it look better.
     ImGui::StyleColorsDark();
 
     ImGuiStyle& style = ImGui::GetStyle();
@@ -37,7 +38,7 @@ void Layer::init() noexcept {
     }
 
     // Load default font
-    ImFontConfig font_config;
+    ImFontConfig font_config{};
     font_config.FontDataOwnedByAtlas = false;
     ImFont* font =
         io.Fonts->AddFontFromMemoryTTF((void*)embed::roboto_font, sizeof(embed::roboto_font), 15.0f, &font_config);

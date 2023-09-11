@@ -19,7 +19,7 @@ outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
 --for grouping projects in the future
 include "deps"
-include "xtr"
+include "mods" -- this should be combined with `deps` potentially.
 
 group ""
     include "zoo"

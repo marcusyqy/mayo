@@ -35,7 +35,7 @@ size_t get_format_size(VkFormat format) noexcept {
     switch (format) {
         case VK_FORMAT_R8G8B8A8_SRGB: return 4;
         case VK_FORMAT_R8G8B8A8_UNORM: return 4;
-        default: ZOO_ASSERT(false); return 0;  // This should at least create something.
+        default: ZOO_ASSERT(false); return 0; // This should at least create something.
     }
 }
 

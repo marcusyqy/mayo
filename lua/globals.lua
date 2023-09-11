@@ -9,7 +9,7 @@ include_dir["vma"] = "%{wks.location}/deps/vma"
 include_dir["tinyobj"] = "%{wks.location}/deps/tinyobj"
 include_dir["stb"] = "%{wks.location}/deps/stb"
 include_dir["spdlog"] = "%{wks.location}/deps/spdlog/include"
-include_dir["xtr"] = "%{wks.location}/xtr"
+include_dir["mods"] = "%{wks.location}/mods"
 include_dir["glm"] = "%{wks.location}/deps/glm"
 include_dir["vulkan"] = "%{VULKAN_SDK}/Include"
 
