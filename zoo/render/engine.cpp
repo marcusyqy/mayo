@@ -13,8 +13,8 @@ namespace zoo::render {
 
 namespace {
 
-render::Parameters params{ true };
-render::Query query{ params };
+Parameters params{ true };
+Query query{ params };
 
 std::optional<size_t> get_queue_index_if_physical_device_is_chosen(
     const render::utils::Physical_Device& physical_device,
@@ -40,7 +40,7 @@ uint32_t get_version() noexcept { return VK_MAKE_VERSION(0, 0, 0); }
 VkInstance create_instance() noexcept {
     VkApplicationInfo app_info{ .sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO,
                                 .pNext              = nullptr, // for now
-                                .pApplicationName   = "Zoo",
+                                .pApplicationName   = "Zoo Engine",
                                 .applicationVersion = get_version(),
                                 .pEngineName        = "Zoo Engine",
                                 .engineVersion      = get_version(),

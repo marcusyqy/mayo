@@ -24,3 +24,6 @@ compile_commands
 bin
 bin-int
 *.ini
+
+build.exe
+build.obj
