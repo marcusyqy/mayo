@@ -1,6 +1,6 @@
 @echo off
 set FILEMASK=*.c,*.cc,*.cpp,*.h,*.hh,*.hpp
-set FILEPATHS=zoo,mods,sandbox
+set FILEPATHS=zoo,mods,sandbox,ccb
     :: Formats zoo folder
     for %%p in (%FILEPATHS%) do (
         pushd %~dp0\..\%%p
@@ -11,4 +11,5 @@ set FILEPATHS=zoo,mods,sandbox
         )
         popd
     )
+
 PAUSE
