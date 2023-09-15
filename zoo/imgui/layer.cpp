@@ -138,7 +138,7 @@ void Layer::draw_frame_buffer() noexcept {
     const float window_height = ImGui::GetContentRegionAvail().y;
 
     // we rescale the framebuffer to the actual window size here and reset the glViewport
-    //rescale_framebuffer(window_width, window_height);
+    // rescale_framebuffer(window_width, window_height);
 
     // we get the screen position of the window
     ImVec2 pos = ImGui::GetCursorScreenPos();

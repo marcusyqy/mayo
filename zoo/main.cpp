@@ -3,8 +3,8 @@
 
 #include "core/window.hpp"
 #include "render/engine.hpp"
-#include "utility/array.hpp"
 #include "simp/simp.hpp"
+#include "utility/array.hpp"
 
 void simp() {
     using namespace zoo;
@@ -20,8 +20,7 @@ void simp() {
                         is_window_open = false;
                     break;
                 // So that it doesn't complain lol.
-                case zoo::Window_Event_Type::RESIZE:
-                    Simp::window_resized(main_window, event.width, event.height);
+                case zoo::Window_Event_Type::RESIZE: Simp::window_resized(main_window, event.width, event.height);
                 default: break;
             }
         }
