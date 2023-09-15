@@ -19,35 +19,34 @@ VkIndexType size_to_index_type(size_t size) noexcept {
 
 } // namespace
 
-Pipeline_Bind_Context& Pipeline_Bind_Context::push_constants(const PushConstant& constant, void* data) noexcept {
-    vkCmdPushConstants(cmd_buffer_, pipeline_layout_, constant.stageFlags, constant.offset, constant.size, data);
-    return *this;
+void Command_Buffer::push_constants(const PushConstant& constant, void* data) noexcept {
+    ZOO_ASSERT(pipeline_bind_context_.layout);
+    vkCmdPushConstants(
+        underlying_,
+        pipeline_bind_context_.layout,
+        constant.stageFlags,
+        constant.offset,
+        constant.size,
+        data);
 }
 
-Pipeline_Bind_Context&
-    Pipeline_Bind_Context::bindings(const Resource_Bindings& binding, stdx::span<u32> offset) noexcept {
+void Command_Buffer::bindings(const Resource_Bindings& binding, stdx::span<u32> offset) noexcept {
     auto set   = binding.sets();
     auto count = binding.count();
 
+    ZOO_ASSERT(pipeline_bind_context_.layout);
+
     // TODO: change this when compute exists bind point
     vkCmdBindDescriptorSets(
-        cmd_buffer_,
+        underlying_,
         VK_PIPELINE_BIND_POINT_GRAPHICS,
-        pipeline_layout_,
+        pipeline_bind_context_.layout,
         0,
         count,
         set,
         static_cast<u32>(offset.size()),
         offset.data());
-    return *this;
 }
-
-Pipeline_Bind_Context::Pipeline_Bind_Context(
-    VkCommandBuffer cmd_buffer,
-    VkPipeline pipeline,
-    VkPipelineLayout pipeline_layout) noexcept :
-    cmd_buffer_(cmd_buffer),
-    pipeline_(pipeline), pipeline_layout_(pipeline_layout) {}
 
 Present_Context::Present_Context(
     VkSemaphore image_available,
@@ -148,10 +147,10 @@ void Command_Buffer::draw_indexed(
         first_instance);
 }
 
-Pipeline_Bind_Context Command_Buffer::bind_pipeline(const render::Pipeline& pipeline) noexcept {
+void Command_Buffer::bind_pipeline(const render::Pipeline& pipeline) noexcept {
     assure_status(RecordStatus::begin);
     vkCmdBindPipeline(underlying_, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-    return { underlying_, pipeline.get(), pipeline.layout() };
+    pipeline_bind_context_ = Pipeline_Bind_Context{ .pipeline = pipeline.get(), .layout = pipeline.layout() };
 }
 
 void Command_Buffer::bind_vertex_buffers(stdx::span<const render::resources::Buffer> buffers) noexcept {
@@ -262,14 +261,20 @@ void Command_Buffer::exec(const VkRenderPassBeginInfo& begin_info, stdx::functio
 }
 
 void Command_Buffer::clear_context() noexcept {
+    // clear vertex buffer
     vertex_buffer_bind_context_.count_ = 0;
     vertex_buffer_bind_context_.buffers_.clear();
     vertex_buffer_bind_context_.offsets_.clear();
 
+    // clear index buffer
     index_buffer_bind_context_.buffer_     = nullptr;
     index_buffer_bind_context_.offset_     = 0;
     index_buffer_bind_context_.index_type_ = default_index_type;
     index_buffer_bind_context_.count_      = 0;
+
+    // clear pipeline
+    pipeline_bind_context_.pipeline = nullptr;
+    pipeline_bind_context_.layout   = nullptr;
 }
 
 void Command_Buffer::submit(

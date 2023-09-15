@@ -26,6 +26,8 @@ private:
     void init() noexcept;
     void exit() noexcept;
 
+    void draw_frame_buffer() noexcept;
+
 private:
     render::Engine* engine_;
     Window* window_;

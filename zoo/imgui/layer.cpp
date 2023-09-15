@@ -100,6 +100,8 @@ void Layer::update() noexcept {
             ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
         }
 
+        draw_frame_buffer();
+
         if (ImGui::BeginMenuBar()) {
             if (ImGui::MenuItem("Demo")) {
                 show_demo_window = true;
@@ -127,6 +129,28 @@ void Layer::render() noexcept {
 
     imgui_render_present();
     window_->swap_buffers();
+}
+
+void Layer::draw_frame_buffer() noexcept {
+    ImGui::Begin("Framebuffer");
+    // we access the ImGui window size
+    const float window_width  = ImGui::GetContentRegionAvail().x;
+    const float window_height = ImGui::GetContentRegionAvail().y;
+
+    // we rescale the framebuffer to the actual window size here and reset the glViewport
+    //rescale_framebuffer(window_width, window_height);
+
+    // we get the screen position of the window
+    ImVec2 pos = ImGui::GetCursorScreenPos();
+
+    // ImGui::GetWindowDrawList()->AddImage(
+    //     (void*)texture_id,
+    //     ImVec2(pos.x, pos.y),
+    //     ImVec2(pos.x + window_width, pos.y + window_height),
+    //     ImVec2(0, 1),
+    //     ImVec2(1, 0));
+
+    ImGui::End();
 }
 
 } // namespace zoo::imgui

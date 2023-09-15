@@ -16,7 +16,7 @@ static void error_callback(int, [[maybe_unused]] const char* description) noexce
 
 namespace detail {
 
-void construct() {
+void construct() noexcept {
     glfwSetErrorCallback(error_callback);
     if (!glfwInit()) {
         ZOO_LOG_ERROR("Something went wrong when initializing glfw");
@@ -28,29 +28,19 @@ void construct() {
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 }
 
-void destruct() { glfwTerminate(); }
-
-struct Window_Registry : utils::Singleton<Window_Registry> {
-
-    Window_Registry() {
-        glfwSetErrorCallback(error_callback);
-        if (!glfwInit()) {
-            ZOO_LOG_ERROR("Something went wrong when initializing glfw");
-            std::abort();
-        }
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-    }
-
-    ~Window_Registry() { glfwTerminate(); }
-
-    u32 create_window();
-    void delete_window();
-};
+void destruct() noexcept { glfwTerminate(); }
 
 } // namespace detail
+
+struct Window_Registry : utils::Singleton<Window_Registry> {
+    Window_Registry() noexcept {}
+    ~Window_Registry() noexcept { ZOO_ASSERT(registry.all_freed()); }
+
+    Registry::handle assign_window() { return registry.create(); }
+    void remove_window(Registry::handle win_handle) { registry.destroy(win_handle); }
+
+    Registry registry;
+};
 
 const utils::Initializer<> initializer{ detail::construct, detail::destruct };
 
@@ -60,7 +50,8 @@ const utils::Initializer<> initializer{ detail::construct, detail::destruct };
 // platform-ness?
 Window::Window(s32 width, s32 height, std::string_view name) noexcept :
     width_{ width }, height_{ height }, name_{ name },
-    impl_{ glfwCreateWindow(width_, height_, name_.c_str(), NULL, NULL) } {
+    impl_{ glfwCreateWindow(width_, height_, name_.c_str(), NULL, NULL) },
+    handle_{ Window_Registry::instance().assign_window() } {
 
     // Keep quit here so that when we eventually need quit it will be at the front of the queue.
     events_.emplace_back(Quit_Event());
@@ -83,6 +74,7 @@ Window::~Window() noexcept {
         glfwDestroyWindow(impl_);
         impl_ = nullptr;
     }
+    Window_Registry::instance().remove_window(handle_);
 }
 
 void Window::swap_buffers() noexcept {

@@ -39,7 +39,6 @@ struct PushConstantData {
 
 struct Imgui_Frame_Data {
     render::scene::Command_Buffer command_buffer; // this will probably not be needed as well.
-    render::Resource_Bindings bindings;
     render::sync::Fence fence;
     render::Framebuffer render_target;
 
@@ -70,6 +69,7 @@ struct Imgui_Vulkan_Data {
 
     render::resources::Texture font_tex;
     render::resources::TextureSampler font_sampler;
+    render::Resource_Bindings bindings;
 
     render::Render_Pass renderpass;
     render::Pipeline pipeline;
@@ -113,13 +113,6 @@ Imgui_Frame_Data imgui_create_frame_data(
     auto& context       = vkdata.context;
     auto command_buffer = old_data ? std::move(old_data->command_buffer)
                                    : render::scene::Command_Buffer{ context, render::Operation::graphics };
-    auto bindings       = old_data ? std::move(old_data->bindings) : [&vkdata]() {
-        auto b = vkdata.descriptor_pool.allocate(vkdata.pipeline);
-        b.start_batch()
-            .bind(0, vkdata.font_tex, vkdata.font_sampler, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
-            .end_batch();
-        return b;
-    }();
 
     auto fence = old_data ? std::move(old_data->fence) : render::sync::Fence{ context, true };
     const render::resources::TextureView* tv[] = { swapchain.get_image(index) };
@@ -132,7 +125,6 @@ Imgui_Frame_Data imgui_create_frame_data(
     auto index_buffer            = old_data ? std::move(old_data->index)
                                             : imgui_create_buffer<ImDrawIdx>(default_init_size, VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
     return { .command_buffer = std::move(command_buffer),
-             .bindings       = std::move(bindings),
              .fence          = std::move(fence),
              .render_target  = std::move(render_target),
              .vertex         = std::move(vertex_buffer),
@@ -239,9 +231,9 @@ void imgui_setup_render_state(const ImDrawData& draw_data, Imgui_Frame_Data& fd,
         auto& translate = pcd.translate;
         translate[0]    = -1.0f - draw_data.DisplayPos.x * scale[0];
         translate[1]    = -1.0f - draw_data.DisplayPos.y * scale[1];
-        command_context.bind_pipeline(bd.pipeline)
-            .push_constants(imgui_get_push_constant_descriptor(), &pcd)
-            .bindings(fd.bindings);
+        command_context.bind_pipeline(bd.pipeline);
+        command_context.push_constants(imgui_get_push_constant_descriptor(), &pcd);
+        command_context.bindings(bd.bindings);
     }
 
     command_context.bind_vertex_buffers(&fd.vertex);
@@ -303,6 +295,8 @@ void imgui_render(const ImDrawData& draw_data, Imgui_Frame_Data& fd) {
     ImVec2 clip_off   = draw_data.DisplayPos;       // (0,0) unless using multi-viewports
     ImVec2 clip_scale = draw_data.FramebufferScale; // (1,1) unless using retina display which are often (2,2)
 
+    auto& bd                                      = imgui_get_render_static_data();
+    render::Resource_Bindings* current_bind_state = &bd.bindings;
     // Render command lists
     // (Because we merged all buffers into a single one, we maintain our own offset into them)
     int global_vtx_offset = 0;
@@ -355,13 +349,21 @@ void imgui_render(const ImDrawData& draw_data, Imgui_Frame_Data& fd) {
                 // Bind DescriptorSet with font or user texture
                 // @TODO: Looks like this is not needed.
                 // VkDescriptorSet desc_set[1] = { (VkDescriptorSet)pcmd->TextureId };
-                // if (sizeof(ImTextureID) < sizeof(ImU64)) {
-                //     // We don't support texture switches if ImTextureID hasn't been redefined to be 64-bit. Do a
-                //     flaky
-                //     // check that other textures haven't been used.
-                //     IM_ASSERT(pcmd->TextureId == (ImTextureID)bd->FontDescriptorSet);
-                //     desc_set[0] = bd->FontDescriptorSet;
-                // }
+
+                auto bind_tex = (render::Resource_Bindings*)pcmd->TextureId;
+
+                if (sizeof(ImTextureID) < sizeof(ImU64)) {
+                    // We don't support texture switches if ImTextureID hasn't been redefined to be 64-bit. Do a
+                    // flaky
+                    // check that other textures haven't been used.
+                    ZOO_ASSERT(pcmd->TextureId == (ImTextureID)&bd.bindings);
+                    bind_tex = &bd.bindings;
+                }
+
+                if (current_bind_state != bind_tex && bind_tex != nullptr) {
+                    command_context.bindings(*bind_tex);
+                    current_bind_state = bind_tex;
+                }
 
                 // vkCmdBindDescriptorSets(
                 //     command_buffer,
@@ -495,6 +497,9 @@ void imgui_init_static_render_objects(Imgui_Vulkan_Data& vk_data, VkFormat image
     // create uploader.
     vk_data.upload_context = { vk_data.context };
 
+    // @TODO: We need to change renderdata
+    imgui_init_pipeline_and_descriptors(vk_data, image_format);
+
     // load fonts
     vk_data.font_tex     = init_font_textures(vk_data.upload_context, vk_data.context);
     vk_data.font_sampler = render::resources::TextureSampler::start_build()
@@ -506,8 +511,18 @@ void imgui_init_static_render_objects(Imgui_Vulkan_Data& vk_data, VkFormat image
                                .max_anisotrophy(1.f)
                                .build(vk_data.context);
 
-    // @TODO: We need to change renderdata
-    imgui_init_pipeline_and_descriptors(vk_data, image_format);
+    ZOO_LOG_INFO("??");
+    auto b = vk_data.descriptor_pool.allocate(vk_data.pipeline);
+    b.start_batch()
+        .bind(0, vk_data.font_tex, vk_data.font_sampler, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+        .end_batch();
+
+    vk_data.bindings = std::move(b);
+    ZOO_LOG_INFO("?? end");
+
+    // set font
+    ImGuiIO& io = ImGui::GetIO();
+    io.Fonts->SetTexID((ImTextureID)&vk_data.bindings);
 }
 
 } // namespace
@@ -529,7 +544,8 @@ void imgui_render_init(render::Engine& engine, render::Device_Context& context, 
         ImGuiBackendFlags_RendererHasViewports; // We can create multi-viewports on the Renderer side (optional)
 
     auto [width, height] = main_window.size();
-    auto main_swapchain  = std::make_unique<render::Swapchain>(engine, main_window.impl(), width, height);
+    // @TODO: shift this out so we can still use this.
+    auto main_swapchain = std::make_unique<render::Swapchain>(engine, main_window.impl(), width, height);
 
     imgui_init_static_render_objects(*vk_data, main_swapchain->format());
 

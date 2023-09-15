@@ -6,6 +6,7 @@
 
 #include "input.hpp"
 
+#include "utility/registry.hpp"
 #include <memory>
 #include <stdx/span.hpp>
 #include <vector>
@@ -63,6 +64,10 @@ public:
     static void poll_events() noexcept;
 
     std::pair<s32, s32> size() const noexcept { return std::make_pair(width_, height_); }
+    s32 width() const noexcept { return width_; }
+    s32 height() const noexcept { return height_; }
+
+    Registry::handle id() const noexcept { return handle_; }
 
 private:
     s32 width_;
@@ -71,6 +76,7 @@ private:
 
     GLFWwindow* impl_;
     std::vector<Window_Event> events_;
+    Registry::handle handle_;
 };
 
 } // namespace zoo

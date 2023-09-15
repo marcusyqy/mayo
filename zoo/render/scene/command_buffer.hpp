@@ -12,20 +12,6 @@
 
 namespace zoo::render::scene {
 
-struct Pipeline_Bind_Context {
-public:
-    Pipeline_Bind_Context& push_constants(const PushConstant& constant, void* data) noexcept;
-
-    Pipeline_Bind_Context& bindings(const Resource_Bindings& binding, stdx::span<u32> offset = nullptr) noexcept;
-
-    Pipeline_Bind_Context(VkCommandBuffer cmd_buffer, VkPipeline pipeline, VkPipelineLayout pipeline_layout) noexcept;
-
-private:
-    VkCommandBuffer cmd_buffer_;
-    VkPipeline pipeline_;
-    VkPipelineLayout pipeline_layout_;
-};
-
 struct Present_Context {
     Present_Context(
         VkSemaphore image_available,
@@ -57,7 +43,7 @@ public:
     void set_scissor(const VkRect2D& scissor) noexcept;
 
     // bindings
-    Pipeline_Bind_Context bind_pipeline(const render::Pipeline& pipeline) noexcept;
+    void bind_pipeline(const render::Pipeline& pipeline) noexcept;
 
     void bind_vertex_buffers(stdx::span<const render::resources::Buffer> buffers) noexcept;
     void bind_index_buffer(const render::resources::Buffer& ib) noexcept;
@@ -118,6 +104,9 @@ public:
         RenderArea* render_area = nullptr) noexcept;
     void end_renderpass() noexcept;
 
+    void push_constants(const PushConstant& constant, void* data) noexcept;
+    void bindings(const Resource_Bindings& binding, stdx::span<u32> offset = nullptr) noexcept;
+
 private:
     void clear_context() noexcept;
 
@@ -141,6 +130,11 @@ private:
         VkIndexType index_type_ = VK_INDEX_TYPE_UINT32;
         size_t count_           = {};
     } index_buffer_bind_context_;
+
+    struct Pipeline_Bind_Context {
+        VkPipeline pipeline     = {};
+        VkPipelineLayout layout = {};
+    } pipeline_bind_context_;
 
     Operation op_type_          = Operation::unknown;
     RecordStatus record_status_ = RecordStatus::end;

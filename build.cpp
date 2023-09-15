@@ -5,9 +5,13 @@
 int main(int argc, char** argv) {
     using namespace ccb;
 
-    Workspace ws;
+    Default_Workspace ws{};
     ws.name         = "zoo";
     ws.architecture = Architecture::x86_64;
+
+    ws.configurations = { "Debug", "Release", "Dist" };
+    ws.flags = Workspace_Flags::MULTI_PROCESSOR_COMPILE;
+    // ws.output_dir =  "
 
     static_cast<void>(argc);
     static_cast<void>(argv);
