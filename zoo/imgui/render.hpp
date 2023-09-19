@@ -16,5 +16,8 @@ void imgui_render_init(render::Engine& engine, render::Device_Context& context, 
 void imgui_render_exit();
 void imgui_render_frame_render();
 void imgui_render_present();
+void imgui_render_resize_main_window(s32 x, s32 y);
+
+const render::Pipeline& imgui_get_pipeline();
 
 } // namespace zoo::imgui

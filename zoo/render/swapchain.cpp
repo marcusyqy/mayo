@@ -247,8 +247,6 @@ void Swapchain::cleanup_swapchain_and_resources() noexcept {
     underlying_ = nullptr;
 }
 
-void Swapchain::resize(s32 x, s32 y) noexcept { force_resize(x, y); }
-
 Swapchain::WindowSize Swapchain::get_new_size() const noexcept {
     int width = 0, height = 0;
     while (width == 0 || height == 0) {
@@ -260,17 +258,13 @@ Swapchain::WindowSize Swapchain::get_new_size() const noexcept {
     return { static_cast<s32>(width), static_cast<s32>(height) };
 }
 
-void Swapchain::force_resize(s32 width, s32 height) noexcept {
+void Swapchain::resize(s32 width, s32 height) noexcept {
     size_.x = width;
     size_.y = height;
     create_swapchain_and_resources();
     for (auto& cb : resize_cbs_) {
         cb(*this, size_.x, size_.y);
     }
-}
-
-void Swapchain::on_resize(std::function<void(Swapchain&, u32, u32)> resize_cb) noexcept {
-    resize_cbs_.emplace_back(std::move(resize_cb));
 }
 
 void Swapchain::reset() noexcept {
@@ -351,19 +345,16 @@ void Swapchain::present() noexcept {
             sync_objects_[current_sync_objects_index_].image_avail,
             nullptr,
             &current_frame_));
-    else {
+    /*else {
         size_ = get_new_size();
-        force_resize(size_.x, size_.y);
-    }
+        resize(size_.x, size_.y);
+    }*/
 }
 
-void Swapchain::assure(VkResult result) noexcept {
-    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-        ZOO_LOG_INFO("Should recreate");
-        size_ = get_new_size();
-        force_resize(size_.x, size_.y);
-    } else if (result != VK_SUBOPTIMAL_KHR && result != VK_SUCCESS)
-        ZOO_LOG_ERROR("FAILED with {}", string_VkResult(result));
+void Swapchain::assure([[maybe_unused]] VkResult result) noexcept {
+    ZOO_ASSERT(result != VK_ERROR_OUT_OF_DATE_KHR);
+    if (result != VK_SUBOPTIMAL_KHR && result != VK_SUCCESS) ZOO_LOG_ERROR("FAILED with {}", string_VkResult(result));
+    ZOO_ASSERT(result == VK_SUBOPTIMAL_KHR || result == VK_SUCCESS);
 }
 
 Swapchain::FrameInfo Swapchain::frame_info() const noexcept {
@@ -375,14 +366,18 @@ const resources::TextureView* Swapchain::get_image(s32 index) const noexcept {
     return index < (s32)views_.size() ? &views_[index] : nullptr;
 }
 
-s32 Swapchain::num_images() const noexcept { return static_cast<s32>(images_.size()); }
+u32 Swapchain::num_images() const noexcept { return static_cast<u32>(images_.size()); }
 
 scene::Present_Context Swapchain::current_present_context() const noexcept {
     return { sync_objects_[current_sync_objects_index_].image_avail,
              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
              sync_objects_[current_sync_objects_index_].render_done };
 }
-// @TODO: this function should be named better.
-s32 Swapchain::current_image() const noexcept { return static_cast<s32>(current_frame_); }
+
+void Swapchain::on_resize(std::function<void(Swapchain&, u32, u32)> cb) noexcept {
+    resize_cbs_.emplace_back(std::move(cb));
+}
+
+u32 Swapchain::current_image() const noexcept { return current_frame_; }
 
 } // namespace zoo::render

@@ -208,7 +208,7 @@ Descriptor_Pool::Descriptor_Pool(Device_Context& context, u32 pool_size) noexcep
     VK_EXPECT_SUCCESS(vkCreateDescriptorPool(*context_, &pool_info, nullptr, &pool_));
 }
 
-Resource_Bindings Descriptor_Pool::allocate(render::Pipeline& pipeline) noexcept {
+Resource_Bindings Descriptor_Pool::allocate(const render::Pipeline& pipeline) noexcept {
     static_assert(
         Resource_Bindings::MAX_RESOURCE_SIZE == render::Pipeline::MAX_DESCRIPTORS,
         "Must match the descriptors for the arrays");

@@ -29,7 +29,9 @@ public:
 
     ~Swapchain() noexcept;
 
-    void resize(s32 x, s32 y) noexcept;
+    void resize(s32 width, s32 height) noexcept;
+
+    void on_resize(std::function<void(Swapchain&, u32, u32)> cb) noexcept;
     void reset() noexcept;
 
     [[nodiscard]] VkFormat format() const noexcept { return description_.surface_format.format; }
@@ -43,21 +45,16 @@ public:
     void present() noexcept;
 
     struct FrameInfo {
-        s32 current;
-        s32 count;
+        u32 current;
+        u32 count;
     };
 
     FrameInfo frame_info() const noexcept;
 
-    s32 num_images() const noexcept;
-    s32 current_image() const noexcept;
-
-    // @TODO -EVENT_SYSTEM : fix this to become some proper event system
-
-    void on_resize(std::function<void(Swapchain&, u32, u32)> resize) noexcept;
+    u32 num_images() const noexcept;
+    u32 current_image() const noexcept;
 
     const resources::TextureView* get_image(s32 index) const noexcept;
-
     scene::Present_Context current_present_context() const noexcept;
 
 private:
@@ -71,9 +68,6 @@ private:
     void cleanup_swapchain_and_resources() noexcept;
     void cleanup_resources() noexcept;
 
-    void create_sync_objects() noexcept;
-    void cleanup_sync_objects() noexcept;
-    void force_resize(s32 width, s32 height) noexcept;
     WindowSize get_new_size() const noexcept;
     void assure(VkResult result) noexcept;
 

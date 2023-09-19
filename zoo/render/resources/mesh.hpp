@@ -50,6 +50,10 @@ public:
         const char* file_name) noexcept :
         Mesh(allocator, upload_context, std::string_view(dir_name), std::string_view(file_name)){};
 
+    Mesh() noexcept = default;
+    Mesh(Mesh&& other) noexcept;
+    Mesh& operator=(Mesh&& other) noexcept;
+
     Mesh(const Mesh& other)            = delete;
     Mesh& operator=(const Mesh& other) = delete;
 
@@ -59,9 +63,9 @@ public:
     size_t count() const noexcept { return data_.vertices.size(); }
 
 private:
-    Buffer buffer_;
-    Buffer index_buffer_;
-    MeshData data_;
+    Buffer buffer_       = {};
+    Buffer index_buffer_ = {};
+    MeshData data_       = {};
 };
 
 } // namespace zoo::render::resources

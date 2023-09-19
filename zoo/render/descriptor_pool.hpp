@@ -89,7 +89,7 @@ private:
 class Descriptor_Pool {
 public:
     // TODO: keep resource count.
-    Resource_Bindings allocate(render::Pipeline& pipeline) noexcept;
+    Resource_Bindings allocate(const render::Pipeline& pipeline) noexcept;
 
     Descriptor_Pool(const Descriptor_Pool&) noexcept            = delete;
     Descriptor_Pool& operator=(const Descriptor_Pool&) noexcept = delete;

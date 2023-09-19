@@ -25,6 +25,11 @@ private:
     VkSemaphore render_done_;
 };
 
+struct Resource_Binding_Context {
+    const Resource_Bindings& binding;
+    stdx::span<u32> offset;
+};
+
 class Command_Buffer {
 public:
     using underlying_type = VkCommandBuffer;
@@ -105,7 +110,8 @@ public:
     void end_renderpass() noexcept;
 
     void push_constants(const PushConstant& constant, void* data) noexcept;
-    void bindings(const Resource_Bindings& binding, stdx::span<u32> offset = nullptr) noexcept;
+    void bind_resources(const Resource_Bindings& binding, stdx::span<u32> offset = nullptr) noexcept;
+    void bind_resources(stdx::span<const Resource_Binding_Context> bindings) noexcept;
 
 private:
     void clear_context() noexcept;
@@ -135,6 +141,11 @@ private:
         VkPipeline pipeline     = {};
         VkPipelineLayout layout = {};
     } pipeline_bind_context_;
+
+    struct Bindings_Cache {
+        std::vector<VkDescriptorSet> sets;
+        std::vector<u32> offsets;
+    } binding_cache_;
 
     Operation op_type_          = Operation::unknown;
     RecordStatus record_status_ = RecordStatus::end;

@@ -63,10 +63,11 @@ Window::Window(s32 width, s32 height, std::string_view name) noexcept :
         self->events_.emplace_back(Input_Event(keycode));
     });
 
-    glfwSetFramebufferSizeCallback(impl_, []([[maybe_unused]] GLFWwindow* glfw_window, int width, int height) {
+    glfwSetWindowSizeCallback(impl_, []([[maybe_unused]] GLFWwindow* glfw_window, int width, int height) {
         Window* self = static_cast<Window*>(glfwGetWindowUserPointer(glfw_window));
         self->events_.emplace_back(Resize_Event(width, height));
     });
+
 }
 
 Window::~Window() noexcept {

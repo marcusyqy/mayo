@@ -1,7 +1,7 @@
 #include "render.hpp"
 
-#include "defines.hpp"
 #include "render/fwd.hpp"
+#include "shader.hpp"
 
 // Our renderer contexts.
 #include "render/descriptor_pool.hpp"
@@ -148,8 +148,8 @@ render::Pipeline imgui_create_pipeline(render::Device_Context& context, const re
     };
 
     tools::Shader_Compiler shader_compiler;
-    render::Shader vertex_shader{ context, __glsl_shader_vert_spv, "main" };
-    render::Shader fragment_shader{ context, __glsl_shader_frag_spv, "main" };
+    render::Shader vertex_shader{ context, shader::glsl_vert_spv, "main" };
+    render::Shader fragment_shader{ context, shader::glsl_frag_spv, "main" };
 
     render::BindingDescriptor binding_descriptors[] = {
         { .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .count = 1, .stage = VK_SHADER_STAGE_FRAGMENT_BIT }
@@ -233,7 +233,7 @@ void imgui_setup_render_state(const ImDrawData& draw_data, Imgui_Frame_Data& fd,
         translate[1]    = -1.0f - draw_data.DisplayPos.y * scale[1];
         command_context.bind_pipeline(bd.pipeline);
         command_context.push_constants(imgui_get_push_constant_descriptor(), &pcd);
-        command_context.bindings(bd.bindings);
+        command_context.bind_resources(bd.bindings);
     }
 
     command_context.bind_vertex_buffers(&fd.vertex);
@@ -361,7 +361,7 @@ void imgui_render(const ImDrawData& draw_data, Imgui_Frame_Data& fd) {
                 }
 
                 if (current_bind_state != bind_tex && bind_tex != nullptr) {
-                    command_context.bindings(*bind_tex);
+                    command_context.bind_resources(*bind_tex);
                     current_bind_state = bind_tex;
                 }
 
@@ -414,25 +414,11 @@ void imgui_create_window(ImGuiViewport* viewport) {
 
     auto& swapchain = *vd->swapchain;
 
-    // this will not be null.
-    auto populate_or_repopulate_frame_data = [vd](bool use_old_data) {
-        return [vd, use_old_data](render::Swapchain& swapchain, s32 x, s32 y) {
-            s32 num_images = swapchain.num_images();
-            ZOO_ASSERT(num_images <= Imgui_Viewport_Data::MAX_FRAMES);
-            for (s32 i = 0; i < num_images; ++i)
-                vd->frame[i] = imgui_create_frame_data(
-                    imgui_get_render_static_data(),
-                    swapchain,
-                    i,
-                    x,
-                    y,
-                    use_old_data ? &vd->frame[i] : nullptr);
-        };
-    };
-
-    auto [x, y] = swapchain.extent();
-    populate_or_repopulate_frame_data(false)(swapchain, x, y);
-    swapchain.on_resize(populate_or_repopulate_frame_data(true));
+    auto [x, y]    = swapchain.extent();
+    s32 num_images = swapchain.num_images();
+    ZOO_ASSERT(num_images <= Imgui_Viewport_Data::MAX_FRAMES);
+    for (s32 i = 0; i < num_images; ++i)
+        vd->frame[i] = imgui_create_frame_data(imgui_get_render_static_data(), swapchain, i, x, y, nullptr);
     viewport->RendererUserData = vd;
 }
 
@@ -452,6 +438,17 @@ void imgui_window_resize(ImGuiViewport* viewport, ImVec2 size) {
 
     auto& swapchain = *viewport_data.swapchain;
     swapchain.resize(static_cast<s32>(size.x), static_cast<s32>(size.y));
+
+    s32 num_images = swapchain.num_images();
+    ZOO_ASSERT(num_images <= Imgui_Viewport_Data::MAX_FRAMES);
+    for (s32 i = 0; i < num_images; ++i)
+        viewport_data.frame[i] = imgui_create_frame_data(
+            imgui_get_render_static_data(),
+            swapchain,
+            i,
+            size.x,
+            size.y,
+            &viewport_data.frame[i]);
 }
 
 void imgui_render_window(ImGuiViewport* viewport, void*) {
@@ -511,14 +508,12 @@ void imgui_init_static_render_objects(Imgui_Vulkan_Data& vk_data, VkFormat image
                                .max_anisotrophy(1.f)
                                .build(vk_data.context);
 
-    ZOO_LOG_INFO("??");
     auto b = vk_data.descriptor_pool.allocate(vk_data.pipeline);
     b.start_batch()
         .bind(0, vk_data.font_tex, vk_data.font_sampler, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
         .end_batch();
 
     vk_data.bindings = std::move(b);
-    ZOO_LOG_INFO("?? end");
 
     // set font
     ImGuiIO& io = ImGui::GetIO();
@@ -526,6 +521,20 @@ void imgui_init_static_render_objects(Imgui_Vulkan_Data& vk_data, VkFormat image
 }
 
 } // namespace
+
+void imgui_render_resize_main_window(s32 x, s32 y) {
+    auto& vd            = imgui_get_render_static_data();
+    auto& viewport_data = vd.main_window_data;
+    ZOO_ASSERT(viewport_data != nullptr);
+    auto& swapchain = *viewport_data->swapchain;
+    swapchain.resize(x, y);
+
+    s32 num_images = swapchain.num_images();
+    ZOO_ASSERT(num_images <= Imgui_Viewport_Data::MAX_FRAMES);
+    for (s32 i = 0; i < num_images; ++i)
+        viewport_data->frame[i] =
+            imgui_create_frame_data(imgui_get_render_static_data(), swapchain, i, x, y, &viewport_data->frame[i]);
+}
 
 void imgui_render_init(render::Engine& engine, render::Device_Context& context, const Window& main_window) {
 
@@ -558,28 +567,16 @@ void imgui_render_init(render::Engine& engine, render::Device_Context& context, 
     auto& main_window_data = *vk_data->main_window_data;
     auto& swapchain        = *main_window_data.swapchain;
 
-    auto populate_or_repopulate_frame_data = [](bool use_old_data) {
-        return [use_old_data](render::Swapchain& swapchain, s32 x, s32 y) {
-            auto& vd       = imgui_get_render_static_data();
-            s32 num_images = swapchain.num_images();
-            ZOO_ASSERT(num_images <= Imgui_Viewport_Data::MAX_FRAMES);
-            ZOO_ASSERT(vd.main_window_data);
-            for (s32 i = 0; i < num_images; ++i)
-                vd.main_window_data->frame[i] = imgui_create_frame_data(
-                    vd,
-                    swapchain,
-                    i,
-                    x,
-                    y,
-                    use_old_data ? &vd.main_window_data->frame[i] : nullptr);
-        };
-    };
-
-    auto [x, y] = swapchain.extent();
-    populate_or_repopulate_frame_data(false)(swapchain, x, y);
-    swapchain.on_resize(populate_or_repopulate_frame_data(true));
+    auto [x, y]    = swapchain.extent();
+    auto& vd       = imgui_get_render_static_data();
+    s32 num_images = swapchain.num_images();
+    ZOO_ASSERT(num_images <= Imgui_Viewport_Data::MAX_FRAMES);
+    ZOO_ASSERT(vd.main_window_data);
+    for (s32 i = 0; i < num_images; ++i)
+        vd.main_window_data->frame[i] = imgui_create_frame_data(vd, swapchain, i, x, y, nullptr);
 
     imgui_attach_viewport_callbacks();
+    // swapchain.on_resize([](render::Swapchain&, u32 x, u32 y) { imgui_render_resize_main_window(x, y); });
 
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) imgui_attach_viewport_callbacks();
 
@@ -608,6 +605,11 @@ void imgui_render_exit() {
     io.BackendFlags &= ~(ImGuiBackendFlags_RendererHasVtxOffset | ImGuiBackendFlags_RendererHasViewports);
 
     delete std::addressof(bd);
+}
+
+const render::Pipeline& imgui_get_pipeline() {
+    auto& vd = imgui_get_render_static_data();
+    return vd.pipeline;
 }
 
 void imgui_render_frame_render() {

@@ -7,6 +7,7 @@
 #include "utils/physical_device.hpp"
 
 #include "render/debug/messenger.hpp"
+#include "utility/singleton.hpp"
 
 namespace zoo::render {
 
@@ -21,19 +22,12 @@ struct Info {
 // this class should be just to query for properties that are related to
 // rendering.
 // all other rendering logic should be in `Device_Context`
-class Engine { // @TODO: we should probably think about whether we want to group this with `Device_Context`
+class Engine : zoo::utils::Singleton<Engine> { // @TODO: we should probably think about whether we want to group this with `Device_Context`
 public:
     using Info                     = engine::Info;
     using physical_device_iterator = typename std::vector<utils::Physical_Device>::const_iterator;
 
-    Engine(const Info& info = { .debug_layer = true }) noexcept;
-    ~Engine() noexcept;
-
-    Engine(const Engine&) noexcept            = delete;
-    Engine& operator=(const Engine&) noexcept = delete;
-    Engine(Engine&&) noexcept                 = delete;
-    Engine& operator=(Engine&&) noexcept      = delete;
-
+public:
     const std::vector<utils::Physical_Device>& physical_devices() const noexcept { return physical_devices_; }
 
     VkInstance vk_instance() const noexcept { return instance_; }
@@ -46,9 +40,17 @@ public:
     Device_Context& context() noexcept { return context_; }
     const Device_Context& context() const noexcept { return context_; }
 
+public:
+    Engine(const Info& info = { .debug_layer = true }) noexcept;
+    ~Engine() noexcept;
+
+    Engine(const Engine&) noexcept            = delete;
+    Engine& operator=(const Engine&) noexcept = delete;
+    Engine(Engine&&) noexcept                 = delete;
+    Engine& operator=(Engine&&) noexcept      = delete;
+
 private:
     Info info_;
-
     VkInstance instance_ = nullptr;
 
     // stores all the physical devices.

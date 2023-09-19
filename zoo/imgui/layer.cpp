@@ -10,7 +10,10 @@
 
 namespace zoo::imgui {
 
-Layer::Layer(render::Engine& engine, Window& window) noexcept : engine_(&engine), window_(&window) { init(); }
+Layer::Layer(render::Engine& engine, Window& window) noexcept :
+    engine_(engine), window_(window), scene_(engine, window.width(), window.height()) {
+    init();
+}
 
 Layer::~Layer() noexcept { exit(); }
 
@@ -45,8 +48,10 @@ void Layer::init() noexcept {
     io.FontDefault = font;
 
     // Probably Okay.
-    imgui_window_init(window_->impl(), true);
-    imgui_render_init(*engine_, engine_->context(), *window_);
+    imgui_window_init(window_.impl(), true);
+    imgui_render_init(engine_, engine_.context(), window_);
+
+    scene_.allocate_frame_buffer(imgui_get_pipeline());
 }
 
 void Layer::exit() noexcept {
@@ -128,8 +133,10 @@ void Layer::render() noexcept {
     }
 
     imgui_render_present();
-    window_->swap_buffers();
+    window_.swap_buffers();
 }
+
+void Layer::resize(s32 x, s32 y) noexcept { imgui_render_resize_main_window(x, y); }
 
 void Layer::draw_frame_buffer() noexcept {
     ImGui::Begin("Framebuffer");
@@ -143,12 +150,12 @@ void Layer::draw_frame_buffer() noexcept {
     // we get the screen position of the window
     ImVec2 pos = ImGui::GetCursorScreenPos();
 
-    // ImGui::GetWindowDrawList()->AddImage(
-    //     (void*)texture_id,
-    //     ImVec2(pos.x, pos.y),
-    //     ImVec2(pos.x + window_width, pos.y + window_height),
-    //     ImVec2(0, 1),
-    //     ImVec2(1, 0));
+    ImGui::GetWindowDrawList()->AddImage(
+        (void*)scene_.ensure_frame_buffers_and_update(imgui_get_pipeline(), (s32)window_width, (s32)window_height),
+        ImVec2(pos.x, pos.y + window_height), // since we think the texture is on the top left corner.
+        ImVec2(pos.x + window_width, pos.y),
+        ImVec2(0, 1),
+        ImVec2(1, 0));
 
     ImGui::End();
 }

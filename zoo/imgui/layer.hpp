@@ -6,6 +6,7 @@
 #include "render/engine.hpp"
 
 #include "render/resources/texture.hpp"
+#include "imgui/scene.hpp"
 
 namespace zoo::imgui {
 
@@ -13,6 +14,7 @@ class Layer {
 public:
     void update() noexcept;
     void render() noexcept;
+    void resize(s32 x, s32 y) noexcept;
 
     Layer(const Layer&)            = delete;
     Layer(Layer&&)                 = delete;
@@ -29,8 +31,10 @@ private:
     void draw_frame_buffer() noexcept;
 
 private:
-    render::Engine* engine_;
-    Window* window_;
+    render::Engine& engine_;
+    Window& window_;
+
+    Imgui_Scene scene_;
 };
 
 } // namespace zoo::imgui

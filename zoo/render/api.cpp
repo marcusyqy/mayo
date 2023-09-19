@@ -1,12 +1,12 @@
-#include "simp.hpp"
+#include "api.hpp"
 #include "render/engine.hpp"
 #include "render/swapchain.hpp"
 #include "utility/singleton.hpp"
 #include <memory>
 
 #include "utility/registry.hpp"
-
-namespace zoo {
+#if 0
+namespace zoo::render {
 namespace {
 
 struct Render_Details {
@@ -24,7 +24,7 @@ struct Render_Details {
     bool drawn_this_frame = false;
 };
 
-struct Context : utils::Singleton<Context> {
+struct Context {
     render::Engine engine;
     const Window* current_rt = nullptr;
     std::vector<std::unique_ptr<Render_Details>> registry;
@@ -34,9 +34,9 @@ struct Context : utils::Singleton<Context> {
 
     Render_Details& retrieve(const Window& window) noexcept {
         auto handle = window.id();
-        ZOO_ASSERT(handle >= registry.size(), "Window was never used in Simp");
+        ZOO_ASSERT(handle >= registry.size(), "Window was never used in Api");
         auto& details = registry[handle];
-        ZOO_ASSERT(details, "Window was never used in Simp");
+        ZOO_ASSERT(details, "Window was never used in Api");
         return *details;
     }
 
@@ -54,32 +54,26 @@ struct Context : utils::Singleton<Context> {
     }
 };
 
+Context g_context;
+
 } // namespace
 
-void Simp::set_render_target(const Window& window) noexcept {
-    auto& context                         = Context::instance();
-    [[maybe_unused]] auto& render_details = context.assure_created(window);
-    context.current_rt                    = &window;
+void set_target(const Window& window) noexcept {
+    [[maybe_unused]] auto& render_details = g_context.assure_created(window);
+    g_context.current_rt                  = &window;
 }
 
-void Simp::window_resized(const Window& window, s32 x, s32 y) noexcept {
-    auto& context        = Context::instance();
-    auto& render_details = context.assure_created(window);
-    render_details.swapchain.resize(x, y);
-}
-
-void Simp::poll_events() noexcept {
-    // @TODO: change this later.
-    Window::poll_events();
-    // handle events here?
-}
-
-void Simp::swap_buffers(Window& window) noexcept {
-    auto& context        = Context::instance();
-    auto& render_details = context.retrieve(window);
+void swap_buffers(Window& window) noexcept {
+    auto& render_details = g_context.retrieve(window);
     if (render_details.drawn_this_frame) render_details.swapchain.present();
     render_details.drawn_this_frame = false;
     window.swap_buffers();
 }
 
+
+void set_target(const Image& image) noexcept {
+
+}
+
 } // namespace zoo
+#endif

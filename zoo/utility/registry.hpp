@@ -13,7 +13,6 @@ public:
 
     handle create() noexcept;
     void destroy(handle idx) noexcept;
-
     [[nodiscard]] bool all_freed() const noexcept;
 
     static constexpr auto invalid = std::numeric_limits<handle>::max();

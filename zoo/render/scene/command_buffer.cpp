@@ -30,7 +30,7 @@ void Command_Buffer::push_constants(const PushConstant& constant, void* data) no
         data);
 }
 
-void Command_Buffer::bindings(const Resource_Bindings& binding, stdx::span<u32> offset) noexcept {
+void Command_Buffer::bind_resources(const Resource_Bindings& binding, stdx::span<u32> offset) noexcept {
     auto set   = binding.sets();
     auto count = binding.count();
 
@@ -46,6 +46,34 @@ void Command_Buffer::bindings(const Resource_Bindings& binding, stdx::span<u32> 
         set,
         static_cast<u32>(offset.size()),
         offset.data());
+}
+
+
+void Command_Buffer::bind_resources(stdx::span<const Resource_Binding_Context> bindings) noexcept {
+    ZOO_ASSERT(pipeline_bind_context_.layout);
+
+    binding_cache_.sets.clear();
+    binding_cache_.offsets.clear();
+    
+    for (const auto& binds : bindings) {
+        std::copy(
+            binds.binding.sets(),
+            binds.binding.sets() + binds.binding.count(),
+            std::back_inserter(binding_cache_.sets));
+        std::copy(binds.offset.begin(), binds.offset.end(), std::back_inserter(binding_cache_.offsets));
+    }
+
+    ZOO_ASSERT(binding_cache_.sets.size() == binding_cache_.offsets.size());
+    // TODO: change this when compute exists bind point
+    vkCmdBindDescriptorSets(
+        underlying_,
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        pipeline_bind_context_.layout,
+        0,
+        static_cast<u32>(binding_cache_.sets.size()),
+        binding_cache_.sets.data(),
+        static_cast<u32>(binding_cache_.offsets.size()),
+        binding_cache_.offsets.data());
 }
 
 Present_Context::Present_Context(

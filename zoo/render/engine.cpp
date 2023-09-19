@@ -91,7 +91,6 @@ std::optional<debug::Messenger> create_debugger(VkInstance instance, const engin
 }
 
 Device_Context create_context(VkInstance instance, const std::vector<utils::Physical_Device>& physical_devices) {
-
     for (const auto& pd : physical_devices) {
         auto optional_index = get_queue_index_if_physical_device_is_chosen(pd, instance);
 

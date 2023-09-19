@@ -16,13 +16,13 @@ VkFence create_fence(VkDevice device, bool signaled) noexcept {
 void Fence::reset() noexcept { vkResetFences(*context_, 1, &underlying_); }
 
 void Fence::wait() noexcept {
-    vkWaitForFences(*context_, 1, &underlying_, VK_TRUE, std::numeric_limits<uint64_t>::max());
+    vkWaitForFences(*context_, 1, &underlying_, VK_TRUE, std::numeric_limits<u64>::max());
 }
 
 Fence::Status Fence::is_signaled() const noexcept {
     switch (vkGetFenceStatus(*context_, underlying_)) { // NOLINT
         case VK_SUCCESS: return Status::signaled;
-        case VK_NOT_READY: return Status::unsignaled; return Status::error;
+        case VK_NOT_READY: return Status::unsignaled; 
         default: return Status::error;
     }
 }

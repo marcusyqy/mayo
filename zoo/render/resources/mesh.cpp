@@ -135,4 +135,14 @@ Mesh::Mesh(
     std::string_view file_name) noexcept :
     Mesh(allocator, upload_context, load_mesh_data(dir_name, file_name), file_name) {}
 
+Mesh::Mesh(Mesh&& other) noexcept { *this = std::move(other); }
+
+Mesh& Mesh::operator=(Mesh&& other) noexcept {
+    buffer_       = std::move(other.buffer_);
+    index_buffer_ = std::move(other.index_buffer_);
+    data_         = std::move(other.data_);
+    return *this;
+}
+
 } // namespace zoo::render::resources
+  //
