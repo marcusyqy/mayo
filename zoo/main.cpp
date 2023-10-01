@@ -51,7 +51,8 @@ void demo() {
                     if (event.key_code.key == Key::escape && event.key_code.action == Action::pressed)
                         is_window_open = false;
                     break;
-                case zoo::Window_Event_Type::RESIZE:
+                 case zoo::Window_Event_Type::RESIZE:
+                    // figure out how imgui does it in examples.
                     //[[fallthrough]];
                     layer.resize(event.width, event.height);
                 default: break;

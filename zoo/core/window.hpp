@@ -26,8 +26,6 @@ struct Window_Event {
     // Resize event data
     s32 width  = -1;
     s32 height = -1;
-
-    //
 };
 
 struct Quit_Event : Window_Event {

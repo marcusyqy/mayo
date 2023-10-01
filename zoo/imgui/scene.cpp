@@ -317,7 +317,6 @@ void Imgui_Scene::allocate_frame_buffer(const render::Pipeline& pipeline) noexce
 
 const render::Resource_Bindings*
     Imgui_Scene::ensure_frame_buffers_and_update(const render::Pipeline& pipeline, s32 width, s32 height) noexcept {
-    
     if (width <= 0) return nullptr;
     if (height <= 0) return nullptr;
 
@@ -352,6 +351,7 @@ const render::Resource_Bindings*
             .bind(0, frame_data.render_buffer, frame_data.render_sampler, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
             .end_batch();
     }
+
     return &update();
 }
 
@@ -413,6 +413,7 @@ const render::Resource_Bindings& Imgui_Scene::update() noexcept {
 
     VkClearValue depth_clear{};
     depth_clear.depthStencil.depth = 1.f;
+
     VkClearValue clear_color[]     = { { { { 0.1f, 0.1f, 0.1f, 1.0f } } }, depth_clear };
     command_context.begin_renderpass(frame_data.render_target, clear_color);
 

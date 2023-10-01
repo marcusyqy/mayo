@@ -44,4 +44,3 @@ warnings "Off"
             runtime "Release"
             optimize "on"
             symbols "off"
-

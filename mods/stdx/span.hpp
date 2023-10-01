@@ -155,7 +155,7 @@ public:
     template <typename TT, size_t N>
     span(TT (&arr)[N]) noexcept : span(arr, N) {}
 
-    // TODO: @EVALUATE is this a hack? This is to make it a much less specialised type than array. So it doesn't decay.
+    // @TODO: Evaluate if this is a hack? This is to make it a much less specialised type than array. So it doesn't decay.
     template <typename TT, typename = std::enable_if_t<std::is_pointer_v<TT>, bool>>
     span(TT data) noexcept : span(data, data != nullptr ? 1 : 0) {}
 

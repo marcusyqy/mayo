@@ -527,8 +527,8 @@ void imgui_render_resize_main_window(s32 x, s32 y) {
     auto& viewport_data = vd.main_window_data;
     ZOO_ASSERT(viewport_data != nullptr);
     auto& swapchain = *viewport_data->swapchain;
-    swapchain.resize(x, y);
 
+    swapchain.resize(x, y);
     s32 num_images = swapchain.num_images();
     ZOO_ASSERT(num_images <= Imgui_Viewport_Data::MAX_FRAMES);
     for (s32 i = 0; i < num_images; ++i)

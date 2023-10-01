@@ -1,13 +1,5 @@
 #include "imgui.h"
-#ifndef IMGUI_DISABLE
 #include "Window.hpp"
-
-// Clang warnings with -Weverything
-#if defined(__clang__)
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wold-style-cast"  // warning: use of old-style cast
-#pragma clang diagnostic ignored "-Wsign-conversion" // warning: implicit conversion changes signedness
-#endif
 
 // GLFW
 #include <GLFW/glfw3.h>
@@ -16,15 +8,6 @@
 #undef APIENTRY
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3native.h> // for glfwGetWin32Window()
-#endif
-#ifdef __APPLE__
-#define GLFW_EXPOSE_NATIVE_COCOA
-#include <GLFW/glfw3native.h> // for glfwGetCocoaWindow()
-#endif
-
-#ifdef __EMSCRIPTEN__
-#include <emscripten.h>
-#include <emscripten/html5.h>
 #endif
 
 // We gather version tests as define in order to easily see which features are version-dependent.
@@ -524,7 +507,8 @@ void ImGui_ImplGlfw_SetCallbacksChainForAllWindows(bool chain_for_all_windows) {
     bd->CallbacksChainForAllWindows = chain_for_all_windows;
 }
 
-static bool ImGui_ImplGlfw_Init(GLFWwindow* window, bool install_callbacks, GlfwClientApi client_api) {
+static bool ImGui_ImplGlfw_Init(GLFWwindow* window, bool install_callbacks) {
+    GlfwClientApi client_api = GlfwClientApi_Vulkan;
     ImGuiIO& io = ImGui::GetIO();
     IM_ASSERT(io.BackendPlatformUserData == nullptr && "Already initialized a platform backend!");
     // printf("GLFW_VERSION: %d.%d.%d (%d)", GLFW_VERSION_MAJOR, GLFW_VERSION_MINOR, GLFW_VERSION_REVISION,
@@ -618,17 +602,6 @@ static bool ImGui_ImplGlfw_Init(GLFWwindow* window, bool install_callbacks, Glfw
     return true;
 }
 
-bool ImGui_ImplGlfw_InitForOpenGL(GLFWwindow* window, bool install_callbacks) {
-    return ImGui_ImplGlfw_Init(window, install_callbacks, GlfwClientApi_OpenGL);
-}
-
-bool ImGui_ImplGlfw_InitForVulkan(GLFWwindow* window, bool install_callbacks) {
-    return ImGui_ImplGlfw_Init(window, install_callbacks, GlfwClientApi_Vulkan);
-}
-
-bool ImGui_ImplGlfw_InitForOther(GLFWwindow* window, bool install_callbacks) {
-    return ImGui_ImplGlfw_Init(window, install_callbacks, GlfwClientApi_Unknown);
-}
 
 void ImGui_ImplGlfw_Shutdown() {
     ImGui_ImplGlfw_Data* bd = ImGui_ImplGlfw_GetBackendData();
@@ -642,7 +615,7 @@ void ImGui_ImplGlfw_Shutdown() {
     for (ImGuiMouseCursor cursor_n = 0; cursor_n < ImGuiMouseCursor_COUNT; cursor_n++)
         glfwDestroyCursor(bd->MouseCursors[cursor_n]);
 
-        // Windows: register a WndProc hook so we can intercept some messages.
+    // Windows: register a WndProc hook so we can intercept some messages.
 #ifdef _WIN32
     ImGuiViewport* main_viewport = ImGui::GetMainViewport();
     ::SetWindowLongPtr((HWND)main_viewport->PlatformHandleRaw, GWLP_WNDPROC, (LONG_PTR)bd->GlfwWndProc);
@@ -1229,7 +1202,7 @@ static void ImGui_ImplGlfw_ShutdownPlatformInterface() { ImGui::DestroyPlatformW
 namespace zoo::imgui {
 
 bool imgui_window_init(GLFWwindow* window, bool install_callbacks) {
-    return ImGui_ImplGlfw_InitForVulkan(window, install_callbacks);
+    return ImGui_ImplGlfw_Init(window, install_callbacks);
 }
 
 void imgui_window_new_frame() { ImGui_ImplGlfw_NewFrame(); }
@@ -1246,4 +1219,3 @@ GLFWwindow* imgui_window_handle_from_viewport(ImGuiViewport* viewport) {
 
 } // namespace zoo::imgui
 
-#endif
