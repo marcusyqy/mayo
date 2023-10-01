@@ -73,7 +73,7 @@ Binding_Batch& Binding_Batch::bind(
     VkDescriptorImageInfo& image_info = texture_infos_[texture_count_++];
     image_info.sampler                = sampler;
     image_info.imageView              = texture.view();
-    image_info.imageLayout            = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    image_info.imageLayout            = texture.layout(); // VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
     ZOO_ASSERT(
         write_descriptors_count_ < MAX_RESOURCE_SIZE,

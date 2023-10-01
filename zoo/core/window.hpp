@@ -65,7 +65,12 @@ public:
     s32 width() const noexcept { return width_; }
     s32 height() const noexcept { return height_; }
 
-    Registry::handle id() const noexcept { return handle_; }
+    std::string_view get_clipboard_text() const;
+    void set_clipboard_text(std::string_view text);
+
+private:
+    void install_callbacks();
+    friend struct Glfw_Callbacks;
 
 private:
     s32 width_;
@@ -74,7 +79,6 @@ private:
 
     GLFWwindow* impl_;
     std::vector<Window_Event> events_;
-    Registry::handle handle_;
 };
 
 } // namespace zoo
