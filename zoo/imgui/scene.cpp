@@ -171,12 +171,6 @@ render::resources::Texture load_image_from_file(
     return texture;
 }
 
-// TODO: move this to a utils :: namespace or something.
-template <typename T, std::enable_if_t<std::is_integral_v<T>, bool> = true>
-T is_power_of_two(T v) noexcept {
-    return (((v) != 0) && (((v) & ((v)-1)) == 0));
-}
-
 size_t pad_uniform_buffer_size(const render::Device_Context& context, size_t original_size) {
     size_t min_ubo_alignment = context.physical().limits().minUniformBufferOffsetAlignment;
     size_t aligned_size      = original_size;

@@ -26,3 +26,8 @@ using u64 = uint64_t;
 using f32 = float;
 using f64 = double;
 
+template <typename T, std::enable_if_t<std::is_integral_v<T>, bool> = true>
+bool is_power_of_two(T v) noexcept {
+    return (((v) != 0) && (((v) & ((v)-1)) == 0));
+}
+

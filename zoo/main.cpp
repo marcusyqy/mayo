@@ -3,8 +3,9 @@
 
 #include "core/window.hpp"
 #include "render/engine.hpp"
-#include "render/api.hpp"
 #include "utility/array.hpp"
+
+#include "render/vulkan.hpp"
 
 #if 0
 void render_api_test() {
@@ -34,6 +35,7 @@ void render_api_test() {
 }
 #endif
 
+#if 0
 void demo() {
     using namespace zoo;
 
@@ -63,6 +65,7 @@ void demo() {
         layer.render();
     }
 }
+#endif
 
 // @TODO: change this to WinMain
 int main(int argc, char* argv[]) { // NOLINT
@@ -71,6 +74,28 @@ int main(int argc, char* argv[]) { // NOLINT
 
     using namespace zoo;
     core::check_memory();
-    demo();
+
+    Window window{ 1280, 960, "Zoo" };
+    auto data = zoo::vk::allocate_render_context(window);
+
+    for (bool is_window_open = true; is_window_open; Window::poll_events()) {
+        for (const auto& event : window.events_this_frame()) {
+            switch (event.type) {
+                case Window_Event_Type::QUIT: is_window_open = false; break;
+                case Window_Event_Type::KEY:
+                    if (event.key_code.key == Key::escape && event.key_code.action == Action::pressed)
+                        is_window_open = false;
+                    break;
+                 case zoo::Window_Event_Type::RESIZE:
+                    // figure out how imgui does it in examples.
+                    //[[fallthrough]];
+
+                default: break;
+            }
+        }
+    }
+
+    zoo::vk::free_render_context(data);
+
     return 0;
 }
