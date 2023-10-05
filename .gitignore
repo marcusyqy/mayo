@@ -27,3 +27,5 @@ bin-int
 
 build.exe
 build.obj
+
+*.lnk
