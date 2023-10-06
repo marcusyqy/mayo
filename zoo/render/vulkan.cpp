@@ -7,7 +7,11 @@ namespace zoo::vk {
 
 namespace {
 
+enum : u32 { MAX_FORMAT_COUNT = 100, MAX_PRESENT_MODE_COUNT = 100 };
+
+// @TODO: don't know if this is fine.
 std::vector<const char*> get_layers() noexcept {
+
     if (ENABLE_VALIDATION) {
         const char* validation_layer{ "VK_LAYER_KHRONOS_validation" };
         uint32_t layer_count;
@@ -358,6 +362,103 @@ VkDevice create_device(
     return device;
 }
 
+VkCommandPool create_command_pool(
+    VkDevice device,
+    u32 index,
+    const VkAllocationCallbacks& allocation_callbacks,
+    VkCommandPoolCreateFlags create_flags) {
+    VkCommandPoolCreateInfo pool_create_info{};
+    pool_create_info.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    pool_create_info.flags            = create_flags;
+    pool_create_info.queueFamilyIndex = index;
+
+    VkCommandPool command_pool;
+    VK_EXPECT_SUCCESS(vkCreateCommandPool(device, &pool_create_info, &allocation_callbacks, &command_pool));
+    return command_pool;
+}
+
+VkSurfaceFormatKHR choose_surface_format(const VkSurfaceFormatKHR* available_formats, u32 count) noexcept {
+    // Select Surface Format (from ImGui):
+    // const VkFormat requestSurfaceImageFormat[]     = { VK_FORMAT_B8G8R8A8_UNORM,
+    //                                                    VK_FORMAT_R8G8B8A8_UNORM,
+    //                                                    VK_FORMAT_B8G8R8_UNORM,
+    //                                                    VK_FORMAT_R8G8B8_UNORM };
+    for (u32 i = 0; i < count; ++i) {
+        const auto& format = available_formats[i];
+        if (format.format == VK_FORMAT_B8G8R8A8_SRGB && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+            return format;
+    }
+
+    return available_formats[0];
+}
+
+VkPresentModeKHR choose_present_mode(const VkPresentModeKHR* available_presentation_modes, u32 count) noexcept {
+    for (u32 i = 0; i < count; ++i) {
+        const auto& mode = available_presentation_modes[i];
+        if (mode == VK_PRESENT_MODE_MAILBOX_KHR) return mode;
+    }
+    return VK_PRESENT_MODE_FIFO_KHR;
+}
+
+VkExtent2D choose_extent(const VkSurfaceCapabilitiesKHR& capabilities, s32 width, s32 height) {
+    if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+        return capabilities.currentExtent;
+    }
+
+    VkExtent2D actual_extent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
+    actual_extent.width =
+        std::clamp(actual_extent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+
+    actual_extent.height =
+        std::clamp(actual_extent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+    return actual_extent;
+}
+
+void create_or_recreate_swapchain(
+    Window_Data& window,
+    VkDevice device,
+    VkPhysicalDevice physical_device,
+    s32 width,
+    s32 height,
+    const VkAllocationCallbacks& allocation_callbacks) {
+
+    VkSurfaceCapabilitiesKHR capabilities = {};
+    VkSurfaceFormatKHR formats[MAX_FORMAT_COUNT];
+
+    VkPresentModeKHR present_modes[MAX_PRESENT_MODE_COUNT];
+
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device, window.surface, &capabilities);
+
+    u32 format_count{};
+    vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, window.surface, &format_count, nullptr);
+    if (format_count != 0) {
+        ZOO_ASSERT(format_count < MAX_FORMAT_COUNT);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, window.surface, &format_count, formats);
+    }
+
+    u32 present_mode_count{};
+    vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, window.surface, &present_mode_count, nullptr);
+    if (present_mode_count != 0) {
+        ZOO_ASSERT(present_mode_count < MAX_PRESENT_MODE_COUNT);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, window.surface, &present_mode_count, present_modes);
+    }
+
+    //
+    auto chosen_surface_format = choose_surface_format(formats, format_count);
+    auto chosen_present_mode   = choose_present_mode(present_modes, present_mode_count);
+    auto chosen_extent         = choose_extent(capabilities, width, height);
+
+    // @TODO:
+    window.width  = chosen_extent.width;
+    window.height = chosen_extent.height;
+
+
+    u32 image_count = std::clamp(
+        capabilities.minImageCount + 1,
+        capabilities.minImageCount,
+        capabilities.maxImageCount);
+}
+
 } // namespace
 
 Render_Context allocate_render_context(Window& window) noexcept {
@@ -373,14 +474,19 @@ Render_Context allocate_render_context(Window& window) noexcept {
     render_context.debug =
         create_debug_utils_messenger_ext(render_context.instance, render_context.allocation_callbacks);
 
+    VkSurfaceKHR surface = VK_NULL_HANDLE;
     VK_EXPECT_SUCCESS(glfwCreateWindowSurface(
         render_context.instance,
         window.impl(),
         &render_context.allocation_callbacks,
-        &render_context.surface));
+        &surface));
+
+    auto& window_data   = render_context.windows[render_context.num_windows++];
+    window_data.context = window.impl();
+    window_data.surface = surface;
 
     auto [physical_device, graphics_queue_family_idx, present_queue_family_idx] =
-        select_device(render_context.instance, render_context.surface);
+        select_device(render_context.instance, window_data.surface);
     render_context.physical_device = physical_device;
 
     render_context.device = create_device(
@@ -391,25 +497,56 @@ Render_Context allocate_render_context(Window& window) noexcept {
         render_context.allocation_callbacks);
 
     vkGetDeviceQueue(render_context.device, graphics_queue_family_idx, 0, &render_context.graphics_queue);
+    render_context.graphics_command_pool = create_command_pool(
+        render_context.device,
+        graphics_queue_family_idx,
+        render_context.allocation_callbacks,
+        VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+
     if (graphics_queue_family_idx != present_queue_family_idx) {
         vkGetDeviceQueue(render_context.device, present_queue_family_idx, 0, &render_context.present_queue);
+        render_context.present_command_pool = create_command_pool(
+            render_context.device,
+            present_queue_family_idx,
+            render_context.allocation_callbacks,
+            VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
     } else {
-        render_context.present_queue = render_context.graphics_queue;
+        render_context.present_queue        = render_context.graphics_queue;
+        render_context.present_command_pool = render_context.graphics_command_pool;
     }
 
     return render_context;
 }
 
 void free_render_context(Render_Context& render_context) noexcept {
+    vkDestroyCommandPool(
+        render_context.device,
+        render_context.graphics_command_pool,
+        &render_context.allocation_callbacks);
+
+    if (render_context.present_command_pool != render_context.graphics_command_pool) {
+        vkDestroyCommandPool(
+            render_context.device,
+            render_context.present_command_pool,
+            &render_context.allocation_callbacks);
+    }
+
     vkDestroyDevice(render_context.device, &render_context.allocation_callbacks);
 
-    vkDestroySurfaceKHR(render_context.instance, render_context.surface, &render_context.allocation_callbacks);
+    for (u32 i = 0; i < render_context.num_windows; ++i) {
+        vkDestroySurfaceKHR(
+            render_context.instance,
+            render_context.windows[i].surface,
+            &render_context.allocation_callbacks);
+    }
 
     destroy_debug_utils_messenger_ext(
         render_context.instance,
         render_context.debug,
         render_context.allocation_callbacks);
     vkDestroyInstance(render_context.instance, &render_context.allocation_callbacks);
+
+    memset(&render_context, 0, sizeof(Render_Context));
 }
 
 } // namespace zoo::vk

@@ -5,6 +5,7 @@
 #include "render/engine.hpp"
 #include "utility/array.hpp"
 
+#include "core/macros.hpp"
 #include "render/vulkan.hpp"
 
 #if 0
@@ -77,6 +78,7 @@ int main(int argc, char* argv[]) { // NOLINT
 
     Window window{ 1280, 960, "Zoo" };
     auto data = zoo::vk::allocate_render_context(window);
+    defer { zoo::vk::free_render_context(data); };
 
     for (bool is_window_open = true; is_window_open; Window::poll_events()) {
         for (const auto& event : window.events_this_frame()) {
@@ -86,7 +88,7 @@ int main(int argc, char* argv[]) { // NOLINT
                     if (event.key_code.key == Key::escape && event.key_code.action == Action::pressed)
                         is_window_open = false;
                     break;
-                 case zoo::Window_Event_Type::RESIZE:
+                case zoo::Window_Event_Type::RESIZE:
                     // figure out how imgui does it in examples.
                     //[[fallthrough]];
 
@@ -94,8 +96,6 @@ int main(int argc, char* argv[]) { // NOLINT
             }
         }
     }
-
-    zoo::vk::free_render_context(data);
 
     return 0;
 }

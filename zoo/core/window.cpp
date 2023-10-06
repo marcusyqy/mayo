@@ -7,7 +7,11 @@
 #include "utility/initializer.hpp"
 #include "utility/singleton.hpp"
 
+#include "detail/window_registry.hpp"
+
 namespace zoo {
+
+namespace window_registry = __hiddendetail::window_registry;
 
 // @TODO: implement these stuffs correctly.
 struct Glfw_Callbacks {
@@ -64,6 +68,7 @@ namespace {
 
 namespace detail {
 
+// move this to window_registry maybe.
 void construct() noexcept {
     glfwSetErrorCallback(&Glfw_Callbacks::error);
     if (!glfwInit()) {
@@ -73,7 +78,6 @@ void construct() noexcept {
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 2);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
     glfwSetMonitorCallback(&Glfw_Callbacks::monitor);
 }
@@ -89,8 +93,11 @@ const utils::Initializer<> initializer{ detail::construct, detail::destruct };
 // We want to eventually move away from using GLFW so we will need to implement our own windows abstraction for cross
 // platform-ness?
 Window::Window(s32 width, s32 height, std::string_view name) noexcept :
-    width_{ width }, height_{ height }, name_{ name },
-    impl_{ glfwCreateWindow(width_, height_, name_.c_str(), NULL, NULL) } {
+    width_{ width }, height_{ height }, name_{ name }, impl_{ window_registry::create_window(
+                                                           width_,
+                                                           height_,
+                                                           name_.c_str(),
+                                                           Window_Traits::RESIZABLE | Window_Traits::VISIBLE) } {
     // Keep quit here so that when we eventually need quit it will be at the front of the queue.
     events_.emplace_back(Quit_Event());
 
@@ -99,7 +106,6 @@ Window::Window(s32 width, s32 height, std::string_view name) noexcept :
 
 void Window::install_callbacks() {
     glfwSetWindowUserPointer(impl_, this);
-
     glfwSetKeyCallback(impl_, &Glfw_Callbacks::key);
     glfwSetWindowSizeCallback(impl_, &Glfw_Callbacks::window_size);
     glfwSetWindowFocusCallback(impl_, &Glfw_Callbacks::window_focus);
@@ -112,7 +118,7 @@ void Window::install_callbacks() {
 
 Window::~Window() noexcept {
     if (impl_ != nullptr) {
-        glfwDestroyWindow(impl_);
+        window_registry::destroy_window(impl_);
         impl_ = nullptr;
     }
 }

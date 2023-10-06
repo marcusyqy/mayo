@@ -5,16 +5,6 @@
 
 namespace zoo::core {
 
-void* ptr_round_up_align(void* ptr, uintptr_t align) noexcept {
-    ZOO_ASSERT(is_power_of_two(align), "align must be a power of two!");
-    return (void*)(((uintptr_t)ptr + (align - 1)) & ~(align - 1));
-}
-
-void* ptr_round_down_align(void* ptr, uintptr_t align) noexcept {
-    ZOO_ASSERT(is_power_of_two(align), "align must be a power of two!");
-    return (void*)((uintptr_t)ptr & ~(align - 1));
-}
-
 void check_memory() noexcept {
 #if defined(WIN32)
 #if defined(DEBUG) | defined(_DEBUG)
@@ -68,3 +58,18 @@ void populate_vertices(render::Device_Context& context) {
 }
 } // namespace example
 } // namespace zoo::core
+//
+//
+
+namespace zoo {
+
+void* ptr_round_up_align(void* ptr, uintptr_t align) noexcept {
+    ZOO_ASSERT(is_power_of_two(align), "align must be a power of two!");
+    return (void*)(((uintptr_t)ptr + (align - 1)) & ~(align - 1));
+}
+
+void* ptr_round_down_align(void* ptr, uintptr_t align) noexcept {
+    ZOO_ASSERT(is_power_of_two(align), "align must be a power of two!");
+    return (void*)((uintptr_t)ptr & ~(align - 1));
+}
+} // namespace zoo

@@ -11,6 +11,8 @@
 #include <stdx/span.hpp>
 #include <vector>
 
+#include "stdx/enum.hpp"
+
 struct GLFWwindow;
 
 namespace zoo {
@@ -40,6 +42,16 @@ struct Resize_Event : Window_Event {
     Resize_Event(s32 width, s32 height) : Window_Event{ Window_Event_Type::RESIZE, {}, width, height } {}
 };
 
+// clang-format off
+enum class Window_Traits {
+    NONE = 0,
+    RESIZABLE = 1 << 0,
+    VISIBLE = 1 << 1,
+    FOCUS_ON_SHOW = 1 << 2,
+    _stdx_enum_as_bitmask
+};
+// clang-format on
+
 class Window {
 public:
     explicit Window(s32 width, s32 height, std::string_view name) noexcept;
@@ -61,7 +73,6 @@ public:
 
     static void poll_events() noexcept;
 
-    std::pair<s32, s32> size() const noexcept { return std::make_pair(width_, height_); }
     s32 width() const noexcept { return width_; }
     s32 height() const noexcept { return height_; }
 
@@ -78,6 +89,7 @@ private:
     std::string name_;
 
     GLFWwindow* impl_;
+    //
     std::vector<Window_Event> events_;
 };
 

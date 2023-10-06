@@ -552,7 +552,8 @@ void imgui_render_init(render::Engine& engine, render::Device_Context& context, 
     io.BackendFlags |=
         ImGuiBackendFlags_RendererHasViewports; // We can create multi-viewports on the Renderer side (optional)
 
-    auto [width, height] = main_window.size();
+    auto width = main_window.width();
+    auto height = main_window.height();
     // @TODO: shift this out so we can still use this.
     auto main_swapchain = std::make_unique<render::Swapchain>(engine, main_window.impl(), width, height);
 
