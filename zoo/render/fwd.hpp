@@ -35,14 +35,14 @@ struct ViewportInfo {
 
 // @TODO: find somewhere else to put this.
 template <typename T>
-struct v2 {
+struct V2 {
     T x = {};
     T y = {};
 };
 
 struct RenderArea {
-    v2<s32> offset;
-    v2<u32> extent;
+    V2<s32> offset;
+    V2<u32> extent;
 };
 
 /*

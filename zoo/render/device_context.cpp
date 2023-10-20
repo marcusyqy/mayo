@@ -141,7 +141,6 @@ void Device_Context::release_device_resource(VkDeviceMemory device_memory) noexc
 }
 
 VkQueue Device_Context::retrieve(Operation op) const noexcept {
-
     switch (op) {
         case Operation::graphics: [[fallthrough]];
         case Operation::transfer: [[fallthrough]];

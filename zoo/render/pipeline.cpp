@@ -1,7 +1,6 @@
 
 #include "pipeline.hpp"
 #include "core/fwd.hpp"
-#include "stdx/defer.hpp"
 
 namespace zoo::render {
 
@@ -149,7 +148,7 @@ Pipeline::Pipeline(
     {
         VkDescriptorSetLayoutBinding* descriptor_set_layouts =
             new VkDescriptorSetLayoutBinding[binding_descriptors.size()];
-        STDX_DEFER({ delete[] descriptor_set_layouts; });
+        defer { delete[] descriptor_set_layouts; };
         for (set_layout_count_ = 0; set_layout_count_ < MAX_DESCRIPTORS; ++set_layout_count_) {
             // reset.
             auto idx         = set_layout_count_;

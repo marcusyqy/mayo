@@ -3,6 +3,7 @@
 namespace zoo::render {
 
 namespace {
+
 VkFramebuffer create_framebuffer(
     render::Device_Context& context,
     const Render_Pass& renderpass,
