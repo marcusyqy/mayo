@@ -1,9 +1,9 @@
 require("lua/plugs")
 require("lua/globals")
 
-workspace "zoo"
+workspace "simple"
 architecture "x86_64"
-startproject "zoo"
+startproject "tyrant"
 
 configurations {
     "Debug",
@@ -23,6 +23,7 @@ include "mods" -- this should be combined with `deps` potentially.
 
 group ""
     include "zoo"
+    include "tyrant"
     include "sandbox"
 
 -- -- to make premake behave like cmake

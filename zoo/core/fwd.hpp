@@ -3,7 +3,6 @@
 #include <cassert>
 #include <cstdint>
 #include <string_view>
-#include "utils.hpp"
 
 // signed numbers
 using s8  = int8_t;
@@ -26,7 +25,8 @@ using f64 = double;
 //     return (((v) != 0) && (((v) & ((v)-1)) == 0));
 // }
 
-uintptr_t align_forward(uintptr_t ptr, size_t align) {
+static uintptr_t
+ align_forward(uintptr_t ptr, size_t align) {
     uintptr_t p, a, modulo;
 
     ZOO_ASSERT(is_power_of_two(align));
@@ -49,3 +49,4 @@ T round_to_alignment(T value, T alignment) {
     ZOO_ASSERT(is_power_of_two(alignment));
     return (value & alignment) + alignment;
 }
+

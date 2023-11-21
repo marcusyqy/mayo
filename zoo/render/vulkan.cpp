@@ -73,7 +73,6 @@ void* reallocation_fn(
 }
 
 void free_fn(void* user_data, void* memory) {
-    // ZOO_LOG_INFO("Logging free function");
     return free(memory);
 }
 
@@ -420,6 +419,7 @@ void create_or_recreate_swapchain(
     VkPhysicalDevice physical_device,
     s32 width,
     s32 height,
+    Image_Registry& image_registry,
     const VkAllocationCallbacks& allocation_callbacks) {
 
     VkSurfaceCapabilitiesKHR capabilities = {};
@@ -444,19 +444,77 @@ void create_or_recreate_swapchain(
     }
 
     //
-    auto chosen_surface_format = choose_surface_format(formats, format_count);
-    auto chosen_present_mode   = choose_present_mode(present_modes, present_mode_count);
-    auto chosen_extent         = choose_extent(capabilities, width, height);
+    window.surface_format    = choose_surface_format(formats, format_count);
+    auto chosen_present_mode = choose_present_mode(present_modes, present_mode_count);
+    auto chosen_extent       = choose_extent(capabilities, width, height);
 
-    // @TODO:
     window.width  = chosen_extent.width;
     window.height = chosen_extent.height;
 
+    u32 image_count =
+        std::clamp(capabilities.minImageCount + 1, capabilities.minImageCount, capabilities.maxImageCount);
 
-    u32 image_count = std::clamp(
-        capabilities.minImageCount + 1,
-        capabilities.minImageCount,
-        capabilities.maxImageCount);
+    VkSwapchainCreateInfoKHR create_info{ .sType                 = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+                                          .pNext                 = nullptr,
+                                          .flags                 = 0,
+                                          .surface               = window.surface,
+                                          .minImageCount         = image_count,
+                                          .imageFormat           = window.surface_format.format,
+                                          .imageColorSpace       = window.surface_format.colorSpace,
+                                          .imageExtent           = chosen_extent,
+                                          .imageArrayLayers      = 1,
+                                          .imageUsage            = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                                          .imageSharingMode      = VK_SHARING_MODE_EXCLUSIVE,
+                                          .queueFamilyIndexCount = 0,
+                                          .pQueueFamilyIndices   = nullptr,
+                                          .preTransform          = capabilities.currentTransform,
+                                          .compositeAlpha        = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+                                          .presentMode           = chosen_present_mode,
+                                          .clipped               = VK_TRUE,
+                                          .oldSwapchain          = window.swapchain };
+
+    VK_EXPECT_SUCCESS(vkCreateSwapchainKHR(device, &create_info, &allocation_callbacks, &window.swapchain));
+
+    // required to safely destroy after creating new swapchain.
+    if (create_info.oldSwapchain != nullptr) {
+        vkDestroySwapchainKHR(device, create_info.oldSwapchain, &allocation_callbacks);
+        for (u32 i = 0; i < window.num_images; ++i) {
+            // must not have any allocation.
+            ZOO_ASSERT(image_registry.pool[window.images[i]].image.mem == VK_NULL_HANDLE);
+            image_registry.pool.erase(window.images[i]);
+        }
+    }
+
+    // retrieve images
+    vkGetSwapchainImagesKHR(device, window.swapchain, &window.num_images, nullptr);
+    VkImage placeholder[MAX_IMAGES];
+    vkGetSwapchainImagesKHR(device, window.swapchain, &window.num_images, placeholder);
+
+    for (u32 i = 0; i < window.num_images; ++i) {
+        auto index        = image_registry.pool.create();
+        auto& data        = image_registry.pool[index];
+        data.image.vk     = placeholder[i];
+        data.image.handle = index;
+        data.image.mem    = VK_NULL_HANDLE;
+        window.images[i]  = index;
+    }
+    //@BOOKMARK
+}
+
+VmaAllocator create_vma_allocator(VkInstance instance, VkDevice device, VkPhysicalDevice physical_device) {
+    VmaAllocatorCreateInfo create_info{};
+    create_info.vulkanApiVersion = API_VERSION;
+    create_info.physicalDevice   = physical_device;
+    create_info.device           = device;
+    create_info.instance         = instance;
+    VmaAllocator allocator       = VK_NULL_HANDLE;
+    VK_EXPECT_SUCCESS(vmaCreateAllocator(&create_info, &allocator));
+    return allocator;
+}
+
+void create_image_registry([[maybe_unused]] Image_Registry& registry) {
+    // ... does nothing lol.
+    // supposedly gets the vma pool but let's delegate that for later.
 }
 
 } // namespace
@@ -496,6 +554,9 @@ Render_Context allocate_render_context(Window& window) noexcept {
         present_queue_family_idx,
         render_context.allocation_callbacks);
 
+    render_context.allocator =
+        create_vma_allocator(render_context.instance, render_context.device, render_context.physical_device);
+
     vkGetDeviceQueue(render_context.device, graphics_queue_family_idx, 0, &render_context.graphics_queue);
     render_context.graphics_command_pool = create_command_pool(
         render_context.device,
@@ -515,6 +576,17 @@ Render_Context allocate_render_context(Window& window) noexcept {
         render_context.present_command_pool = render_context.graphics_command_pool;
     }
 
+    create_image_registry(render_context.image_registry);
+
+    create_or_recreate_swapchain(
+        window_data,
+        render_context.device,
+        render_context.physical_device,
+        window.width(),
+        window.height(),
+        render_context.image_registry,
+        render_context.allocation_callbacks);
+
     return render_context;
 }
 
@@ -531,6 +603,7 @@ void free_render_context(Render_Context& render_context) noexcept {
             &render_context.allocation_callbacks);
     }
 
+    vmaDestroyAllocator(render_context.allocator);
     vkDestroyDevice(render_context.device, &render_context.allocation_callbacks);
 
     for (u32 i = 0; i < render_context.num_windows; ++i) {

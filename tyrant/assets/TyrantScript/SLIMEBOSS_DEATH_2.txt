@@ -1,0 +1,1 @@
+lightbringer: looks like we gained a new skill called phase dash. *lightbringer: phase dash allows us to phase through obstacles avoiding any potential damage. *lightbringer: it also deals a small amount of damage to enemies you phase through. *lightbringer:however it does have a short recharge time  *press x to try phase dash *you can also do a jump dash *

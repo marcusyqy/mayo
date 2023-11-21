@@ -94,7 +94,6 @@ render::resources::Texture create_depth_buffer(render::Device_Context& context, 
 }
 
 Shaders read_shaders() noexcept {
-
     tools::Shader_Compiler compiler;
     auto vertex_bytes = core::read_file("static/shaders/Test.vert");
     ZOO_ASSERT(vertex_bytes, "vertex shader must have value!");

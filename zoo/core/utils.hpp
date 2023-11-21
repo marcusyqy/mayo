@@ -16,8 +16,7 @@ stdx::expected<std::string, std::runtime_error> read_file(std::string_view filen
 } // namespace zoo::core
   //
   //
-namespace zoo
-{
+namespace zoo {
 void* ptr_round_up_align(void* ptr, uintptr_t align) noexcept;
 void* ptr_round_down_align(void* ptr, uintptr_t align) noexcept;
-}
+} // namespace zoo
