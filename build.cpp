@@ -1,19 +1,23 @@
-#include "zoo/build.hpp"
 #include "ccb/ccb.hpp"
 #include <iostream>
+
+namespace ccb {
+
+void build(const Project* project, Source_Location loc) {
+    const char* source_path = loc.file_name;
+}
+
+}
 
 int main(int argc, char** argv) {
     using namespace ccb;
 
-    Default_Workspace ws{};
-    ws.name         = "zoo";
-    ws.architecture = Architecture::x86_64;
+    Project project = {};
+    project.files = {
+        "tyrant/main.cpp"
+    };
 
-    ws.configurations = { "Debug", "Release", "Dist" };
-    ws.flags = Workspace_Flags::MULTI_PROCESSOR_COMPILE;
-    // ws.output_dir =  "
+    project.cpp_version = Cpp_Version::_20;
 
-    static_cast<void>(argc);
-    static_cast<void>(argv);
-    std::cout << "hello" << std::endl;
+    build(&project);
 }

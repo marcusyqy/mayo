@@ -16,27 +16,22 @@ project "tyrant"
     includedirs {
         "%{include_dir.imgui}",
         "%{include_dir.spdlog}",
-        -- "%{include_dir.vma}",
+        "%{include_dir.vma}",
         "%{include_dir.tinyobj}",
         "%{include_dir.stb}",
         "%{include_dir.mods}",
-        -- "%{include_dir.vulkan}",
-        "%{include_dir.GLFW}",
+        "%{include_dir.vulkan}",
         "%{include_dir.glm}",
-        "%{include_dir.glad}",
-        -- "%{include_dir.d3}",
         "."
     }
 
     links {
         "GLFW",
         "vma",
+        "%{library_dir.vulkan}",
         "tinyobj",
         "stb",
         "imgui",
-        "%{library_dir.opengl}",
-        -- "%{library_dir.d3d11}",
-        -- "%{library_dir.d3dcompiler}",
         "glad"
     }
 
@@ -44,7 +39,7 @@ project "tyrant"
 
     --defines for msvc compiler
     filter "system:windows"
-    kind "ConsoleApp"
+    kind "ConsoleApp" -- "WindowedApp"
     systemversion "latest"
     defines { "WIN32", "_CRT_SECURE_NO_WARNINGS" }
 
