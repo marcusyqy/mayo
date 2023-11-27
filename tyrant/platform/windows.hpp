@@ -118,13 +118,13 @@ static DWORD WINAPI main_thread(LPVOID param) {
     window_class.hIcon = LoadIconA(NULL, IDI_APPLICATION);
     window_class.hCursor = LoadCursorA(NULL, IDC_ARROW);
     window_class.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
-    window_class.lpszClassName = L"TyrantMain Class";
+    window_class.lpszClassName = L"Tyrant_Main_Class";
     RegisterClassExW(&window_class);
 
     Actual_Window_Param p = {};
-    p.dwExStyle = 0;;
+    p.dwExStyle = 0;
     p.lpClassName = window_class.lpszClassName;
-    p.lpWindowName = L"Tyrant";
+    p.lpWindowName = L"Tyrant"; // Window name
     p.dwStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
     p.x = CW_USEDEFAULT;
     p.y = CW_USEDEFAULT;
@@ -139,15 +139,15 @@ static DWORD WINAPI main_thread(LPVOID param) {
         while(PeekMessage(&message, 0, 0, 0, PM_REMOVE)) {
             switch(message.message) {
                 case WM_CHAR: {
-                    SendMessageW(service_window, CREATE_DANGEROUS_WINDOW, (WPARAM)&p, 0);
+                    // SendMessageW(service_window, CREATE_DANGEROUS_WINDOW, (WPARAM)&p, 0);
                 } break;
-
                 case WM_CLOSE: {
                     SendMessageW(service_window, DESTROY_DANGEROUS_WINDOW, message.wParam, 0);
                 } break;
             }
         }
 
+        // This is where application code is supposed to live.
         int mid_point = (x++%(64*1024))/64;
         int window_count = 0;
         for(HWND window = FindWindowExW(0, 0, window_class.lpszClassName, 0);
@@ -175,8 +175,8 @@ static DWORD WINAPI main_thread(LPVOID param) {
     ExitProcess(0);
 }
 
-
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nCmdShow) {
+
     log_info("starting application");
 
     WNDCLASSEXW window_class = {};
@@ -191,11 +191,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
 
     HWND service_window =
         CreateWindowExW(
-            0, window_class.lpszClassName, L"Tyrant-Service", 0,
+            0, // STYLE NOT VISIBLE.
+            window_class.lpszClassName, L"Tyrant-Service", 0,
             CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
             0, 0, window_class.hInstance, 0);
 
-    // TODO:
     CreateThread(0, 0, main_thread, service_window, 0, &main_thread_id);
 
     for(;;) {
