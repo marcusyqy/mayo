@@ -1,7 +1,7 @@
 require("lua/plugs")
 require("lua/globals")
 
-workspace "simple"
+workspace "mayo"
 architecture "x86_64"
 startproject "tyrant"
 

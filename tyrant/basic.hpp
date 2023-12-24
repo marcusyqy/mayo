@@ -53,10 +53,16 @@ using f64 = double;
 
 uintptr_t align_forward(uintptr_t ptr, size_t align);
 
-template <typename T, std::enable_if_t<std::is_integral_v<T>, bool> = true>
-T round_to_alignment(T value, T alignment) {
-    assert(is_power_of_two(alignment));
-    return (value & alignment) + alignment;
-}
+#define round_to_alignment(value, alignment)                                                                           \
+    {                                                                                                                  \
+        assert(is_power_of_two(alignment));                                                                            \
+        return (value & alignment) + alignment;                                                                        \
+    }
+
+namespace convert_to {
+constexpr size_t kilo_bytes(size_t bytes) noexcept { return ((size_t)bytes << 10); }
+constexpr size_t mega_bytes(size_t bytes) noexcept { return ((size_t)bytes << 20); }
+constexpr size_t giga_bytes(size_t bytes) noexcept { return ((size_t)bytes << 30); }
+} // namespace convert_to
 
 constexpr size_t DEFAULT_ALIGNMENT = 2 * sizeof(void*);
