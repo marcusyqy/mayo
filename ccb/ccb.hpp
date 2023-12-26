@@ -16,7 +16,7 @@ enum class Architecture {
 
 enum class Platform { WINDOWS, LINUX, MAC };
 enum class Compiler { CLANG, MICROSOFT, GCC, CC };
-enum class Cpp_Version { _11, _14, _17, _20, latest = _20};
+enum class Cpp_Version { _11, _14, _17, _20, latest = _20 };
 enum class Workspace_Flags : unsigned int { NONE = 0, MULTI_PROCESSOR_COMPILE = 1 << 0, ALL = 0xFFFFFFFF };
 
 struct Query {
@@ -69,7 +69,7 @@ struct Project {
     Build_Tree build_tree = {};
 
     std::vector<std::string> files = {};
-    Cpp_Version cpp_version = Cpp_Version::latest;
+    Cpp_Version cpp_version        = Cpp_Version::latest;
 };
 
 struct Source_Location {
@@ -79,11 +79,8 @@ struct Source_Location {
     // const int line;
     // const int column;
 
-    static constexpr Source_Location current(
-        const char* file_name = __builtin_FILE()) noexcept {
-        return {
-            file_name
-        };
+    static constexpr Source_Location current(const char* file_name = __builtin_FILE()) noexcept {
+        return { file_name };
     }
 };
 
@@ -96,41 +93,39 @@ struct Workspace {
     std::vector<Project> projects           = {};
 };
 
-void build(const Workspace* workspace);
-void build(const Project* project, Source_Location loc = Source_Location::current());
+namespace detail {
+
+void ccb_internal_build(const char* source_path, int argc, char** argv) {
+    assert(argc >= 1);
+    const char* binary_path = argv[0];
+
+    int rebuild_is_needed = nob_needs_rebuild(binary_path, &source_path, 1);
+    if (rebuild_is_needed < 0) exit(1);
+    if (rebuild_is_needed) {
+        Nob_String_Builder sb = { 0 };
+        nob_sb_append_cstr(&sb, binary_path);
+        nob_sb_append_cstr(&sb, ".old");
+        nob_sb_append_null(&sb);
+
+        if (!nob_rename(binary_path, sb.items)) exit(1);
+        Nob_Cmd rebuild = { 0 };
+        nob_cmd_append(&rebuild, NOB_REBUILD_URSELF(binary_path, source_path));
+        bool rebuild_succeeded = nob_cmd_run_sync(rebuild);
+        nob_cmd_free(rebuild);
+        if (!rebuild_succeeded) {
+            nob_rename(sb.items, binary_path);
+            exit(1);
+        }
+
+        Nob_Cmd cmd = { 0 };
+        nob_da_append_many(&cmd, argv, argc);
+        if (!nob_cmd_run_sync(cmd)) exit(1);
+        exit(0);
+    }
+}
+
+} // namespace detail
 
 } // namespace ccb
 
-#define BUILD_CCB(argc, argv)                                                                \
-    do {                                                                                     \
-        const char *source_path = __FILE__;                                                  \
-        assert(argc >= 1);                                                                   \
-        const char *binary_path = argv[0];                                                   \
-                                                                                             \
-        int rebuild_is_needed = nob_needs_rebuild(binary_path, &source_path, 1);             \
-        if (rebuild_is_needed < 0) exit(1);                                                  \
-        if (rebuild_is_needed) {                                                             \
-            Nob_String_Builder sb = {0};                                                     \
-            nob_sb_append_cstr(&sb, binary_path);                                            \
-            nob_sb_append_cstr(&sb, ".old");                                                 \
-            nob_sb_append_null(&sb);                                                         \
-                                                                                             \
-            if (!nob_rename(binary_path, sb.items)) exit(1);                                 \
-            Nob_Cmd rebuild = {0};                                                           \
-            nob_cmd_append(&rebuild, NOB_REBUILD_URSELF(binary_path, source_path));          \
-            bool rebuild_succeeded = nob_cmd_run_sync(rebuild);                              \
-            nob_cmd_free(rebuild);                                                           \
-            if (!rebuild_succeeded) {                                                        \
-                nob_rename(sb.items, binary_path);                                           \
-                exit(1);                                                                     \
-            }                                                                                \
-                                                                                             \
-            Nob_Cmd cmd = {0};                                                               \
-            nob_da_append_many(&cmd, argv, argc);                                            \
-            if (!nob_cmd_run_sync(cmd)) exit(1);                                             \
-            exit(0);                                                                         \
-        }                                                                                    \
-    } while(0)
-
-
-
+#define BUILD_CCB(candidate, argc, argv) ccb_internal_build(__FILE__, argc, argv)

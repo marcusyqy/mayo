@@ -1,13 +1,6 @@
 #include "ccb/ccb.hpp"
 #include <iostream>
 
-namespace ccb {
-
-void build(const Project* project, Source_Location loc) {
-    const char* source_path = loc.file_name;
-}
-
-}
 
 int main(int argc, char** argv) {
     using namespace ccb;
@@ -18,6 +11,4 @@ int main(int argc, char** argv) {
     };
 
     project.cpp_version = Cpp_Version::_20;
-
-    build(&project);
 }
