@@ -16,7 +16,7 @@
 
 // forward declare
 Swapchain create_swapchain_from_surface(VkSurfaceKHR surface);
-void recreate_swapchain(Swapchain&);
+void recreate_swapchain(Swapchain& swapchain);
 
 namespace {
 
@@ -32,15 +32,15 @@ constexpr const char* required_extensions[] = {
 #endif
 };
 
-enum : u32 { MAX_IMAGES = 3, MAX_NUMBER_DEVICES = 10, MAX_FORMAT_COUNT = 100, MAX_PRESENT_MODE_COUNT = 100 };
-
-VkInstance instance                          = { VK_NULL_HANDLE };
-VkDebugUtilsMessengerEXT debug_messenger     = { VK_NULL_HANDLE };
-VkPhysicalDevice devices[MAX_NUMBER_DEVICES] = {};
+VkInstance instance                                         = { VK_NULL_HANDLE };
+VkDebugUtilsMessengerEXT debug_messenger                    = { VK_NULL_HANDLE };
+VkPhysicalDevice devices[Render_Params::MAX_NUMBER_DEVICES] = {};
 
 struct Device {
     VkDevice logical          = { VK_NULL_HANDLE };
     VkPhysicalDevice physical = { VK_NULL_HANDLE };
+    VkQueue present_queue;
+    VkQueue graphics_queue;
 } gpu = {};
 
 u32 device_count = {};
@@ -157,7 +157,7 @@ void init_vulkan_resources() {
     // for some reason we have to get the count first then get the devices?
     VK_EXPECT_SUCCESS(vkEnumeratePhysicalDevices(instance, &device_count, nullptr));
     assert(device_count != 0);
-    assert(device_count < MAX_NUMBER_DEVICES);
+    assert(device_count < Render_Params::MAX_NUMBER_DEVICES);
     VK_EXPECT_SUCCESS(vkEnumeratePhysicalDevices(instance, &device_count, +devices));
 
     // probably done until we get a window?
@@ -171,20 +171,6 @@ void free_vulkan_resources() {
     }
     vkDestroyInstance(instance, nullptr);
 }
-
-#ifdef WIN32
-
-Swapchain create_swapchain_from_win32(HINSTANCE hinstance, HWND hwnd) {
-    VkWin32SurfaceCreateInfoKHR create_info = {};
-    create_info.sType                       = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-    create_info.hinstance                   = hinstance;
-    create_info.hwnd                        = hwnd;
-    VkSurfaceKHR surface                    = { VK_NULL_HANDLE };
-    VK_EXPECT_SUCCESS(vkCreateWin32SurfaceKHR(instance, &create_info, nullptr, &surface));
-    return create_swapchain_from_surface(surface);
-}
-
-#endif
 
 Swapchain create_swapchain_from_surface(VkSurfaceKHR surface) {
     Swapchain swapchain = {};
@@ -316,9 +302,14 @@ Swapchain create_swapchain_from_surface(VkSurfaceKHR surface) {
         create_info.ppEnabledLayerNames = nullptr;
 #endif
 
-        VkDevice device;
+        VkDevice device = { VK_NULL_HANDLE };
         VK_EXPECT_SUCCESS(vkCreateDevice(pd, &create_info, nullptr, &device));
-        gpu = { .logical = device, .physical = pd };
+
+        VkQueue present_queue  = { VK_NULL_HANDLE };
+        VkQueue graphics_queue = { VK_NULL_HANDLE };
+        vkGetDeviceQueue(device, most_compatible_graphics_queue, 0, &graphics_queue);
+        vkGetDeviceQueue(device, most_compatible_present_queue, 0, &present_queue);
+        gpu = { .logical = device, .physical = pd, .present_queue = present_queue, .graphics_queue = graphics_queue };
     }
 
     // create_swapchain here.
@@ -328,22 +319,26 @@ Swapchain create_swapchain_from_surface(VkSurfaceKHR surface) {
 }
 
 void recreate_swapchain(Swapchain& swapchain) {
+    // @TODO: erase all resources without waiting for gpu to be idle
+    vkDeviceWaitIdle(gpu.logical);
+
+    const auto old_num_images             = swapchain.num_images;
     const auto& surface                   = swapchain.surface;
     VkSurfaceCapabilitiesKHR capabilities = {};
-    VkSurfaceFormatKHR formats[MAX_FORMAT_COUNT];
-    VkPresentModeKHR present_modes[MAX_PRESENT_MODE_COUNT];
+    VkSurfaceFormatKHR formats[Render_Params::MAX_FORMAT_COUNT];
+    VkPresentModeKHR present_modes[Render_Params::MAX_PRESENT_MODE_COUNT];
 
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(gpu.physical, surface, &capabilities);
 
     u32 format_count{};
     vkGetPhysicalDeviceSurfaceFormatsKHR(gpu.physical, surface, &format_count, nullptr);
     assert(format_count != 0);
-    assert(format_count < MAX_FORMAT_COUNT);
+    assert(format_count < Render_Params::MAX_FORMAT_COUNT);
     vkGetPhysicalDeviceSurfaceFormatsKHR(gpu.physical, surface, &format_count, formats);
 
     u32 present_mode_count{};
     vkGetPhysicalDeviceSurfacePresentModesKHR(gpu.physical, surface, &present_mode_count, nullptr);
-    assert(present_mode_count < MAX_PRESENT_MODE_COUNT);
+    assert(present_mode_count < Render_Params::MAX_PRESENT_MODE_COUNT);
     vkGetPhysicalDeviceSurfacePresentModesKHR(gpu.physical, surface, &present_mode_count, present_modes);
     //
 
@@ -404,17 +399,76 @@ void recreate_swapchain(Swapchain& swapchain) {
 
     VK_EXPECT_SUCCESS(vkCreateSwapchainKHR(gpu.logical, &create_info, nullptr, &swapchain.handle));
 
+    // cleanup.
+    for (u32 i = 0; i < old_num_images; ++i) {
+        vkDestroyImageView(gpu.logical, swapchain.image_views[i], nullptr);
+        vkDestroyFence(gpu.logical, swapchain.in_flight[i], nullptr);
+        vkDestroySemaphore(gpu.logical, swapchain.render_done[i], nullptr);
+        vkDestroySemaphore(gpu.logical, swapchain.image_avail[i], nullptr);
+    }
+
     // required to safely destroy after creating new swapchain.
     if (create_info.oldSwapchain != nullptr) vkDestroySwapchainKHR(gpu.logical, create_info.oldSwapchain, nullptr);
 
     // retrieve images
-    VkImage placeholder[MAX_IMAGES];
+    VkImage placeholder[Render_Params::MAX_SWAPCHAIN_IMAGES];
     vkGetSwapchainImagesKHR(gpu.logical, swapchain.handle, &swapchain.num_images, nullptr);
-    assert(swapchain.num_images <= MAX_IMAGES);
+    assert(swapchain.num_images <= Render_Params::MAX_SWAPCHAIN_IMAGES);
     vkGetSwapchainImagesKHR(gpu.logical, swapchain.handle, &swapchain.num_images, placeholder);
+
+    for (u32 i = 0; i < swapchain.num_images; ++i) {
+        const auto& image = placeholder[i];
+
+        VkImageViewCreateInfo image_view_create_info{};
+        image_view_create_info.sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        image_view_create_info.image    = image;
+        image_view_create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        image_view_create_info.format   = swapchain.format.format;
+
+        image_view_create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+        image_view_create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+        image_view_create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+        image_view_create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+
+        image_view_create_info.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+        image_view_create_info.subresourceRange.baseMipLevel   = 0;
+        image_view_create_info.subresourceRange.levelCount     = 1;
+        image_view_create_info.subresourceRange.baseArrayLayer = 0;
+        image_view_create_info.subresourceRange.layerCount     = 1;
+
+        // create image view
+        VK_EXPECT_SUCCESS(
+            vkCreateImageView(gpu.logical, &image_view_create_info, nullptr, swapchain.image_views + i),
+            [i](VkResult result) {
+                log_error("Failed to create image views! For index {}", i);
+                assert(result == VK_SUCCESS);
+            });
+
+        // create semaphore
+        VkSemaphoreCreateInfo semaphore_info{};
+        semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+        VK_EXPECT_SUCCESS(vkCreateSemaphore(gpu.logical, &semaphore_info, nullptr, swapchain.image_avail + i));
+        VK_EXPECT_SUCCESS(vkCreateSemaphore(gpu.logical, &semaphore_info, nullptr, swapchain.render_done + i));
+
+        // create fence
+        VkFenceCreateInfo fence_info{};
+        fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        // TODO: figure out if we really need to signal at the start.
+        fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+        VK_EXPECT_SUCCESS(vkCreateFence(gpu.logical, &fence_info, nullptr, swapchain.in_flight + i));
+    }
+
+    swapchain.out_of_date = false;
 }
 
 void free_swapchain(Swapchain& swapchain) {
+    for (u32 i = 0; i < swapchain.num_images; ++i) {
+        vkDestroyImageView(gpu.logical, swapchain.image_views[i], nullptr);
+        vkDestroyFence(gpu.logical, swapchain.in_flight[i], nullptr);
+        vkDestroySemaphore(gpu.logical, swapchain.render_done[i], nullptr);
+        vkDestroySemaphore(gpu.logical, swapchain.image_avail[i], nullptr);
+    }
+
     if (swapchain.handle) {
         vkDestroySwapchainKHR(gpu.logical, swapchain.handle, nullptr);
     }
@@ -422,3 +476,56 @@ void free_swapchain(Swapchain& swapchain) {
         vkDestroySurfaceKHR(instance, swapchain.surface, nullptr);
     }
 }
+
+void resize_swapchain(Swapchain& swapchain, u32 width, u32 height) {
+    swapchain.width  = width;
+    swapchain.height = height;
+    recreate_swapchain(swapchain);
+}
+
+void present_swapchain(Swapchain& swapchain) {
+    VkSwapchainKHR swapchains[]     = { swapchain.handle };
+    VkSemaphore signal_semaphores[] = { swapchain.render_done[swapchain.out_of_sync_index] };
+    VkPresentInfoKHR present_info{};
+    present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+    present_info.waitSemaphoreCount = 1;
+    present_info.pWaitSemaphores    = signal_semaphores;
+    present_info.swapchainCount     = 1;
+    present_info.pSwapchains        = swapchains;
+    present_info.pImageIndices      = &swapchain.current_frame;
+
+    // get queue from device.
+    VkResult result = vkQueuePresentKHR(gpu.present_queue, &present_info);
+
+    // increment to get next sync object
+    swapchain.out_of_sync_index = (swapchain.out_of_sync_index + 1) % swapchain.num_images;
+
+    if (result == VK_SUCCESS) {
+        result = vkAcquireNextImageKHR(
+            gpu.logical,
+            swapchain.handle,
+            std::numeric_limits<std::uint64_t>::max(),
+            swapchain.image_avail[swapchain.out_of_sync_index],
+            nullptr,
+            &swapchain.current_frame);
+        assert(result == VK_SUBOPTIMAL_KHR || result == VK_SUCCESS);
+
+        if (result == VK_SUBOPTIMAL_KHR) swapchain.out_of_date = true;
+    } else
+        swapchain.out_of_date = true;
+}
+
+#ifdef WIN32
+
+Swapchain create_swapchain_from_win32(HINSTANCE hinstance, HWND hwnd) {
+    VkWin32SurfaceCreateInfoKHR create_info = {};
+    create_info.sType                       = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+    create_info.hinstance                   = hinstance;
+    create_info.hwnd                        = hwnd;
+    VkSurfaceKHR surface                    = { VK_NULL_HANDLE };
+    VK_EXPECT_SUCCESS(vkCreateWin32SurfaceKHR(instance, &create_info, nullptr, &surface));
+    return create_swapchain_from_surface(surface);
+}
+
+#endif

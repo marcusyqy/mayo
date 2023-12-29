@@ -100,10 +100,10 @@ static LRESULT CALLBACK display_wnd_proc(HWND window, UINT message, WPARAM wpara
         case WM_LBUTTONDOWN:
         case WM_LBUTTONUP:
         case WM_DESTROY:
+        // case WM_SIZE:
         case WM_CHAR: {
             PostThreadMessageW(main_thread_id, message, wparam, lparam);
         } break;
-
         default: {
             result = DefWindowProcW(window, message, wparam, lparam);
         } break;
@@ -161,12 +161,18 @@ static DWORD WINAPI main_thread(LPVOID param) {
                 case WM_CLOSE: {
                     SendMessageW(service_window, Window_Messages::destroy_window, message.wParam, 0);
                 } break;
+                // case WM_SIZE: {
+                //     UINT width  = LOWORD(message.lParam);
+                //     UINT height = HIWORD(message.lParam);
+                //     resize_swapchain(swapchain, width, height);
+                // } break;
             }
         }
 
         // This is where application code is supposed to live.
         int mid_point    = (x++ % (64 * 1024)) / 64;
         int window_count = 0;
+        // turn this into something else?
         for (HWND window = FindWindowExW(0, 0, window_class.lpszClassName, 0); window;
              window      = FindWindowExW(0, window, window_class.lpszClassName, 0)) {
             // Change this to game loop ? Do something here.
@@ -179,7 +185,14 @@ static DWORD WINAPI main_thread(LPVOID param) {
                 PatBlt(device_context, mid_point, 0, client.right - mid_point, client.bottom, WHITENESS);
             }
             ReleaseDC(window, device_context);
-
+            if (window == handle) {
+                present_swapchain(swapchain);
+                if (swapchain.out_of_date) {
+                    UINT width  = client.right - client.left;
+                    UINT height = client.top - client.bottom;
+                    resize_swapchain(swapchain, width, height);
+                }
+            }
             ++window_count;
         }
 
