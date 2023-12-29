@@ -4,6 +4,7 @@ VULKAN_SDK = os.getenv("VULKAN_SDK")
 include_dir = {}
 include_dir["GLFW"] = "%{wks.location}/deps/glfw/include"
 include_dir["glad"] = "%{wks.location}/deps/glad"
+include_dir["mayo_core"] = "%{wks.location}/mayo"
 -- include_dir["opengl"] = "%{wks.location}/deps/glfw/include"
 include_dir["imgui"] = "%{wks.location}/deps/imgui"
 include_dir["vma"] = "%{wks.location}/deps/vma"

@@ -4,11 +4,10 @@
 #include <spdlog/spdlog.h>
 
 namespace detail {
-
 #define logger_init() ::spdlog::set_level(::spdlog::level::trace)
-
 }
-#ifdef SIMP_VERBOSE_LOGS
+
+#ifdef _VERBOSE_LOGS
 #define log_info(...)                                                                                                  \
     spdlog::info("[{} in \".{}-{}\"] : {}", __FUNCTION__, __FILE__, __LINE__, fmt::format(__VA_ARGS__))
 #define log_error(...)                                                                                                 \

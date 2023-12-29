@@ -36,7 +36,7 @@ void render_api_test() {
 }
 #endif
 
-#if 0
+#if 1
 void demo() {
     using namespace zoo;
 
@@ -68,6 +68,7 @@ void demo() {
 }
 #endif
 
+
 // @TODO: change this to WinMain
 int main(int argc, char* argv[]) { // NOLINT
     static_cast<void>(argc);
@@ -75,7 +76,8 @@ int main(int argc, char* argv[]) { // NOLINT
 
     using namespace zoo;
     core::check_memory();
-
+    demo();
+    #if 0
     Window window{ 1280, 960, "Zoo" };
     auto data = zoo::vk::allocate_render_context(window);
     defer { zoo::vk::free_render_context(data); };
@@ -96,6 +98,6 @@ int main(int argc, char* argv[]) { // NOLINT
             }
         }
     }
-
+    #endif
     return 0;
 }

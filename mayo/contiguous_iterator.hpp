@@ -36,19 +36,19 @@ public:
     const_reference operator*() const noexcept { return data_[curr_]; }
 
     bool operator==(const this_type& other) const noexcept {
-        STDX_ASSERT(data_ == other.data_, "Not even comparing iterators from the same container!");
+        MAYO_ASSERT(data_ == other.data_, "Not even comparing iterators from the same container!");
         return curr_ == other.curr_;
     }
 
     bool operator!=(const this_type& other) const noexcept { return !(*this == other); }
 
     bool operator<(const this_type& other) const noexcept {
-        STDX_ASSERT(data_ == other.data_, "Not even comparing iterators from the same container!");
+        MAYO_ASSERT(data_ == other.data_, "Not even comparing iterators from the same container!");
         return curr_ < other.curr_;
     }
 
     bool operator>(const this_type& other) const noexcept {
-        STDX_ASSERT(data_ == other.data_, "Not even comparing iterators from the same container!");
+        MAYO_ASSERT(data_ == other.data_, "Not even comparing iterators from the same container!");
         return curr_ > other.curr_;
     }
 
@@ -58,7 +58,7 @@ public:
 
     template <bool LConst, typename LOwner>
     difference_type operator-(const contiguous_iterator<LConst, LOwner>& other) const noexcept {
-        STDX_ASSERT(data_ == other.data_, "Must be comparing the same data!");
+        MAYO_ASSERT(data_ == other.data_, "Must be comparing the same data!");
         return data_ == other.data_ ? difference_type(curr_) - difference_type(other.curr_)
                                     : std::numeric_limits<difference_type>::max();
     }

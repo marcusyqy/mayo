@@ -22,10 +22,8 @@ void* Linear_Allocator::allocate(size_t size, size_t alignment) noexcept {
 }
 
 void Arena::clear() noexcept {
-    if (first != nullptr) {
-        strategy = Linear_Allocator(first->data, first->length);
-    }
-    current = first;
+    strategy = Linear_Allocator(first.data, first.length);
+    current  = &first;
 }
 
 void* Arena::allocate(size_t size, size_t alignment) noexcept {
@@ -33,9 +31,10 @@ void* Arena::allocate(size_t size, size_t alignment) noexcept {
     if (ptr == nullptr) {
         // push_front
         if (current->next == nullptr) {
+            // can try using windows alloc.
             current->next = new Memory_Bucket();
             current       = current->next;
-            strategy      = Linear_Allocator(first->data, first->length);
+            strategy      = Linear_Allocator(first.data, first.length);
         }
     }
 
@@ -43,9 +42,10 @@ void* Arena::allocate(size_t size, size_t alignment) noexcept {
 }
 
 Arena::~Arena() noexcept {
-    while (first != nullptr) {
-        Memory_Bucket* bucket = first;
-        first                 = first->next;
+    auto node = &first;
+    while (node != nullptr) {
+        auto bucket = node;
+        node        = node->next;
         delete bucket;
     }
 }

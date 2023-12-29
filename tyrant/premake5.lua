@@ -22,6 +22,7 @@ project "tyrant"
         "%{include_dir.mods}",
         "%{include_dir.vulkan}",
         "%{include_dir.glm}",
+        "%{include_dir.mayo_core}",
         "."
     }
 

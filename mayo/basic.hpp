@@ -12,6 +12,7 @@
 #define ANONYMOUS_VARIABLE(str) CONCATENATE(str, __LINE__)
 #endif
 
+// should try to use namespaces? or no
 namespace detail {
 template <typename Fn>
 struct Defer {
@@ -35,24 +36,6 @@ Defer<Fn> operator+(DeferHelper, Fn&& fn) {
 #define DEFER              defer
 #define is_power_of_two(v) (((v) != 0) && (((v) & ((v)-1)) == 0))
 
-// signed numbers
-using s8  = int8_t;
-using s16 = int16_t;
-using s32 = int32_t;
-using s64 = int64_t;
-
-// unsigned numbers
-using u8  = uint8_t;
-using u16 = uint16_t;
-using u32 = uint32_t;
-using u64 = uint64_t;
-
-// float numbers
-using f32 = float;
-using f64 = double;
-
-uintptr_t align_forward(uintptr_t ptr, size_t align);
-
 #define round_to_alignment(value, alignment)                                                                           \
     {                                                                                                                  \
         assert(is_power_of_two(alignment));                                                                            \
@@ -66,3 +49,21 @@ constexpr size_t giga_bytes(size_t bytes) noexcept { return ((size_t)bytes << 30
 } // namespace convert_to
 
 constexpr size_t DEFAULT_ALIGNMENT = 2 * sizeof(void*);
+
+static uintptr_t align_forward(uintptr_t ptr, size_t align) {
+    uintptr_t p, a, modulo;
+    assert(is_power_of_two(align));
+
+    p = ptr;
+    a = (uintptr_t)align;
+    // Same as (p % a) but faster as 'a' is a power of two
+    modulo = p & (a - 1);
+
+    if (modulo != 0) {
+        // If 'p' address is not aligned, push the address to the
+        // next value which is aligned
+        p += a - modulo;
+    }
+    return p;
+}
+

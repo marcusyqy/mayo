@@ -1,4 +1,6 @@
 #pragma once
+#include "../render.hpp"
+#include "basic.hpp"
 #include "logger.hpp"
 #include <stdio.h>
 #include <windows.h>
@@ -116,6 +118,9 @@ static DWORD WINAPI main_thread(LPVOID param) {
        do it on the other thread, using the CREATE_DANGEROUS_WINDOW and DESTROY_DANGEROUS_WINDOW
        user messages.  Otherwise, everything proceeds as normal.
     */
+    init_vulkan_resources();
+    defer { free_vulkan_resources(); };
+
     HWND service_window = (HWND)param;
 
     WNDCLASSEXW window_class   = {};
@@ -140,13 +145,18 @@ static DWORD WINAPI main_thread(LPVOID param) {
     p.hInstance                  = window_class.hInstance;
     [[maybe_unused]] HWND handle = (HWND)SendMessageW(service_window, Window_Messages::create_window, (WPARAM)&p, 0);
 
+    auto swapchain = create_swapchain_from_win32(window_class.hInstance, handle);
+    defer { free_swapchain(swapchain); };
+
     int x = 0;
+
     for (;;) {
         MSG message;
         while (PeekMessage(&message, 0, 0, 0, PM_REMOVE)) {
             switch (message.message) {
                 case WM_CHAR: {
-                    SendMessageW(service_window, Window_Messages::create_window, (WPARAM)&p, 0);
+                    //  when we support multiple swap chains
+                    // SendMessageW(service_window, Window_Messages::create_window, (WPARAM)&p, 0);
                 } break;
                 case WM_CLOSE: {
                     SendMessageW(service_window, Window_Messages::destroy_window, message.wParam, 0);
@@ -223,7 +233,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
             DispatchMessageW(&message);
         }
     }
-
 
     return 0;
 }

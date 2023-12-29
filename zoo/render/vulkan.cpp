@@ -72,9 +72,7 @@ void* reallocation_fn(
     return realloc(original, size);
 }
 
-void free_fn(void* user_data, void* memory) {
-    return free(memory);
-}
+void free_fn(void* user_data, void* memory) { return free(memory); }
 
 void internal_allocation_notification_fn(
     void* user_data,
@@ -129,24 +127,22 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
     [[maybe_unused]] void* user_data) noexcept {
 
     const char* prepend = nullptr;
-    if (type >= VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT) {
-        prepend = "PERFORMANCE";
-    } else if (type >= VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT) {
+    if (type >= VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT) prepend = "PERFORMANCE";
+    else if (type >= VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT)
         prepend = "VALIDATION";
-    } else if (type >= VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT) {
+    else if (type >= VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT)
         prepend = "GENERAL";
-    }
 
     static constexpr char validation_message[] = "<{}> :|vulkan|: {}";
-    if (severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
+    if (severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
         ZOO_LOG_ERROR(validation_message, prepend, callback_data->pMessage);
-    } else if (severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
+    else if (severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
         ZOO_LOG_WARN(validation_message, prepend, callback_data->pMessage);
-    } else if (severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {
+    else if (severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT)
         ZOO_LOG_INFO(validation_message, prepend, callback_data->pMessage);
-    } else if (severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT) {
+    else if (severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT)
         ZOO_LOG_TRACE(validation_message, prepend, callback_data->pMessage);
-    }
+
     return VK_FALSE;
 }
 
@@ -199,6 +195,7 @@ struct Device_Selection {
     u32 graphics_queue               = {};
     u32 present_queue                = {};
 };
+
 Device_Selection select_device(VkInstance instance, VkSurfaceKHR surface) noexcept {
     constexpr auto MAX_NUMBER_DEVICES = 10;
     VkPhysicalDevice devices[MAX_NUMBER_DEVICES];

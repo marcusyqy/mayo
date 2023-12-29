@@ -7,6 +7,7 @@
 namespace ccb {
 
 enum class Architecture {
+    // do we need to support things that we will not use?
     UNIVERSAL, // The universal binaries supported by iOS and macOS
     x86,
     x86_64,
