@@ -21,5 +21,4 @@ void main() {
 	// outFragColor = vec4(texCoord.x, texCoord.y, 0.5f, 1.0f);
     vec3 color = texture(tex1, texCoord).xyz;
 	outFragColor = vec4(color, 1.0f);
-
 }

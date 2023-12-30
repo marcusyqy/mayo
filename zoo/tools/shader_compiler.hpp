@@ -4,7 +4,6 @@
 #include "stdx/expected.hpp"
 #include "stdx/span.hpp"
 #include <shaderc/shaderc.hpp>
-#include <string_view>
 
 namespace zoo::tools {
 

@@ -1,6 +1,7 @@
 #pragma once
-#include <cstdint>
 #include <cassert>
+#include <cstdint>
+#include <utility>
 
 using s8  = int8_t;
 using s16 = int16_t;
@@ -31,8 +32,26 @@ struct Buffer_View {
         assert(idx < count);
         return data[idx];
     }
+
+    T* begin() { return data; }
+    T* end() { return data + count; }
+
+    const T* begin() const { return data; }
+    const T* end() const { return data + count; }
+
+    template <std::enable_if<!std::is_const_v<T>, bool> = false>
+    Buffer_View<std::add_const<T>> as_const() const {
+        return { data, count };
+    }
+
+    template <std::enable_if<!std::is_const_v<T>, bool> = false>
+    operator Buffer_View<std::add_const<T>>() const {
+        return as_const();
+    }
 };
 
-using String_View = Buffer_View<char>;
+template <typename T>
+struct Buffer : Buffer_View<T> {};
+
 
 #define ARRAY_SIZE(X) (sizeof(X) / sizeof(X[0]))

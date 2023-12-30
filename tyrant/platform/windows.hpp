@@ -161,16 +161,16 @@ static DWORD WINAPI main_thread(LPVOID param) {
                 case WM_CLOSE: {
                     SendMessageW(service_window, Window_Messages::destroy_window, message.wParam, 0);
                 } break;
-                // case WM_SIZE: {
-                //     UINT width  = LOWORD(message.lParam);
-                //     UINT height = HIWORD(message.lParam);
-                //     resize_swapchain(swapchain, width, height);
-                // } break;
+                    // case WM_SIZE: {
+                    //     UINT width  = LOWORD(message.lParam);
+                    //     UINT height = HIWORD(message.lParam);
+                    //     resize_swapchain(swapchain, width, height);
+                    // } break;
             }
         }
 
         // This is where application code is supposed to live.
-        int mid_point    = (x++ % (64 * 1024)) / 64;
+        // int mid_point    = (x++ % (64 * 1024)) / 64;
         int window_count = 0;
         // turn this into something else?
         for (HWND window = FindWindowExW(0, 0, window_class.lpszClassName, 0); window;
@@ -178,13 +178,14 @@ static DWORD WINAPI main_thread(LPVOID param) {
             // Change this to game loop ? Do something here.
             RECT client;
             GetClientRect(window, &client);
-            HDC device_context = GetDC(window);
+            // HDC device_context = GetDC(window);
+            //
+            // PatBlt(device_context, 0, 0, mid_point, client.bottom, BLACKNESS);
+            // if (client.right > mid_point) {
+            //     PatBlt(device_context, mid_point, 0, client.right - mid_point, client.bottom, WHITENESS);
+            // }
+            // ReleaseDC(window, device_context);
 
-            PatBlt(device_context, 0, 0, mid_point, client.bottom, BLACKNESS);
-            if (client.right > mid_point) {
-                PatBlt(device_context, mid_point, 0, client.right - mid_point, client.bottom, WHITENESS);
-            }
-            ReleaseDC(window, device_context);
             if (window == handle) {
                 present_swapchain(swapchain);
                 if (swapchain.out_of_date) {

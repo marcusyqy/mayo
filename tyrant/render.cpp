@@ -450,7 +450,7 @@ void recreate_swapchain(Swapchain& swapchain) {
         VK_EXPECT_SUCCESS(vkCreateSemaphore(gpu.logical, &semaphore_info, nullptr, swapchain.image_avail + i));
         VK_EXPECT_SUCCESS(vkCreateSemaphore(gpu.logical, &semaphore_info, nullptr, swapchain.render_done + i));
 
-        // create fence
+        // create fence (maybe i don't need this)
         VkFenceCreateInfo fence_info{};
         fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
         // TODO: figure out if we really need to signal at the start.
