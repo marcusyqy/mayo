@@ -1,5 +1,6 @@
 #pragma once
 #include "types.hpp"
+#include "string.hpp"
 
 #ifdef WIN32
 #include <windows.h>
@@ -39,12 +40,6 @@ struct Command {
     VkCommandBuffer command_buffer;
 };
 
-
-// @TODO: TBD
-struct Draw_Command : Command {
-    VkBuffer buffer; // maybe
-};
-
 //
 void init_vulkan_resources();
 void free_vulkan_resources();
@@ -55,7 +50,8 @@ void resize_swapchain(Swapchain& swapchain, u32 width, u32 height);
 void present_swapchain(Swapchain& swapchain);
 
 // shader
-VkShaderModule create_shader();
+VkShaderModule create_shader(Buffer_View<const u32> buffer);
+void free_shader(VkShaderModule shader);
 
 #ifdef WIN32
 
@@ -63,3 +59,9 @@ Swapchain create_swapchain_from_win32(HINSTANCE hinstance, HWND hwnd);
 
 #endif // WIN32
 
+
+// TEMP
+void create_shaders_and_pipeline();
+void free_shaders_and_pipeline();
+void assert_format(VkFormat format);
+void draw(Swapchain& swapchain);

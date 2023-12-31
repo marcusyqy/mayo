@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef SIMP_ENABLE_LOGS
+#ifdef TYRANT_ENABLE_LOGS
 #include <spdlog/spdlog.h>
 
 namespace detail {

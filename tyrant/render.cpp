@@ -10,7 +10,11 @@
 #undef max
 #endif
 
+#include "basic.hpp"
+#include "shader_compiler.hpp"
 #include <limits>
+#include <algorithm>
+#include <string_view>
 
 #define ENABLE_VALIDATION 1
 
@@ -41,6 +45,7 @@ struct Device {
     VkPhysicalDevice physical = { VK_NULL_HANDLE };
     VkQueue present_queue;
     VkQueue graphics_queue;
+    VkCommandPool command_pool;
 } gpu = {};
 
 u32 device_count = {};
@@ -164,6 +169,11 @@ void init_vulkan_resources() {
 }
 
 void free_vulkan_resources() {
+    if(gpu.logical) {
+        vkDestroyCommandPool(gpu.logical, gpu.command_pool, nullptr);
+        vkDestroyDevice(gpu.logical, nullptr);
+    }
+
     if (debug_messenger != VK_NULL_HANDLE) {
         auto func =
             (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
@@ -309,7 +319,22 @@ Swapchain create_swapchain_from_surface(VkSurfaceKHR surface) {
         VkQueue graphics_queue = { VK_NULL_HANDLE };
         vkGetDeviceQueue(device, most_compatible_graphics_queue, 0, &graphics_queue);
         vkGetDeviceQueue(device, most_compatible_present_queue, 0, &present_queue);
-        gpu = { .logical = device, .physical = pd, .present_queue = present_queue, .graphics_queue = graphics_queue };
+
+        VkCommandPoolCreateInfo pool_create_info{};
+        pool_create_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+        pool_create_info.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+        pool_create_info.queueFamilyIndex = most_compatible_graphics_queue;
+
+        VkCommandPool command_pool = { VK_NULL_HANDLE };
+        VK_EXPECT_SUCCESS(vkCreateCommandPool(device, &pool_create_info, nullptr, &command_pool));
+        // we need to handle this case
+        assert(most_compatible_graphics_queue == most_compatible_present_queue);
+
+        gpu = { .logical        = device,
+                .physical       = pd,
+                .present_queue  = present_queue,
+                .graphics_queue = graphics_queue,
+                .command_pool   = command_pool };
     }
 
     // create_swapchain here.
@@ -516,6 +541,20 @@ void present_swapchain(Swapchain& swapchain) {
         swapchain.out_of_date = true;
 }
 
+VkShaderModule create_shader(Buffer_View<const u32> buffer) {
+    VkShaderModuleCreateInfo create_info{};
+    create_info.sType     = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    create_info.codeSize  = buffer.count;
+    create_info.pCode     = buffer.data;
+    VkShaderModule module = { VK_NULL_HANDLE };
+    VK_EXPECT_SUCCESS(vkCreateShaderModule(gpu.logical, &create_info, nullptr, &module));
+    return module;
+}
+
+void free_shader(VkShaderModule shader) {
+    if (shader) vkDestroyShaderModule(gpu.logical, shader, nullptr);
+}
+
 #ifdef WIN32
 
 Swapchain create_swapchain_from_win32(HINSTANCE hinstance, HWND hwnd) {
@@ -529,3 +568,203 @@ Swapchain create_swapchain_from_win32(HINSTANCE hinstance, HWND hwnd) {
 }
 
 #endif
+
+// TEMP FILE
+#include <fstream>
+
+namespace {
+struct Pipeline {
+    VkRenderPass renderpass = { VK_NULL_HANDLE };
+    VkPipelineLayout layout = { VK_NULL_HANDLE };
+    VkPipeline handle       = { VK_NULL_HANDLE };
+} pipeline = {};
+
+struct Draw_Context {
+    Command command[Render_Params::MAX_SWAPCHAIN_IMAGES];
+};
+
+} // namespace
+
+void create_shaders_and_pipeline() {
+    const auto read_file = [](std::string_view filename) -> Buffer_View<char> {
+        std::ifstream file{ filename.data(), std::ios::ate | std::ios::binary };
+        assert(file.is_open());
+
+        const size_t file_size     = (size_t)file.tellg();
+        Buffer_View<char> buffer = { new char[file_size], file_size };
+        file.seekg(0);
+        file.read(buffer.data, buffer.count);
+        file.close();
+        return buffer;
+    };
+
+    auto vert_buffer = read_file("shaders/color.vert");
+    defer { delete[] vert_buffer.data; };
+
+    auto frag_buffer = read_file("shaders/color.frag");
+    defer { delete[] frag_buffer.data; };
+
+    Shader_Compiler shader_compiler = create_shader_compiler();
+    defer { free_shader_compiler(shader_compiler); };
+
+    Shader_Work vert_work = { .kind  = shaderc_vertex_shader,
+                              .name  = "color.vert",
+                              .bytes = { vert_buffer.data, vert_buffer.count } };
+
+    Shader_Work frag_work = { .kind  = shaderc_fragment_shader,
+                              .name  = "color.frag",
+                              .bytes = { frag_buffer.data, frag_buffer.count } };
+
+    auto spv_vert = shader_compiler.compile(vert_work);
+    defer { shader_compiler.free(spv_vert); };
+    auto spv_frag = shader_compiler.compile(frag_work);
+    defer { shader_compiler.free(spv_frag); };
+
+    auto vert_shader = create_shader({ spv_vert.data(), spv_vert.size_in_bytes() });
+    defer { free_shader(vert_shader); };
+
+    auto frag_shader = create_shader({ spv_frag.data(), spv_frag.size_in_bytes() });
+    defer { free_shader(frag_shader); };
+
+    // create pipeline
+    enum : uint32_t { vertex_stage = 0, fragment_stage = 1, shader_stages = 2 };
+    VkPipelineShaderStageCreateInfo shaders_create_info[shader_stages]{};
+    {
+        VkPipelineShaderStageCreateInfo& vertex_create_info{ shaders_create_info[vertex_stage] };
+        vertex_create_info.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        vertex_create_info.stage  = VK_SHADER_STAGE_VERTEX_BIT;
+        vertex_create_info.module = vert_shader;
+        vertex_create_info.pName  = "main";
+    }
+    {
+        VkPipelineShaderStageCreateInfo& fragment_create_info{ shaders_create_info[fragment_stage] };
+        fragment_create_info.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        fragment_create_info.stage  = VK_SHADER_STAGE_FRAGMENT_BIT;
+        fragment_create_info.module = frag_shader;
+        fragment_create_info.pName  = "main";
+    }
+
+    VkDynamicState dynamic_states_array[]{ VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+    VkPipelineDynamicStateCreateInfo dynamic_state{};
+    dynamic_state.sType             = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+    dynamic_state.dynamicStateCount = static_cast<u32>(ARRAY_SIZE(dynamic_states_array));
+    dynamic_state.pDynamicStates    = +dynamic_states_array;
+
+    VkViewport viewport = {};
+    VkRect2D scissor    = {};
+
+    VkPipelineViewportStateCreateInfo viewport_state_create_info{};
+    viewport_state_create_info.sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    viewport_state_create_info.viewportCount = 1;
+    viewport_state_create_info.pViewports    = &viewport;
+    viewport_state_create_info.scissorCount  = 1;
+    viewport_state_create_info.pScissors     = &scissor;
+
+    // INPUT ASSEMBLY
+    VkPipelineInputAssemblyStateCreateInfo input_assembly_create_info{};
+    input_assembly_create_info.sType                  = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+    input_assembly_create_info.topology               = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+    input_assembly_create_info.primitiveRestartEnable = VK_FALSE;
+
+    // RASTERIZATION
+    VkPipelineRasterizationStateCreateInfo rasterizer_create_info{};
+    rasterizer_create_info.sType                   = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+    rasterizer_create_info.depthClampEnable        = VK_FALSE;
+    rasterizer_create_info.depthBiasEnable         = VK_FALSE;
+    rasterizer_create_info.depthBiasConstantFactor = 0.0f;                  // Optional
+    rasterizer_create_info.depthBiasClamp          = 0.0f;                  // Optional
+    rasterizer_create_info.depthBiasSlopeFactor    = 0.0f;                  // Optional
+    rasterizer_create_info.cullMode                = VK_CULL_MODE_BACK_BIT; // : VK_CULL_MODE_NONE;
+    rasterizer_create_info.frontFace               = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    rasterizer_create_info.lineWidth               = 1.0f;
+    rasterizer_create_info.polygonMode             = VK_POLYGON_MODE_FILL;
+    rasterizer_create_info.rasterizerDiscardEnable = VK_FALSE;
+
+    VkPipelineMultisampleStateCreateInfo multisampling_create_info{};
+    multisampling_create_info.sType                 = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    multisampling_create_info.sampleShadingEnable   = VK_FALSE;
+    multisampling_create_info.rasterizationSamples  = VK_SAMPLE_COUNT_1_BIT;
+    multisampling_create_info.minSampleShading      = 1.0f;     // Optional
+    multisampling_create_info.pSampleMask           = nullptr;  // Optional
+    multisampling_create_info.alphaToCoverageEnable = VK_FALSE; // Optional
+    multisampling_create_info.alphaToOneEnable      = VK_FALSE; // Optional
+
+    VkAttachmentDescription color_attachment{};
+    color_attachment.format         = VK_FORMAT_B8G8R8A8_SRGB; // try
+    color_attachment.samples        = VK_SAMPLE_COUNT_1_BIT;
+    color_attachment.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    color_attachment.storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
+    color_attachment.stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    color_attachment.initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED;
+    color_attachment.finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+    VkSubpassDependency dependency{};
+    dependency.srcSubpass    = VK_SUBPASS_EXTERNAL;
+    dependency.dstSubpass    = 0;
+    dependency.srcStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.srcAccessMask = 0;
+    dependency.dstStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+    VkAttachmentReference color_attachment_ref{};
+    color_attachment_ref.attachment = 0;
+    color_attachment_ref.layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    VkSubpassDescription subpass{};
+    subpass.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpass.colorAttachmentCount    = 1;
+    subpass.pColorAttachments       = &color_attachment_ref;
+    subpass.pDepthStencilAttachment = nullptr; //&depth_attachment_ref;
+
+    VkRenderPassCreateInfo renderpass_info{};
+    renderpass_info.sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    renderpass_info.attachmentCount = 1;
+    renderpass_info.pAttachments    = &color_attachment;
+    renderpass_info.subpassCount    = 1;
+    renderpass_info.pSubpasses      = &subpass;
+    renderpass_info.dependencyCount = 1;
+    renderpass_info.pDependencies   = &dependency;
+
+    VK_EXPECT_SUCCESS(vkCreateRenderPass(gpu.logical, &renderpass_info, nullptr, &pipeline.renderpass));
+
+    VkPipelineLayoutCreateInfo pipeline_layout_create_info{};
+    pipeline_layout_create_info.sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipeline_layout_create_info.setLayoutCount         = 0;
+    pipeline_layout_create_info.pSetLayouts            = nullptr;
+    pipeline_layout_create_info.pushConstantRangeCount = 0;
+    pipeline_layout_create_info.pPushConstantRanges    = nullptr;
+
+    VK_EXPECT_SUCCESS(vkCreatePipelineLayout(gpu.logical, &pipeline_layout_create_info, nullptr, &pipeline.layout));
+
+    VkGraphicsPipelineCreateInfo graphics_pipeline_create_info{};
+    graphics_pipeline_create_info.sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    graphics_pipeline_create_info.stageCount          = ARRAY_SIZE(shaders_create_info);
+    graphics_pipeline_create_info.pStages             = +shaders_create_info;
+    graphics_pipeline_create_info.pVertexInputState   = nullptr; // &vertex_input_state_create_info;
+    graphics_pipeline_create_info.pInputAssemblyState = &input_assembly_create_info;
+    graphics_pipeline_create_info.pViewportState      = &viewport_state_create_info;
+    graphics_pipeline_create_info.pRasterizationState = &rasterizer_create_info;
+    graphics_pipeline_create_info.pMultisampleState   = &multisampling_create_info;
+    graphics_pipeline_create_info.pDepthStencilState  = nullptr; // &depth_stencil_state_info; // Optional
+    graphics_pipeline_create_info.pColorBlendState    = nullptr; //&color_blend_state_create_info;
+    graphics_pipeline_create_info.pDynamicState       = &dynamic_state;
+    graphics_pipeline_create_info.layout              = pipeline.layout;
+    graphics_pipeline_create_info.renderPass          = pipeline.renderpass;
+    graphics_pipeline_create_info.subpass             = 0;
+    graphics_pipeline_create_info.basePipelineHandle  = VK_NULL_HANDLE; // Optional
+    graphics_pipeline_create_info.basePipelineIndex   = -1;             // Optional
+
+    VK_EXPECT_SUCCESS(
+        vkCreateGraphicsPipelines(gpu.logical, nullptr, 1, &graphics_pipeline_create_info, nullptr, &pipeline.handle));
+}
+
+void draw(Swapchain& swapchain) { static_cast<void>(swapchain); }
+
+void assert_format(VkFormat format) { assert(format == VK_FORMAT_B8G8R8A8_SRGB); }
+
+void free_shaders_and_pipeline() {
+    vkDestroyPipelineLayout(gpu.logical, pipeline.layout, nullptr);
+    vkDestroyRenderPass(gpu.logical, pipeline.renderpass, nullptr);
+    vkDestroyPipeline(gpu.logical, pipeline.handle, nullptr);
+}

@@ -148,7 +148,10 @@ static DWORD WINAPI main_thread(LPVOID param) {
     auto swapchain = create_swapchain_from_win32(window_class.hInstance, handle);
     defer { free_swapchain(swapchain); };
 
-    int x = 0;
+    create_shaders_and_pipeline();
+    defer { free_shaders_and_pipeline(); };
+
+    assert_format(swapchain.format.format);
 
     for (;;) {
         MSG message;
@@ -185,6 +188,8 @@ static DWORD WINAPI main_thread(LPVOID param) {
             //     PatBlt(device_context, mid_point, 0, client.right - mid_point, client.bottom, WHITENESS);
             // }
             // ReleaseDC(window, device_context);
+
+            draw(swapchain);
 
             if (window == handle) {
                 present_swapchain(swapchain);

@@ -1,5 +1,6 @@
 #pragma once
 #include "string.hpp"
+#include "types.hpp"
 #include <shaderc/shaderc.h>
 
 struct Shader_Def_Type {

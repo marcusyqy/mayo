@@ -51,7 +51,7 @@ project "tyrant"
     defines {}
 
     filter "configurations:Debug"
-        defines { "SIMP_ENABLE_LOGS" }
+        defines { "TYRANT_ENABLE_LOGS" }
         runtime "Debug"
         symbols "on"
         links {
@@ -59,7 +59,7 @@ project "tyrant"
         }
 
     filter "configurations:Release"
-        defines { "SIMP_ENABLE_LOGS" }
+        defines { "TYRANT_ENABLE_LOGS" }
         runtime "Release"
         optimize "on"
         links {
@@ -67,7 +67,7 @@ project "tyrant"
         }
 
     filter "configurations:Dist"
-        defines { "SIMP_DIST" }
+        defines { "TYRANT_DIST" }
         runtime "Release"
         optimize "on"
         links {
