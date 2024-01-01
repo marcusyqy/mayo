@@ -12,6 +12,7 @@
 /* Copied from DTC by cmuratori
    "https://github.com/cmuratori/dtc"
 */
+
 struct Actual_Window_Param {
     DWORD dwExStyle;
     LPCWSTR lpClassName;
@@ -118,9 +119,6 @@ static DWORD WINAPI main_thread(LPVOID param) {
        do it on the other thread, using the CREATE_DANGEROUS_WINDOW and DESTROY_DANGEROUS_WINDOW
        user messages.  Otherwise, everything proceeds as normal.
     */
-    init_vulkan_resources();
-    defer { free_vulkan_resources(); };
-
     HWND service_window = (HWND)param;
 
     WNDCLASSEXW window_class   = {};
@@ -145,11 +143,14 @@ static DWORD WINAPI main_thread(LPVOID param) {
     p.hInstance                  = window_class.hInstance;
     [[maybe_unused]] HWND handle = (HWND)SendMessageW(service_window, Window_Messages::create_window, (WPARAM)&p, 0);
 
+    create_shaders_and_pipeline();
+    defer { free_shaders_and_pipeline(); };
+
     auto swapchain = create_swapchain_from_win32(window_class.hInstance, handle);
     defer { free_swapchain(swapchain); };
 
-    create_shaders_and_pipeline();
-    defer { free_shaders_and_pipeline(); };
+    create_draw_data();
+    defer { free_draw_data(); };
 
     assert_format(swapchain.format.format);
 
@@ -213,6 +214,9 @@ static DWORD WINAPI main_thread(LPVOID param) {
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nCmdShow) {
 
     log_info("starting application");
+
+    init_vulkan_resources();
+    defer { free_vulkan_resources(); };
 
     WNDCLASSEXW window_class   = {};
     window_class.cbSize        = sizeof(window_class);

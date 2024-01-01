@@ -35,11 +35,6 @@ struct Swapchain {
     VkFence in_flight[Render_Params::MAX_SWAPCHAIN_IMAGES]       = {};
 };
 
-struct Command {
-    VkFence fence;
-    VkCommandBuffer command_buffer;
-};
-
 //
 void init_vulkan_resources();
 void free_vulkan_resources();
@@ -65,3 +60,6 @@ void create_shaders_and_pipeline();
 void free_shaders_and_pipeline();
 void assert_format(VkFormat format);
 void draw(Swapchain& swapchain);
+
+void create_draw_data();
+void free_draw_data();

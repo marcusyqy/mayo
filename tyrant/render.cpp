@@ -12,8 +12,8 @@
 
 #include "basic.hpp"
 #include "shader_compiler.hpp"
-#include <limits>
 #include <algorithm>
+#include <limits>
 #include <string_view>
 
 #define ENABLE_VALIDATION 1
@@ -32,12 +32,14 @@ constexpr const char* required_extensions[] = {
     "VK_KHR_win32_surface",
 #endif
 #if ENABLE_VALIDATION
+    VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
     VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
 #endif
 };
 
 VkInstance instance                                         = { VK_NULL_HANDLE };
 VkDebugUtilsMessengerEXT debug_messenger                    = { VK_NULL_HANDLE };
+VkDebugReportCallbackEXT debug_report                       = { VK_NULL_HANDLE };
 VkPhysicalDevice devices[Render_Params::MAX_NUMBER_DEVICES] = {};
 
 struct Device {
@@ -55,6 +57,19 @@ void maybe_invoke(VkResult result) noexcept { assert(result == VK_SUCCESS); }
 template <typename Call, typename... Args>
 void maybe_invoke(VkResult result, Call then, Args&&... args) noexcept {
     then(result, std::forward<Args>(args)...);
+}
+
+VKAPI_ATTR VkBool32 VKAPI_CALL debug_report_callback(
+    VkDebugReportFlagsEXT flags,
+    VkDebugReportObjectTypeEXT object_type,
+    std::uint64_t object,
+    std::size_t location,
+    std::int32_t message_code,
+    const char* layer_prefix,
+    const char* message,
+    void* user_data) {
+    log_error(message);
+    return VK_FALSE;
 }
 
 VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
@@ -108,10 +123,12 @@ void init_vulkan_resources() {
 #if ENABLE_VALIDATION
         u32 layer_count = {};
         VkLayerProperties available_layers[100];
+        vkEnumerateInstanceLayerProperties(&layer_count, nullptr);
+        assert(layer_count < 100);
         vkEnumerateInstanceLayerProperties(&layer_count, +available_layers);
 
         for (u32 i = 0; i < layer_count; ++i) {
-            if (strcmp(VALIDATION_LAYER, available_layers[i].layerName)) {
+            if (!strcmp(VALIDATION_LAYER, available_layers[i].layerName)) {
                 layers = { &VALIDATION_LAYER, 1 };
                 break;
             }
@@ -134,10 +151,10 @@ void init_vulkan_resources() {
     }
 
     // create_debug_messenger
+#if ENABLE_VALIDATION
     {
         VkDebugUtilsMessengerCreateInfoEXT create_info = {};
         {
-            create_info.sType           = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
             create_info.sType           = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
             create_info.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
                 VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
@@ -148,16 +165,26 @@ void init_vulkan_resources() {
             create_info.pUserData       = nullptr; // Optional
         }
 
-        auto func =
+        auto vkCreateDebugUtilsMessengerEXT =
             (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
-        if (!func) log_warn("Debug utils messenger failed with {}", string_VkResult(VK_ERROR_EXTENSION_NOT_PRESENT));
+        assert(vkCreateDebugUtilsMessengerEXT);
 
-        VkResult result = func(instance, &create_info, nullptr, &debug_messenger);
-        if (result != VK_SUCCESS) {
-            log_warn("Debug utils messenger failed with {}", string_VkResult(result));
-            debug_messenger = VK_NULL_HANDLE;
-        }
+        VK_EXPECT_SUCCESS(vkCreateDebugUtilsMessengerEXT(instance, &create_info, nullptr, &debug_messenger));
+
+        VkDebugReportCallbackCreateInfoEXT debug_report_callback_info = {};
+        debug_report_callback_info.sType       = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
+        debug_report_callback_info.flags       = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT;
+        debug_report_callback_info.pfnCallback = (PFN_vkDebugReportCallbackEXT)debug_report_callback;
+
+        // We have to explicitly load this function.
+        auto vkCreateDebugReportCallbackEXT =
+            (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugReportCallbackEXT");
+        assert(vkCreateDebugReportCallbackEXT);
+
+        VK_EXPECT_SUCCESS(
+            vkCreateDebugReportCallbackEXT(instance, &debug_report_callback_info, nullptr, &debug_report));
     }
+#endif // ENABLE_VALIDATION
 
     // for some reason we have to get the count first then get the devices?
     VK_EXPECT_SUCCESS(vkEnumeratePhysicalDevices(instance, &device_count, nullptr));
@@ -165,177 +192,176 @@ void init_vulkan_resources() {
     assert(device_count < Render_Params::MAX_NUMBER_DEVICES);
     VK_EXPECT_SUCCESS(vkEnumeratePhysicalDevices(instance, &device_count, +devices));
 
-    // probably done until we get a window?
+    // select and create device if not already created. @TODO: maybe we need a mutex here.
+    u32 most_compatible                = 0;
+    u32 most_compatible_graphics_queue = 0;
+    u32 most_compatible_present_queue  = 0;
+
+    for (u32 i = 0; i < device_count; ++i) {
+        const auto& physical_device                                                 = devices[i];
+        VkPhysicalDeviceShaderDrawParametersFeatures shader_draw_parameters_feature = {};
+        shader_draw_parameters_feature.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES;
+        shader_draw_parameters_feature.pNext = nullptr;
+        shader_draw_parameters_feature.shaderDrawParameters = VK_TRUE;
+
+        VkPhysicalDeviceFeatures2 features;
+        features.pNext = &shader_draw_parameters_feature;
+        features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+
+        vkGetPhysicalDeviceFeatures2(physical_device, &features);
+        if (shader_draw_parameters_feature.shaderDrawParameters != VK_TRUE) continue;
+
+        if (features.features.geometryShader != VK_TRUE) continue;
+
+        constexpr u32 MAX_EXTENSIONS = 300;
+        u32 extension_count{};
+        VkExtensionProperties available_extensions[MAX_EXTENSIONS];
+        vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &extension_count, nullptr);
+        assert(extension_count < MAX_EXTENSIONS);
+        vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &extension_count, available_extensions);
+
+        u32 j = 0;
+        for (; j < extension_count; ++j) {
+            auto& props = available_extensions[j];
+            if (!strcmp(props.extensionName, VK_KHR_SWAPCHAIN_EXTENSION_NAME)) break;
+        }
+
+        // did not find.
+        if (j == extension_count) continue;
+
+        u32 queue_family_count        = 0;
+        constexpr u32 MAX_QUEUE_COUNT = 20;
+        VkQueueFamilyProperties queue_families[MAX_QUEUE_COUNT];
+        vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &queue_family_count, nullptr);
+        vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &queue_family_count, queue_families);
+        assert(queue_family_count < MAX_QUEUE_COUNT);
+
+        bool found_graphics = false;
+        bool found_present  = false;
+
+        u32 graphics_queue_idx = 0;
+        u32 present_queue_idx  = 0;
+        for (j = 0; j < queue_family_count; ++j) {
+            // @NOTE: assume graphics supports all types of queue.
+            if (queue_families[j].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+                found_graphics     = true;
+                graphics_queue_idx = j;
+            }
+#ifdef WIN32
+            VkBool32 presentation_support = vkGetPhysicalDeviceWin32PresentationSupportKHR(physical_device, j);
+#else
+            static_assert(false); // TODO: this needs to be changed
+            VkBool32 presentation_support = VK_FALSE;
+#endif
+            // vkGetPhysicalDeviceSurfaceSupportKHR(physical_device, j, surface, &presentation_support);
+            if (presentation_support) {
+                found_present     = true;
+                present_queue_idx = j;
+            }
+
+            if (found_present && found_graphics) break;
+        }
+
+        if (!found_present || !found_graphics) continue;
+
+        most_compatible                = i;
+        most_compatible_graphics_queue = graphics_queue_idx;
+        most_compatible_present_queue  = present_queue_idx;
+
+        VkPhysicalDeviceProperties properties;
+        vkGetPhysicalDeviceProperties(physical_device, &properties);
+        if (properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) break;
+    }
+
+    const auto& pd                = devices[most_compatible];
+    constexpr u32 MAX_QUEUE_COUNT = 20;
+    u32 queue_family_count        = 0;
+    VkQueueFamilyProperties queue_families[MAX_QUEUE_COUNT];
+    vkGetPhysicalDeviceQueueFamilyProperties(pd, &queue_family_count, nullptr);
+    assert(queue_family_count < MAX_QUEUE_COUNT);
+    vkGetPhysicalDeviceQueueFamilyProperties(pd, &queue_family_count, queue_families);
+
+    float queue_priority                         = 1.0f;
+    VkDeviceQueueCreateInfo queue_create_info[2] = {};
+
+    queue_create_info[0].sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    queue_create_info[0].queueFamilyIndex = most_compatible_graphics_queue;
+    queue_create_info[0].pQueuePriorities = &queue_priority;
+    queue_create_info[0].queueCount       = 1;
+
+    queue_create_info[1].sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    queue_create_info[1].queueFamilyIndex = most_compatible_present_queue;
+    queue_create_info[1].pQueuePriorities = &queue_priority;
+    queue_create_info[1].queueCount       = 1;
+
+    VkPhysicalDeviceShaderDrawParametersFeatures shader_draw_parameters_feature = {};
+    shader_draw_parameters_feature.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES;
+    shader_draw_parameters_feature.pNext = nullptr;
+    shader_draw_parameters_feature.shaderDrawParameters = VK_TRUE;
+
+    VkPhysicalDeviceFeatures features;
+    vkGetPhysicalDeviceFeatures(pd, &features);
+
+    const char* device_extension{ VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+
+    VkDeviceCreateInfo create_info{};
+    create_info.pNext                   = &shader_draw_parameters_feature;
+    create_info.sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    create_info.queueCreateInfoCount    = most_compatible_present_queue == most_compatible_graphics_queue ? 1 : 2;
+    create_info.pQueueCreateInfos       = queue_create_info;
+    create_info.pEnabledFeatures        = &features;
+    create_info.ppEnabledExtensionNames = &device_extension;
+    create_info.enabledExtensionCount   = 1;
+
+    VkDevice device = { VK_NULL_HANDLE };
+    VK_EXPECT_SUCCESS(vkCreateDevice(pd, &create_info, nullptr, &device));
+
+    VkQueue present_queue  = { VK_NULL_HANDLE };
+    VkQueue graphics_queue = { VK_NULL_HANDLE };
+    vkGetDeviceQueue(device, most_compatible_graphics_queue, 0, &graphics_queue);
+    vkGetDeviceQueue(device, most_compatible_present_queue, 0, &present_queue);
+
+    VkCommandPoolCreateInfo pool_create_info{};
+    pool_create_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    pool_create_info.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    pool_create_info.queueFamilyIndex = most_compatible_graphics_queue;
+
+    VkCommandPool command_pool = { VK_NULL_HANDLE };
+    VK_EXPECT_SUCCESS(vkCreateCommandPool(device, &pool_create_info, nullptr, &command_pool));
+    // we need to handle this case
+    assert(most_compatible_graphics_queue == most_compatible_present_queue);
+
+    gpu = { .logical        = device,
+            .physical       = pd,
+            .present_queue  = present_queue,
+            .graphics_queue = graphics_queue,
+            .command_pool   = command_pool };
 }
 
 void free_vulkan_resources() {
-    if(gpu.logical) {
+    if (gpu.logical) {
         vkDestroyCommandPool(gpu.logical, gpu.command_pool, nullptr);
         vkDestroyDevice(gpu.logical, nullptr);
     }
 
-    if (debug_messenger != VK_NULL_HANDLE) {
-        auto func =
-            (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-        if (func != nullptr) func(instance, debug_messenger, nullptr);
-    }
+#if !ENABLE_VALIDATION
+    auto vkDestroyDebugUtilsMessengerEXT =
+        (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+    assert(vkDestroyDebugUtilsMessengerEXT);
+    vkDestroyDebugUtilsMessengerEXT(instance, debug_messenger, nullptr);
+
+    auto vkDestroyDebugReportCallbackEXT =
+        (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugReportCallbackEXT");
+    assert(vkDestroyDebugReportCallbackEXT);
+    vkDestroyDebugReportCallbackEXT(instance, debug_report, nullptr);
+#endif // ENABLE_VALIDATION
+
     vkDestroyInstance(instance, nullptr);
 }
 
 Swapchain create_swapchain_from_surface(VkSurfaceKHR surface) {
     Swapchain swapchain = {};
     swapchain.surface   = surface;
-
-    // select and create device if not already created. @TODO: maybe we need a mutex here.
-    if (!gpu.logical) {
-        u32 most_compatible                = 0;
-        u32 most_compatible_graphics_queue = 0;
-        u32 most_compatible_present_queue  = 0;
-
-        for (u32 i = 0; i < device_count; ++i) {
-            const auto& physical_device                                                 = devices[i];
-            VkPhysicalDeviceShaderDrawParametersFeatures shader_draw_parameters_feature = {};
-            shader_draw_parameters_feature.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES;
-            shader_draw_parameters_feature.pNext = nullptr;
-            shader_draw_parameters_feature.shaderDrawParameters = VK_TRUE;
-
-            VkPhysicalDeviceFeatures2 features;
-            features.pNext = &shader_draw_parameters_feature;
-            features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-
-            vkGetPhysicalDeviceFeatures2(physical_device, &features);
-            if (shader_draw_parameters_feature.shaderDrawParameters != VK_TRUE) continue;
-
-            if (features.features.geometryShader != VK_TRUE) continue;
-
-            constexpr u32 MAX_EXTENSIONS = 300;
-            u32 extension_count{};
-            VkExtensionProperties available_extensions[MAX_EXTENSIONS];
-            vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &extension_count, nullptr);
-            assert(extension_count < MAX_EXTENSIONS);
-            vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &extension_count, available_extensions);
-
-            u32 j = 0;
-            for (; j < extension_count; ++j) {
-                auto& props = available_extensions[j];
-                if (!strcmp(props.extensionName, VK_KHR_SWAPCHAIN_EXTENSION_NAME)) break;
-            }
-
-            // did not find.
-            if (j == extension_count) continue;
-
-            u32 queue_family_count        = 0;
-            constexpr u32 MAX_QUEUE_COUNT = 20;
-            VkQueueFamilyProperties queue_families[MAX_QUEUE_COUNT];
-            vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &queue_family_count, nullptr);
-            vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &queue_family_count, queue_families);
-            assert(queue_family_count < MAX_QUEUE_COUNT);
-
-            bool found_graphics = false;
-            bool found_present  = false;
-
-            u32 graphics_queue_idx = 0;
-            u32 present_queue_idx  = 0;
-            for (j = 0; j < queue_family_count; ++j) {
-                // @NOTE: assume graphics supports all types of queue.
-                if (queue_families[j].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-                    found_graphics     = true;
-                    graphics_queue_idx = j;
-                }
-
-                VkBool32 presentation_support = VK_FALSE;
-                vkGetPhysicalDeviceSurfaceSupportKHR(physical_device, j, surface, &presentation_support);
-                if (presentation_support) {
-                    found_present     = true;
-                    present_queue_idx = j;
-                }
-
-                if (found_present && found_graphics) break;
-            }
-
-            if (!found_present || !found_graphics) continue;
-
-            most_compatible                = i;
-            most_compatible_graphics_queue = graphics_queue_idx;
-            most_compatible_present_queue  = present_queue_idx;
-
-            VkPhysicalDeviceProperties properties;
-            vkGetPhysicalDeviceProperties(physical_device, &properties);
-            if (properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) break;
-        }
-
-        const auto& pd                = devices[most_compatible];
-        constexpr u32 MAX_QUEUE_COUNT = 20;
-        u32 queue_family_count        = 0;
-        VkQueueFamilyProperties queue_families[MAX_QUEUE_COUNT];
-        vkGetPhysicalDeviceQueueFamilyProperties(pd, &queue_family_count, nullptr);
-        assert(queue_family_count < MAX_QUEUE_COUNT);
-        vkGetPhysicalDeviceQueueFamilyProperties(pd, &queue_family_count, queue_families);
-
-        float queue_priority                         = 1.0f;
-        VkDeviceQueueCreateInfo queue_create_info[2] = {};
-
-        queue_create_info[0].sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        queue_create_info[0].queueFamilyIndex = most_compatible_graphics_queue;
-        queue_create_info[0].pQueuePriorities = &queue_priority;
-        queue_create_info[0].queueCount       = 1;
-
-        queue_create_info[1].sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        queue_create_info[1].queueFamilyIndex = most_compatible_present_queue;
-        queue_create_info[1].pQueuePriorities = &queue_priority;
-        queue_create_info[1].queueCount       = 1;
-
-        VkPhysicalDeviceShaderDrawParametersFeatures shader_draw_parameters_feature = {};
-        shader_draw_parameters_feature.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES;
-        shader_draw_parameters_feature.pNext = nullptr;
-        shader_draw_parameters_feature.shaderDrawParameters = VK_TRUE;
-
-        VkPhysicalDeviceFeatures features;
-        vkGetPhysicalDeviceFeatures(pd, &features);
-
-        const char* device_extension{ VK_KHR_SWAPCHAIN_EXTENSION_NAME };
-
-        VkDeviceCreateInfo create_info{};
-        create_info.pNext                   = &shader_draw_parameters_feature;
-        create_info.sType                   = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-        create_info.queueCreateInfoCount    = most_compatible_present_queue == most_compatible_graphics_queue ? 1 : 2;
-        create_info.pQueueCreateInfos       = queue_create_info;
-        create_info.pEnabledFeatures        = &features;
-        create_info.ppEnabledExtensionNames = &device_extension;
-        create_info.enabledExtensionCount   = 1;
-
-#if ENABLE_VALIDATION
-        create_info.enabledLayerCount   = 1;
-        create_info.ppEnabledLayerNames = &VALIDATION_LAYER;
-#else
-        create_info.enabledLayerCount   = 0;
-        create_info.ppEnabledLayerNames = nullptr;
-#endif
-
-        VkDevice device = { VK_NULL_HANDLE };
-        VK_EXPECT_SUCCESS(vkCreateDevice(pd, &create_info, nullptr, &device));
-
-        VkQueue present_queue  = { VK_NULL_HANDLE };
-        VkQueue graphics_queue = { VK_NULL_HANDLE };
-        vkGetDeviceQueue(device, most_compatible_graphics_queue, 0, &graphics_queue);
-        vkGetDeviceQueue(device, most_compatible_present_queue, 0, &present_queue);
-
-        VkCommandPoolCreateInfo pool_create_info{};
-        pool_create_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        pool_create_info.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-        pool_create_info.queueFamilyIndex = most_compatible_graphics_queue;
-
-        VkCommandPool command_pool = { VK_NULL_HANDLE };
-        VK_EXPECT_SUCCESS(vkCreateCommandPool(device, &pool_create_info, nullptr, &command_pool));
-        // we need to handle this case
-        assert(most_compatible_graphics_queue == most_compatible_present_queue);
-
-        gpu = { .logical        = device,
-                .physical       = pd,
-                .present_queue  = present_queue,
-                .graphics_queue = graphics_queue,
-                .command_pool   = command_pool };
-    }
 
     // create_swapchain here.
     recreate_swapchain(swapchain);
@@ -472,6 +498,7 @@ void recreate_swapchain(Swapchain& swapchain) {
         // create semaphore
         VkSemaphoreCreateInfo semaphore_info{};
         semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+
         VK_EXPECT_SUCCESS(vkCreateSemaphore(gpu.logical, &semaphore_info, nullptr, swapchain.image_avail + i));
         VK_EXPECT_SUCCESS(vkCreateSemaphore(gpu.logical, &semaphore_info, nullptr, swapchain.render_done + i));
 
@@ -484,6 +511,17 @@ void recreate_swapchain(Swapchain& swapchain) {
     }
 
     swapchain.out_of_date = false;
+
+    VkResult result = vkAcquireNextImageKHR(
+        gpu.logical,
+        swapchain.handle,
+        std::numeric_limits<std::uint64_t>::max(),
+        swapchain.image_avail[swapchain.out_of_sync_index],
+        nullptr,
+        &swapchain.current_frame);
+
+    assert(result == VK_SUBOPTIMAL_KHR || result == VK_SUCCESS);
+    if (result == VK_SUBOPTIMAL_KHR) swapchain.out_of_date = true;
 }
 
 void free_swapchain(Swapchain& swapchain) {
@@ -509,6 +547,7 @@ void resize_swapchain(Swapchain& swapchain, u32 width, u32 height) {
 }
 
 void present_swapchain(Swapchain& swapchain) {
+
     VkSwapchainKHR swapchains[]     = { swapchain.handle };
     VkSemaphore signal_semaphores[] = { swapchain.render_done[swapchain.out_of_sync_index] };
     VkPresentInfoKHR present_info{};
@@ -573,6 +612,7 @@ Swapchain create_swapchain_from_win32(HINSTANCE hinstance, HWND hwnd) {
 #include <fstream>
 
 namespace {
+
 struct Pipeline {
     VkRenderPass renderpass = { VK_NULL_HANDLE };
     VkPipelineLayout layout = { VK_NULL_HANDLE };
@@ -580,17 +620,30 @@ struct Pipeline {
 } pipeline = {};
 
 struct Draw_Context {
-    Command command[Render_Params::MAX_SWAPCHAIN_IMAGES];
-};
+    VkDescriptorPool pool      = { VK_NULL_HANDLE };
+    VkDescriptorSet static_set = { VK_NULL_HANDLE };
+
+    VkFence fences[Render_Params::MAX_SWAPCHAIN_IMAGES]                  = {};
+    VkCommandBuffer command_buffers[Render_Params::MAX_SWAPCHAIN_IMAGES] = {};
+    VkDescriptorSet dynamic_sets[Render_Params::MAX_SWAPCHAIN_IMAGES]    = {};
+} draw_context = {};
+
+struct Framebuffer_Info {
+    // assume always same swapchain for now. @TODO: this needs to be changed to make it more robust later on.
+    VkFramebuffer handles[Render_Params::MAX_SWAPCHAIN_IMAGES] = {};
+    u32 width                                                  = 0;
+    u32 height                                                 = 0;
+} framebuffer;
 
 } // namespace
 
+// @TODO : make shader system more robust?
 void create_shaders_and_pipeline() {
     const auto read_file = [](std::string_view filename) -> Buffer_View<char> {
         std::ifstream file{ filename.data(), std::ios::ate | std::ios::binary };
         assert(file.is_open());
 
-        const size_t file_size     = (size_t)file.tellg();
+        const size_t file_size   = (size_t)file.tellg();
         Buffer_View<char> buffer = { new char[file_size], file_size };
         file.seekg(0);
         file.read(buffer.data, buffer.count);
@@ -647,7 +700,7 @@ void create_shaders_and_pipeline() {
     VkDynamicState dynamic_states_array[]{ VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
     VkPipelineDynamicStateCreateInfo dynamic_state{};
     dynamic_state.sType             = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-    dynamic_state.dynamicStateCount = static_cast<u32>(ARRAY_SIZE(dynamic_states_array));
+    dynamic_state.dynamicStateCount = (u32)ARRAY_SIZE(dynamic_states_array);
     dynamic_state.pDynamicStates    = +dynamic_states_array;
 
     VkViewport viewport = {};
@@ -671,10 +724,10 @@ void create_shaders_and_pipeline() {
     rasterizer_create_info.sType                   = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
     rasterizer_create_info.depthClampEnable        = VK_FALSE;
     rasterizer_create_info.depthBiasEnable         = VK_FALSE;
-    rasterizer_create_info.depthBiasConstantFactor = 0.0f;                  // Optional
-    rasterizer_create_info.depthBiasClamp          = 0.0f;                  // Optional
-    rasterizer_create_info.depthBiasSlopeFactor    = 0.0f;                  // Optional
-    rasterizer_create_info.cullMode                = VK_CULL_MODE_BACK_BIT; // : VK_CULL_MODE_NONE;
+    rasterizer_create_info.depthBiasConstantFactor = 0.0f;              // Optional
+    rasterizer_create_info.depthBiasClamp          = 0.0f;              // Optional
+    rasterizer_create_info.depthBiasSlopeFactor    = 0.0f;              // Optional
+    rasterizer_create_info.cullMode                = VK_CULL_MODE_NONE; // VK_CULL_MODE_BACK_BIT;
     rasterizer_create_info.frontFace               = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     rasterizer_create_info.lineWidth               = 1.0f;
     rasterizer_create_info.polygonMode             = VK_POLYGON_MODE_FILL;
@@ -690,7 +743,7 @@ void create_shaders_and_pipeline() {
     multisampling_create_info.alphaToOneEnable      = VK_FALSE; // Optional
 
     VkAttachmentDescription color_attachment{};
-    color_attachment.format         = VK_FORMAT_B8G8R8A8_SRGB; // try
+    color_attachment.format         = VK_FORMAT_B8G8R8A8_SRGB; // try @TODO: make format correct.
     color_attachment.samples        = VK_SAMPLE_COUNT_1_BIT;
     color_attachment.loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR;
     color_attachment.storeOp        = VK_ATTACHMENT_STORE_OP_STORE;
@@ -737,17 +790,46 @@ void create_shaders_and_pipeline() {
 
     VK_EXPECT_SUCCESS(vkCreatePipelineLayout(gpu.logical, &pipeline_layout_create_info, nullptr, &pipeline.layout));
 
+    VkPipelineColorBlendAttachmentState color_blend_attachment_state = {};
+    color_blend_attachment_state.blendEnable                         = VK_TRUE;
+    color_blend_attachment_state.srcColorBlendFactor                 = VK_BLEND_FACTOR_SRC_ALPHA;
+    color_blend_attachment_state.dstColorBlendFactor                 = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    color_blend_attachment_state.colorBlendOp                        = VK_BLEND_OP_ADD;
+    color_blend_attachment_state.srcAlphaBlendFactor                 = VK_BLEND_FACTOR_ONE;
+    color_blend_attachment_state.dstAlphaBlendFactor                 = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+    color_blend_attachment_state.alphaBlendOp                        = VK_BLEND_OP_ADD;
+    color_blend_attachment_state.colorWriteMask =
+        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+
+    VkPipelineColorBlendStateCreateInfo color_blend_state_create_info{};
+    color_blend_state_create_info.sType             = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    color_blend_state_create_info.logicOpEnable     = VK_FALSE;
+    color_blend_state_create_info.logicOp           = VK_LOGIC_OP_COPY; // Optional
+    color_blend_state_create_info.attachmentCount   = 1;
+    color_blend_state_create_info.pAttachments      = &color_blend_attachment_state;
+    color_blend_state_create_info.blendConstants[0] = 0.0f; // Optional
+    color_blend_state_create_info.blendConstants[1] = 0.0f; // Optional
+    color_blend_state_create_info.blendConstants[2] = 0.0f; // Optional
+    color_blend_state_create_info.blendConstants[3] = 0.0f; // Optional
+
+    VkPipelineVertexInputStateCreateInfo vertex_input_state_create_info{};
+    vertex_input_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    vertex_input_state_create_info.vertexBindingDescriptionCount   = 0;
+    vertex_input_state_create_info.pVertexBindingDescriptions      = nullptr;
+    vertex_input_state_create_info.vertexAttributeDescriptionCount = 0;
+    vertex_input_state_create_info.pVertexAttributeDescriptions    = nullptr;
+
     VkGraphicsPipelineCreateInfo graphics_pipeline_create_info{};
     graphics_pipeline_create_info.sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     graphics_pipeline_create_info.stageCount          = ARRAY_SIZE(shaders_create_info);
     graphics_pipeline_create_info.pStages             = +shaders_create_info;
-    graphics_pipeline_create_info.pVertexInputState   = nullptr; // &vertex_input_state_create_info;
+    graphics_pipeline_create_info.pVertexInputState   = &vertex_input_state_create_info;
     graphics_pipeline_create_info.pInputAssemblyState = &input_assembly_create_info;
     graphics_pipeline_create_info.pViewportState      = &viewport_state_create_info;
     graphics_pipeline_create_info.pRasterizationState = &rasterizer_create_info;
     graphics_pipeline_create_info.pMultisampleState   = &multisampling_create_info;
     graphics_pipeline_create_info.pDepthStencilState  = nullptr; // &depth_stencil_state_info; // Optional
-    graphics_pipeline_create_info.pColorBlendState    = nullptr; //&color_blend_state_create_info;
+    graphics_pipeline_create_info.pColorBlendState    = &color_blend_state_create_info;
     graphics_pipeline_create_info.pDynamicState       = &dynamic_state;
     graphics_pipeline_create_info.layout              = pipeline.layout;
     graphics_pipeline_create_info.renderPass          = pipeline.renderpass;
@@ -759,9 +841,172 @@ void create_shaders_and_pipeline() {
         vkCreateGraphicsPipelines(gpu.logical, nullptr, 1, &graphics_pipeline_create_info, nullptr, &pipeline.handle));
 }
 
-void draw(Swapchain& swapchain) { static_cast<void>(swapchain); }
+void draw(Swapchain& swapchain) {
+
+    vkWaitForFences(
+        gpu.logical,
+        1,
+        draw_context.fences + swapchain.current_frame,
+        VK_TRUE,
+        std::numeric_limits<u64>::max());
+
+    vkResetFences(gpu.logical, 1, draw_context.fences + swapchain.current_frame);
+
+    if (swapchain.width != framebuffer.width || swapchain.height != framebuffer.height) {
+        // recreate_framebuffer
+        auto& current_framebuffer = framebuffer.handles[swapchain.current_frame];
+        if (current_framebuffer) {
+            vkDestroyFramebuffer(gpu.logical, current_framebuffer, nullptr);
+        }
+
+        VkFramebufferCreateInfo framebuffer_create_info{};
+        framebuffer_create_info.sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebuffer_create_info.renderPass      = pipeline.renderpass;
+        framebuffer_create_info.attachmentCount = 1;
+        framebuffer_create_info.pAttachments    = &swapchain.image_views[swapchain.current_frame];
+        framebuffer_create_info.width           = swapchain.width;
+        framebuffer_create_info.height          = swapchain.height;
+        framebuffer_create_info.layers          = 1;
+
+        VK_EXPECT_SUCCESS(vkCreateFramebuffer(gpu.logical, &framebuffer_create_info, nullptr, &current_framebuffer));
+    }
+
+    VkCommandBufferBeginInfo begin_info{};
+    begin_info.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    begin_info.flags            = 0; // VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    begin_info.pInheritanceInfo = nullptr;
+
+    vkResetCommandBuffer(draw_context.command_buffers[swapchain.current_frame], 0);
+    VK_EXPECT_SUCCESS(vkBeginCommandBuffer(draw_context.command_buffers[swapchain.current_frame], &begin_info));
+
+    VkRenderPassBeginInfo renderpass_info{};
+    renderpass_info.sType      = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderpass_info.renderPass = pipeline.renderpass;
+    // @TODO: make this work.
+
+    renderpass_info.framebuffer       = framebuffer.handles[swapchain.current_frame];
+    renderpass_info.renderArea.offset = { 0, 0 };
+    renderpass_info.renderArea.extent = { swapchain.width, swapchain.height };
+    renderpass_info.pNext             = nullptr;
+
+    VkClearValue clear_color;
+    renderpass_info.clearValueCount = 1;
+    renderpass_info.pClearValues    = &clear_color;
+
+    VkViewport viewport = { .x        = 0.0f,
+                            .y        = 0.0f,
+                            .width    = (f32)swapchain.width,
+                            .height   = (f32)swapchain.height,
+                            .minDepth = 0.0f,
+                            .maxDepth = 1.0f };
+
+    vkCmdSetViewport(draw_context.command_buffers[swapchain.current_frame], 0, 1, &viewport);
+
+    VkRect2D scissor{
+        .offset = { 0, 0 },
+        .extent = { (u32)swapchain.width, (u32)swapchain.height },
+    };
+    vkCmdSetScissor(draw_context.command_buffers[swapchain.current_frame], 0, 1, &scissor);
+
+    vkCmdBeginRenderPass(
+        draw_context.command_buffers[swapchain.current_frame],
+        &renderpass_info,
+        VK_SUBPASS_CONTENTS_INLINE);
+
+    vkCmdBindPipeline(
+        draw_context.command_buffers[swapchain.current_frame],
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        pipeline.handle);
+
+    vkCmdDraw(draw_context.command_buffers[swapchain.current_frame], 3, 1, 0, 0);
+
+    vkCmdEndRenderPass(draw_context.command_buffers[swapchain.current_frame]);
+    VK_EXPECT_SUCCESS(
+        vkEndCommandBuffer(draw_context.command_buffers[swapchain.current_frame]),
+        [](VkResult /* result */) {});
+
+    VkPipelineStageFlags pipeline_stages = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    VkSubmitInfo submit_info{};
+    submit_info.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submit_info.waitSemaphoreCount   = 1;
+    submit_info.pWaitSemaphores      = swapchain.image_avail + swapchain.out_of_sync_index;
+    submit_info.pWaitDstStageMask    = &pipeline_stages;
+    submit_info.commandBufferCount   = 1;
+    submit_info.pCommandBuffers      = draw_context.command_buffers + swapchain.current_frame;
+    submit_info.signalSemaphoreCount = 1;
+    submit_info.pSignalSemaphores    = swapchain.render_done + swapchain.out_of_sync_index;
+
+    VK_EXPECT_SUCCESS(vkQueueSubmit(gpu.graphics_queue, 1, &submit_info, draw_context.fences[swapchain.current_frame]));
+}
 
 void assert_format(VkFormat format) { assert(format == VK_FORMAT_B8G8R8A8_SRGB); }
+
+void create_draw_data() {
+    constexpr auto pool_size = 1000;
+
+    // clang-format off
+    VkDescriptorPoolSize sizes[] {
+        { VK_DESCRIPTOR_TYPE_SAMPLER, pool_size },
+        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, pool_size },
+        { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, pool_size },
+        { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, pool_size },
+        { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, pool_size },
+        { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, pool_size },
+        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, pool_size },
+        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, pool_size },
+        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, pool_size },
+        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, pool_size },
+        { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, pool_size }
+    };
+    // clang-format on
+
+    u32 count = ARRAY_SIZE(sizes);
+
+    VkDescriptorPoolCreateInfo pool_info = {
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+        // TODO: we can remove this if needed. This is needed for solving the bug above.
+        .flags         = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+        .maxSets       = pool_size * count,
+        .poolSizeCount = count,
+        .pPoolSizes    = +sizes,
+    };
+
+    VK_EXPECT_SUCCESS(vkCreateDescriptorPool(gpu.logical, &pool_info, nullptr, &draw_context.pool));
+
+    for (u32 i = 0, size = ARRAY_SIZE(draw_context.fences); i < size; ++i) {
+        VkFenceCreateInfo fence_info{};
+        fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+
+        // TODO: figure out if we really need to signal at the start.
+        fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+        VK_EXPECT_SUCCESS(vkCreateFence(gpu.logical, &fence_info, nullptr, draw_context.fences + i));
+    }
+
+    VkCommandBufferAllocateInfo alloc_info{};
+    alloc_info.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    alloc_info.commandPool        = gpu.command_pool;
+    alloc_info.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    alloc_info.commandBufferCount = ARRAY_SIZE(draw_context.command_buffers); // @TODO: check if this works.
+    VK_EXPECT_SUCCESS(vkAllocateCommandBuffers(gpu.logical, &alloc_info, draw_context.command_buffers));
+}
+
+void free_draw_data() {
+    vkFreeDescriptorSets(gpu.logical, draw_context.pool, 1, &draw_context.static_set);
+    vkFreeCommandBuffers(
+        gpu.logical,
+        gpu.command_pool,
+        ARRAY_SIZE(draw_context.command_buffers),
+        draw_context.command_buffers);
+
+    vkFreeDescriptorSets(
+        gpu.logical,
+        draw_context.pool,
+        ARRAY_SIZE(draw_context.dynamic_sets),
+        draw_context.dynamic_sets);
+
+    for (u32 i = 0, size = ARRAY_SIZE(draw_context.fences); i < size; ++i)
+        vkDestroyFence(gpu.logical, draw_context.fences[i], nullptr);
+}
 
 void free_shaders_and_pipeline() {
     vkDestroyPipelineLayout(gpu.logical, pipeline.layout, nullptr);
