@@ -119,6 +119,10 @@ static DWORD WINAPI main_thread(LPVOID param) {
        do it on the other thread, using the CREATE_DANGEROUS_WINDOW and DESTROY_DANGEROUS_WINDOW
        user messages.  Otherwise, everything proceeds as normal.
     */
+
+    init_vulkan_resources();
+    defer { free_vulkan_resources(); };
+
     HWND service_window = (HWND)param;
 
     WNDCLASSEXW window_class   = {};
@@ -154,6 +158,7 @@ static DWORD WINAPI main_thread(LPVOID param) {
 
     assert_format(swapchain.format.format);
 
+    int x = 0;
     for (;;) {
         MSG message;
         while (PeekMessage(&message, 0, 0, 0, PM_REMOVE)) {
@@ -165,6 +170,7 @@ static DWORD WINAPI main_thread(LPVOID param) {
                 case WM_CLOSE: {
                     SendMessageW(service_window, Window_Messages::destroy_window, message.wParam, 0);
                 } break;
+                    // @PERFORMANCE: this is slow and blocking.
                     // case WM_SIZE: {
                     //     UINT width  = LOWORD(message.lParam);
                     //     UINT height = HIWORD(message.lParam);
@@ -174,16 +180,16 @@ static DWORD WINAPI main_thread(LPVOID param) {
         }
 
         // This is where application code is supposed to live.
-        // int mid_point    = (x++ % (64 * 1024)) / 64;
+        int mid_point    = (x++ % (64 * 1024)) / 64;
         int window_count = 0;
         // turn this into something else?
         for (HWND window = FindWindowExW(0, 0, window_class.lpszClassName, 0); window;
              window      = FindWindowExW(0, window, window_class.lpszClassName, 0)) {
             // Change this to game loop ? Do something here.
-            RECT client;
-            GetClientRect(window, &client);
             // HDC device_context = GetDC(window);
-            //
+
+            // RECT client;
+            // GetClientRect(window, &client);
             // PatBlt(device_context, 0, 0, mid_point, client.bottom, BLACKNESS);
             // if (client.right > mid_point) {
             //     PatBlt(device_context, mid_point, 0, client.right - mid_point, client.bottom, WHITENESS);
@@ -195,6 +201,8 @@ static DWORD WINAPI main_thread(LPVOID param) {
             if (window == handle) {
                 present_swapchain(swapchain);
                 if (swapchain.out_of_date) {
+                    RECT client;
+                    GetClientRect(window, &client);
                     UINT width  = client.right - client.left;
                     UINT height = client.top - client.bottom;
                     resize_swapchain(swapchain, width, height);
@@ -214,9 +222,6 @@ static DWORD WINAPI main_thread(LPVOID param) {
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nCmdShow) {
 
     log_info("starting application");
-
-    init_vulkan_resources();
-    defer { free_vulkan_resources(); };
 
     WNDCLASSEXW window_class   = {};
     window_class.cbSize        = sizeof(window_class);
