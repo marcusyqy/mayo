@@ -150,15 +150,16 @@ static DWORD WINAPI main_thread(LPVOID param) {
     create_shaders_and_pipeline();
     defer { free_shaders_and_pipeline(); };
 
-    auto swapchain = create_swapchain_from_win32(window_class.hInstance, handle);
-    defer { free_swapchain(swapchain); };
-
     create_draw_data();
     defer { free_draw_data(); };
+
+    auto swapchain = create_swapchain_from_win32(window_class.hInstance, handle);
+    defer { free_swapchain(swapchain); };
 
     assert_format(swapchain.format.format);
 
     int x = 0;
+ 
     for (;;) {
         MSG message;
         while (PeekMessage(&message, 0, 0, 0, PM_REMOVE)) {

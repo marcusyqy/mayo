@@ -986,7 +986,7 @@ void create_draw_data() {
     alloc_info.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     alloc_info.commandPool        = gpu.command_pool;
     alloc_info.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    alloc_info.commandBufferCount = ARRAY_SIZE(draw_context.command_buffers); // @TODO: check if this works.
+    alloc_info.commandBufferCount = ARRAY_SIZE(draw_context.command_buffers);
     VK_EXPECT_SUCCESS(vkAllocateCommandBuffers(gpu.logical, &alloc_info, draw_context.command_buffers));
 }
 
