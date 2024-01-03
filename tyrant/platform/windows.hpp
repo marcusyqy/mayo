@@ -2,6 +2,7 @@
 #include "../render.hpp"
 #include "basic.hpp"
 #include "logger.hpp"
+#include <algorithm>
 #include <stdio.h>
 #include <windows.h>
 
@@ -102,6 +103,7 @@ static LRESULT CALLBACK display_wnd_proc(HWND window, UINT message, WPARAM wpara
         case WM_LBUTTONUP:
         case WM_DESTROY:
         // case WM_SIZE:
+        case WM_KEYDOWN:
         case WM_CHAR: {
             PostThreadMessageW(main_thread_id, message, wparam, lparam);
         } break;
@@ -159,7 +161,7 @@ static DWORD WINAPI main_thread(LPVOID param) {
     assert_format(swapchain.format.format);
 
     int x = 0;
- 
+
     for (;;) {
         MSG message;
         while (PeekMessage(&message, 0, 0, 0, PM_REMOVE)) {
@@ -167,6 +169,10 @@ static DWORD WINAPI main_thread(LPVOID param) {
                 case WM_CHAR: {
                     //  when we support multiple swap chains
                     // SendMessageW(service_window, Window_Messages::create_window, (WPARAM)&p, 0);
+                    if (message.wParam == VK_ESCAPE)
+                        SendMessageW(service_window, Window_Messages::destroy_window, (WPARAM)GetForegroundWindow(), 0);
+                    if (std::tolower(message.wParam) == 'c')
+                        SendMessageW(service_window, Window_Messages::create_window, (WPARAM)&p, 0);
                 } break;
                 case WM_CLOSE: {
                     SendMessageW(service_window, Window_Messages::destroy_window, message.wParam, 0);
@@ -197,9 +203,8 @@ static DWORD WINAPI main_thread(LPVOID param) {
             // }
             // ReleaseDC(window, device_context);
 
-            draw(swapchain);
-
             if (window == handle) {
+                draw(swapchain);
                 present_swapchain(swapchain);
                 if (swapchain.out_of_date) {
                     RECT client;
