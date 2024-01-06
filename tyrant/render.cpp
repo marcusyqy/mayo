@@ -1051,3 +1051,4 @@ void free_shaders_and_pipeline() {
     vkDestroyRenderPass(gpu.logical, pipeline.renderpass, nullptr);
     vkDestroyPipeline(gpu.logical, pipeline.handle, nullptr);
 }
+
