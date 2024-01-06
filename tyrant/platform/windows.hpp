@@ -275,6 +275,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
 
     log_info("starting application");
 
+#define DEBUG
+#if defined(DEBUG) | defined(_DEBUG)
+    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+#endif
+
     WNDCLASSEXW window_class   = {};
     window_class.cbSize        = sizeof(window_class);
     window_class.lpfnWndProc   = &service_wnd_proc;

@@ -1037,6 +1037,8 @@ void free_draw_data(Draw_Data* draw_data) {
 
     for (u32 i = 0, size = ARRAY_SIZE(draw_data->fences); i < size; ++i)
         vkDestroyFence(gpu.logical, draw_data->fences[i], nullptr);
+
+    delete draw_data;
 }
 
 void free_shaders_and_pipeline() {
