@@ -116,11 +116,6 @@ static LRESULT CALLBACK display_wnd_proc(HWND window, UINT message, WPARAM wpara
 }
 
 static DWORD WINAPI main_thread(LPVOID param) {
-    /* NOTE(Casey): This is your app code. Basically you just do everything the same,
-       but instead of calling CreateWindow/DestroyWindow, you use SendMessage to
-       do it on the other thread, using the CREATE_DANGEROUS_WINDOW and DESTROY_DANGEROUS_WINDOW
-       user messages.  Otherwise, everything proceeds as normal.
-    */
 
     init_vulkan_resources();
     defer { free_vulkan_resources(); };
@@ -159,9 +154,9 @@ static DWORD WINAPI main_thread(LPVOID param) {
     defer { free_shaders_and_pipeline(); };
 
     auto create_window = [&]() {
-        HWND handle    = (HWND)SendMessageW(service_window, Window_Messages::create_window, (WPARAM)&p, 0);
-        auto swapchain = create_swapchain_from_win32(window_class.hInstance, handle);
-        auto draw_data = create_draw_data();
+        HWND handle            = (HWND)SendMessageW(service_window, Window_Messages::create_window, (WPARAM)&p, 0);
+        auto swapchain         = create_swapchain_from_win32(window_class.hInstance, handle);
+        auto draw_data         = create_draw_data();
         windows[num_windows++] = { handle, swapchain, draw_data };
         assert_format(swapchain.format.format);
     };
@@ -220,33 +215,10 @@ static DWORD WINAPI main_thread(LPVOID param) {
                     destroy_window((HWND)message.wParam);
                     // SendMessageW(service_window, Window_Messages::destroy_window, message.wParam, 0);
                 } break;
-                    // @PERFORMANCE: this is slow and blocking.
-                    // case WM_SIZE: {
-                    //     UINT width  = LOWORD(message.lParam);
-                    //     UINT height = HIWORD(message.lParam);
-                    //     resize_swapchain(swapchain, width, height);
-                    // } break;
             }
         }
 
-        // This is where application code is supposed to live.
-        // int mid_point    = (x++ % (64 * 1024)) / 64;
-        // int window_count = 0;
-        // turn this into something else?
-        // for (HWND window = FindWindowExW(0, 0, window_class.lpszClassName, 0); window;
-        //      window      = FindWindowExW(0, window, window_class.lpszClassName, 0)) {
         for (size_t i = 0; i < num_windows; ++i) {
-            // Change this to game loop ? Do something here.
-            // HDC device_context = GetDC(window);
-
-            // RECT client;
-            // GetClientRect(window, &client);
-            // PatBlt(device_context, 0, 0, mid_point, client.bottom, BLACKNESS);
-            // if (client.right > mid_point) {
-            //     PatBlt(device_context, mid_point, 0, client.right - mid_point, client.bottom, WHITENESS);
-            // }
-            // ReleaseDC(window, device_context);
-
             auto& window = windows[i];
             RECT client;
             GetClientRect(window.handle, &client);
@@ -263,19 +235,13 @@ static DWORD WINAPI main_thread(LPVOID param) {
                 present_swapchain(window.swapchain);
             }
         }
-
-        // if (window_count == 0) {
-        //     break;
-        // }
     }
 
     ExitProcess(0);
 }
 
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nCmdShow) {
-
+int WINAPI service_thread(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nCmdShow) {
     log_info("starting application");
-
 #define DEBUG
 #if defined(DEBUG) | defined(_DEBUG)
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
@@ -323,6 +289,57 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
     return 0;
 }
 
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nCmdShow) {
+    log_trace("Starting Application...");
+
+#define DEBUG
+#if defined(DEBUG) | defined(_DEBUG)
+    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+#endif
+
+    WNDCLASSEXW window_class   = {};
+    window_class.cbSize        = sizeof(window_class);
+    window_class.lpfnWndProc   = &service_wnd_proc;
+    window_class.hInstance     = GetModuleHandleW(NULL);
+    window_class.hIcon         = LoadIconA(NULL, IDI_APPLICATION);
+    window_class.hCursor       = LoadCursorA(NULL, IDC_ARROW);
+    window_class.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+    window_class.lpszClassName = L"Tyrant-Class";
+    RegisterClassExW(&window_class);
+
+    HWND service_window = CreateWindowExW(
+        0, // STYLE NOT VISIBLE.
+        window_class.lpszClassName,
+        L"Tyrant-Service",
+        0,
+        CW_USEDEFAULT,
+        CW_USEDEFAULT,
+        CW_USEDEFAULT,
+        CW_USEDEFAULT,
+        0,
+        0,
+        window_class.hInstance,
+        0);
+
+    CreateThread(0, 0, main_thread, service_window, 0, &main_thread_id);
+
+    for (;;) {
+        MSG message;
+        GetMessageW(&message, 0, 0, 0);
+        TranslateMessage(&message);
+
+        if ((message.message == WM_CHAR) || (message.message == WM_KEYDOWN) || (message.message == WM_QUIT) ||
+            (message.message == WM_SIZE)) {
+            PostThreadMessageW(main_thread_id, message.message, message.wParam, message.lParam);
+        } else {
+            DispatchMessageW(&message);
+        }
+    }
+
+    log_trace("Exitting Application...");
+    return 0;
+}
+
 #ifndef RELEASE_BUILD
 
 // for allocated console in release build.
@@ -336,5 +353,5 @@ int main(int argc, char** argv) {
 
 // for msvc:
 // run command: "cl tyrant/main.cpp /std:c++17 /Fe:build/main.exe /Fo:build/"
-
-// i'm going to write a c++ counter part for premake/cmake.
+//
+// @TODO: make a C++ counterpart for  premake/cmake.
