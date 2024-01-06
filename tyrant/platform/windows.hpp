@@ -159,9 +159,9 @@ static DWORD WINAPI main_thread(LPVOID param) {
     defer { free_shaders_and_pipeline(); };
 
     auto create_window = [&]() {
-        HWND handle            = (HWND)SendMessageW(service_window, Window_Messages::create_window, (WPARAM)&p, 0);
-        auto swapchain         = create_swapchain_from_win32(window_class.hInstance, handle);
-        auto draw_data         = create_draw_data();
+        HWND handle    = (HWND)SendMessageW(service_window, Window_Messages::create_window, (WPARAM)&p, 0);
+        auto swapchain = create_swapchain_from_win32(window_class.hInstance, handle);
+        auto draw_data = create_draw_data();
         windows[num_windows++] = { handle, swapchain, draw_data };
         assert_format(swapchain.format.format);
     };
@@ -259,29 +259,9 @@ static DWORD WINAPI main_thread(LPVOID param) {
                     resize_swapchain(window.swapchain, width, height);
                 }
 
-                if (window.swapchain.out_of_date) {
-                    GetClientRect(window.handle, &client);
-                    width  = client.right - client.left;
-                    height = client.bottom - client.top;
-                    resize_swapchain(window.swapchain, width, height);
-                }
-
-                if (window.swapchain.out_of_date) {
-                    continue;
-                }
-
                 draw(window.swapchain, window.draw_data);
                 present_swapchain(window.swapchain);
-
-                if (window.swapchain.out_of_date) {
-                    GetClientRect(window.handle, &client);
-                    width  = client.right - client.left;
-                    height = client.bottom - client.top;
-                    resize_swapchain(window.swapchain, width, height);
-                }
             }
-
-            // ++window_count;
         }
 
         // if (window_count == 0) {

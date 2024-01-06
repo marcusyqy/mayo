@@ -28,9 +28,9 @@ struct Swapchain {
 
     u32 width = {}, height = {};
 
-    VkImageView image_views[Render_Params::MAX_SWAPCHAIN_IMAGES] = {};
-    VkSemaphore image_avail[Render_Params::MAX_SWAPCHAIN_IMAGES] = {};
-    VkSemaphore render_done[Render_Params::MAX_SWAPCHAIN_IMAGES] = {};
+    VkImageView image_views[Render_Params::MAX_SWAPCHAIN_IMAGES]    = {};
+    VkSemaphore image_avail[Render_Params::MAX_SWAPCHAIN_IMAGES]    = {};
+    VkSemaphore render_done[Render_Params::MAX_SWAPCHAIN_IMAGES]    = {};
     VkSemaphore semaphore_pool[Render_Params::MAX_SWAPCHAIN_IMAGES] = {};
     size_t semaphore_size                                           = {};
 };
@@ -65,3 +65,4 @@ void draw(Swapchain& swapchain, Draw_Data* draw_data);
 
 Draw_Data* create_draw_data();
 void free_draw_data(Draw_Data* draw_data);
+

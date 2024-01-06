@@ -228,7 +228,7 @@ void init_vulkan_resources() {
             if (!strcmp(props.extensionName, VK_KHR_SWAPCHAIN_EXTENSION_NAME)) break;
         }
 
-        // did not find.
+        // did not find
         if (j == extension_count) continue;
 
         u32 queue_family_count        = 0;
@@ -447,6 +447,7 @@ void recreate_swapchain(Swapchain& swapchain, u32 width, u32 height) {
     if (!format_chosen) swapchain.format = formats[0];
 
     VkPresentModeKHR chosen_present_mode = VK_PRESENT_MODE_FIFO_KHR;
+    // @NOTE: FIFO for smooth resize but dragging window is laggy
     for (u32 i = 0; i < present_mode_count; ++i) {
         const auto& mode = present_modes[i];
         if (mode == VK_PRESENT_MODE_MAILBOX_KHR) chosen_present_mode = mode;
@@ -454,6 +455,18 @@ void recreate_swapchain(Swapchain& swapchain, u32 width, u32 height) {
 
     u32 image_count =
         std::clamp(capabilities.minImageCount + 1, capabilities.minImageCount, capabilities.maxImageCount);
+
+    // Find a supported composite type.
+    VkCompositeAlphaFlagBitsKHR composite = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    if (capabilities.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR) {
+        composite = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    } else if (capabilities.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR) {
+        composite = VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR;
+    } else if (capabilities.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR) {
+        composite = VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR;
+    } else if (capabilities.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR) {
+        composite = VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR;
+    }
 
     VkSwapchainCreateInfoKHR create_info{ .sType                 = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
                                           .pNext                 = nullptr,
@@ -472,7 +485,7 @@ void recreate_swapchain(Swapchain& swapchain, u32 width, u32 height) {
                                               capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR
                                               ? VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR
                                               : capabilities.currentTransform,
-                                          .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+                                          .compositeAlpha = composite, // VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
                                           .presentMode    = chosen_present_mode,
                                           .clipped        = VK_TRUE,
                                           .oldSwapchain   = swapchain.handle };
@@ -511,6 +524,11 @@ void recreate_swapchain(Swapchain& swapchain, u32 width, u32 height) {
         image_view_create_info.image    = image;
         image_view_create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
         image_view_create_info.format   = swapchain.format.format;
+
+        // image_view_create_info.components.r = VK_COMPONENT_SWIZZLE_R;
+        // image_view_create_info.components.g = VK_COMPONENT_SWIZZLE_G;
+        // image_view_create_info.components.b = VK_COMPONENT_SWIZZLE_B;
+        // image_view_create_info.components.a = VK_COMPONENT_SWIZZLE_A;
 
         image_view_create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
         image_view_create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -860,8 +878,9 @@ void draw(Swapchain& swapchain, Draw_Data* draw_data) {
         std::numeric_limits<u64>::max());
 
     vkResetFences(gpu.logical, 1, draw_data->fences + swapchain.current_frame);
-    auto& framebuffer = draw_data->framebuffer;
 
+    auto& framebuffer = draw_data->framebuffer;
+#if 1
     // if (swapchain.width != framebuffer.width[swapchain.current_frame] ||
     //     swapchain.height != framebuffer.height[swapchain.current_frame]) {
     if (framebuffer.image_views[swapchain.current_frame] != swapchain.image_views[swapchain.current_frame]) {
@@ -871,16 +890,6 @@ void draw(Swapchain& swapchain, Draw_Data* draw_data) {
         // recreate_framebuffer
         auto& current_framebuffer = framebuffer.handles[swapchain.current_frame];
         if (current_framebuffer) {
-            // bool slot_filled = false;
-            // for (size_t i = 0; i < num_resize_stuff; ++i) {
-            //     if (resize_stuffs[i].used &&
-            //         framebuffer.image_views[swapchain.current_frame] == resize_stuffs[i].image_view) {
-            //         resize_stuffs[i].framebuffer = current_framebuffer;
-            //         slot_filled                  = true;
-            //     }
-            // }
-            // assert(slot_filled);
-            vkQueueWaitIdle(gpu.graphics_queue);
             vkDestroyFramebuffer(gpu.logical, current_framebuffer, nullptr);
         }
 
@@ -897,6 +906,7 @@ void draw(Swapchain& swapchain, Draw_Data* draw_data) {
 
         VK_EXPECT_SUCCESS(vkCreateFramebuffer(gpu.logical, &framebuffer_create_info, nullptr, &current_framebuffer));
     }
+#endif
 
     VkCommandBufferBeginInfo begin_info{};
     begin_info.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
