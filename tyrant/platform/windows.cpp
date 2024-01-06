@@ -1,16 +1,22 @@
-#pragma once
+#ifdef WIN32
+
+#define NO_ENTRY_POINT
+#include "windows.hpp"
+#include "../render.hpp"
+
+#include "basic.hpp"
 #include "logger.hpp"
+#include <algorithm>
 #include <windows.h>
 
 #pragma comment(lib, "kernel32")
 #pragma comment(lib, "user32")
 #pragma comment(lib, "gdi32")
 
-#if 0
+namespace {
 
-/* Copied from DTC by cmuratori
-   "https://github.com/cmuratori/dtc"
-*/
+DWORD service_thread_id;
+HWND service_window;
 
 struct Actual_Window_Param {
     DWORD dwExStyle;
@@ -27,25 +33,22 @@ struct Actual_Window_Param {
     LPVOID lpParam;
 };
 
-// #define CREATE_DANGEROUS_WINDOW (WM_USER + 0x1337)
-// #define DESTROY_DANGEROUS_WINDOW (WM_USER + 0x1338)
-
 struct Window_Messages {
     enum : UINT {
         create_window  = WM_USER + 0x1337,
         destroy_window = WM_USER + 0x1338,
+        defer_wm_close = WM_USER + 0x1339,
     };
 };
 
-static DWORD main_thread_id;
-
-static LRESULT CALLBACK service_wnd_proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
+LRESULT CALLBACK service_wnd_proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
     LRESULT result = 0;
 
     switch (message) {
         case Window_Messages::create_window: {
-            auto* p = (Actual_Window_Param*)wparam;
-            result  = (LRESULT)CreateWindowExW(
+            auto* p      = (Actual_Window_Param*)wparam;
+            DWORD thread = (DWORD)lparam;
+            auto hwnd    = CreateWindowExW(
                 p->dwExStyle,
                 p->lpClassName,
                 p->lpWindowName,
@@ -58,6 +61,10 @@ static LRESULT CALLBACK service_wnd_proc(HWND window, UINT message, WPARAM wpara
                 p->hMenu,
                 p->hInstance,
                 p->lpParam);
+            assert(hwnd);
+
+            SetWindowLongPtrW(hwnd, GWLP_USERDATA, thread);
+            result = (LRESULT)hwnd;
             break;
         }
         case Window_Messages::destroy_window: {
@@ -73,53 +80,106 @@ static LRESULT CALLBACK service_wnd_proc(HWND window, UINT message, WPARAM wpara
     return result;
 }
 
-static LRESULT CALLBACK display_wnd_proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
-    /* NOTE(casey): This is an example of an actual window procedure. It doesn't do anything
-       but forward things to the main thread, because again, all window messages now occur
-       on the message thread, and presumably we would rather handle everything there.  You
-       don't _have_ to do that - you could choose to handle some of the messages here.
-       But if you did, you would have to actually think about whether there are race conditions
-       with your main thread and all that.  So just PostThreadMessageW()'ing everything gets
-       you out of having to think about it.
-    */
+LRESULT CALLBACK display_wnd_proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
 
     LRESULT result = 0;
+    DWORD thread   = (DWORD)GetWindowLongPtrW(window, GWLP_USERDATA);
 
     switch (message) {
         // NOTE(casey): Mildly annoying, if you want to specify a window, you have
         // to snuggle the params yourself, because Windows doesn't let you forward
         // a god damn window message even though the program IS CALLED WINDOWS. It's
-        // in the name! Let me pass it!
-        case WM_CLOSE: {
-            PostThreadMessageW(main_thread_id, message, (WPARAM)window, lparam);
+        // in the name! Let me pass it!    
+         case WM_SIZE:
+         case WM_CLOSE: {
+            // return FALSE;
+            // PostThreadMessageW(GetWindowThreadProcessId(window, 0), message, (WPARAM)window, lparam);
+            //  PostMessageW(window, WM_CLOSE, (WPARAM)window, lparam);
+            DWORD thread = (DWORD)GetWindowLongPtrW(window, GWLP_USERDATA);
+            PostThreadMessageW(thread, message, (WPARAM)window, lparam);
+            // SendMessageW(window, WM_CLOSE, (WPARAM)window, lparam);
+            // PostThreadMessageW(event_thread_id, message, (WPARAM)window, lparam);
         } break;
 
         // NOTE(casey): Anything you want the application to handle, forward to the main thread
         // here.
         case WM_MOUSEMOVE:
-        case WM_SIZE:
         case WM_LBUTTONDOWN:
         case WM_LBUTTONUP:
         case WM_DESTROY:
         case WM_KEYDOWN:
         case WM_KEYUP:
         case WM_CHAR: {
-            PostThreadMessageW(main_thread_id, message, wparam, lparam);
+            // PostThreadMessageW(event_thread_id, message, wparam, lparam);
+            DWORD thread = (DWORD)GetWindowLongPtrW(window, GWLP_USERDATA);
+            PostThreadMessageW(thread, message, wparam, lparam);
+            // result = DefWindowProcW(window, message, wparam, lparam);
         } break;
         default: {
             result = DefWindowProcW(window, message, wparam, lparam);
+            // PostThreadMessageW(service_thread_id, message, wparam, lparam);
+            //  PostThreadMessageW(event_thread_id, message, (WPARAM)window, lparam);
         } break;
     }
 
     return result;
 }
 
-static DWORD WINAPI main_thread(LPVOID param) {
+DWORD WINAPI service_thread(LPVOID param) {
+    // DWORD main_thread_id = (DWORD)param;
+
+    WNDCLASSEXW window_class   = {};
+    window_class.cbSize        = sizeof(window_class);
+    window_class.lpfnWndProc   = &service_wnd_proc;
+    window_class.hInstance     = GetModuleHandleW(NULL);
+    window_class.hIcon         = LoadIconA(NULL, IDI_APPLICATION);
+    window_class.hCursor       = LoadCursorA(NULL, IDC_ARROW);
+    window_class.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+    window_class.lpszClassName = L"Tyrant-Class";
+    RegisterClassExW(&window_class);
+
+    service_window = CreateWindowExW(
+        0, // STYLE NOT VISIBLE.
+        window_class.lpszClassName,
+        L"Tyrant-Service",
+        0,
+        CW_USEDEFAULT,
+        CW_USEDEFAULT,
+        CW_USEDEFAULT,
+        CW_USEDEFAULT,
+        0,
+        0,
+        window_class.hInstance,
+        0);
+
+    for (;;) {
+        MSG message;
+        GetMessageW(&message, 0, 0, 0);
+        TranslateMessage(&message);
+        DispatchMessageW(&message);
+        // if ((message.message == WM_CHAR) || (message.message == WM_KEYDOWN) || (message.message == WM_QUIT) ||
+        //     (message.message == WM_SIZE)) {
+        //     PostThreadMessageW(main_thread_id, message.message, message.wParam, message.lParam);
+        // } else {
+        //     DispatchMessageW(&message);
+        // }
+    }
+
+    ExitProcess(0);
+}
+
+void initialize_and_create_empty_window() {
+    // create event thread
+    CreateThread(0, 0, service_thread, (LPVOID)GetCurrentThreadId(), 0, &service_thread_id);
+}
+
+} // namespace
+
+void execute() {
+    initialize_and_create_empty_window();
 
     init_vulkan_resources();
     defer { free_vulkan_resources(); };
-
-    HWND service_window = (HWND)param;
 
     struct Window {
         HWND handle;
@@ -153,7 +213,8 @@ static DWORD WINAPI main_thread(LPVOID param) {
     defer { free_shaders_and_pipeline(); };
 
     auto create_window = [&]() {
-        HWND handle            = (HWND)SendMessageW(service_window, Window_Messages::create_window, (WPARAM)&p, 0);
+        HWND handle =
+            (HWND)SendMessageW(service_window, Window_Messages::create_window, (WPARAM)&p, GetCurrentThreadId());
         auto swapchain         = create_swapchain_from_win32(window_class.hInstance, handle);
         auto draw_data         = create_draw_data();
         windows[num_windows++] = { handle, swapchain, draw_data };
@@ -235,91 +296,6 @@ static DWORD WINAPI main_thread(LPVOID param) {
             }
         }
     }
-
-    ExitProcess(0);
 }
 
-int WINAPI service_thread(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nCmdShow) {
-    log_info("starting application");
-#define DEBUG
-#if defined(DEBUG) | defined(_DEBUG)
-    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-#endif
-
-    WNDCLASSEXW window_class   = {};
-    window_class.cbSize        = sizeof(window_class);
-    window_class.lpfnWndProc   = &service_wnd_proc;
-    window_class.hInstance     = GetModuleHandleW(NULL);
-    window_class.hIcon         = LoadIconA(NULL, IDI_APPLICATION);
-    window_class.hCursor       = LoadCursorA(NULL, IDC_ARROW);
-    window_class.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
-    window_class.lpszClassName = L"Tyrant-Class";
-    RegisterClassExW(&window_class);
-
-    HWND service_window = CreateWindowExW(
-        0, // STYLE NOT VISIBLE.
-        window_class.lpszClassName,
-        L"Tyrant-Service",
-        0,
-        CW_USEDEFAULT,
-        CW_USEDEFAULT,
-        CW_USEDEFAULT,
-        CW_USEDEFAULT,
-        0,
-        0,
-        window_class.hInstance,
-        0);
-
-    CreateThread(0, 0, main_thread, service_window, 0, &main_thread_id);
-
-    for (;;) {
-        MSG message;
-        GetMessageW(&message, 0, 0, 0);
-        TranslateMessage(&message);
-
-        if ((message.message == WM_CHAR) || (message.message == WM_KEYDOWN) || (message.message == WM_QUIT) ||
-            (message.message == WM_SIZE)) {
-            PostThreadMessageW(main_thread_id, message.message, message.wParam, message.lParam);
-        } else {
-            DispatchMessageW(&message);
-        }
-    }
-
-    return 0;
-}
-#endif
-
-void execute();
-
-#ifndef NO_ENTRY_POINT
-
-int WINAPI WinMain(HINSTANCE, HINSTANCE, PSTR, int) {
-    log_trace("Starting Application...");
-
-#define DEBUG
-#if defined(DEBUG) | defined(_DEBUG)
-    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-#endif
-
-    execute();
-    log_trace("Exitting Application...");
-    return 0;
-}
-
-#ifndef RELEASE_BUILD
-
-// for allocated console in release build.
-int main(int argc, char** argv) {
-    logger_init();
-    log_trace("This is a debug build");
-    WinMain(0, 0, 0, 0);
-}
-
-#endif // RELEASE_BUILD
-
-#endif
-
-// for msvc:
-// run command: "cl tyrant/main.cpp /std:c++17 /Fe:build/main.exe /Fo:build/"
-//
-// @TODO: make a C++ counterpart for premake/cmake.
+#endif // WIN32

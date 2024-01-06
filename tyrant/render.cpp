@@ -346,7 +346,7 @@ void free_vulkan_resources() {
         vkDestroyDevice(gpu.logical, nullptr);
     }
 
-#if !ENABLE_VALIDATION
+#if ENABLE_VALIDATION
     auto vkDestroyDebugUtilsMessengerEXT =
         (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
     assert(vkDestroyDebugUtilsMessengerEXT);
@@ -448,10 +448,10 @@ void recreate_swapchain(Swapchain& swapchain, u32 width, u32 height) {
 
     VkPresentModeKHR chosen_present_mode = VK_PRESENT_MODE_FIFO_KHR;
     // @NOTE: FIFO for smooth resize but dragging window is laggy
-    for (u32 i = 0; i < present_mode_count; ++i) {
+    /*for (u32 i = 0; i < present_mode_count; ++i) {
         const auto& mode = present_modes[i];
         if (mode == VK_PRESENT_MODE_MAILBOX_KHR) chosen_present_mode = mode;
-    }
+    }*/
 
     u32 image_count =
         std::clamp(capabilities.minImageCount + 1, capabilities.minImageCount, capabilities.maxImageCount);
@@ -1043,6 +1043,11 @@ void free_draw_data(Draw_Data* draw_data) {
     for (u32 i = 0, size = ARRAY_SIZE(draw_data->fences); i < size; ++i)
         vkDestroyFence(gpu.logical, draw_data->fences[i], nullptr);
 
+    for (u32 i = 0, size = ARRAY_SIZE(draw_data->framebuffer.handles); i < size; ++i)
+        vkDestroyFramebuffer(gpu.logical, draw_data->framebuffer.handles[i], nullptr);
+
+    vkDestroyDescriptorPool(gpu.logical, draw_data->pool, nullptr);
+
     delete draw_data;
 }
 
@@ -1051,4 +1056,3 @@ void free_shaders_and_pipeline() {
     vkDestroyRenderPass(gpu.logical, pipeline.renderpass, nullptr);
     vkDestroyPipeline(gpu.logical, pipeline.handle, nullptr);
 }
-
