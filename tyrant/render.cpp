@@ -383,7 +383,7 @@ Swapchain create_swapchain_from_surface(VkSurfaceKHR surface) {
 
 void recreate_swapchain(Swapchain& swapchain) {
     // @TODO: erase all resources without waiting for gpu to be idle
-    // vkDeviceWaitIdle(gpu.logical);
+    vkDeviceWaitIdle(gpu.logical);
 
     const auto old_num_images             = swapchain.num_images;
     const auto& surface                   = swapchain.surface;
@@ -463,24 +463,11 @@ void recreate_swapchain(Swapchain& swapchain) {
     VK_EXPECT_SUCCESS(vkCreateSwapchainKHR(gpu.logical, &create_info, nullptr, &swapchain.handle));
 
     // cleanup.
-    size_t ii = 0;
     for (u32 i = 0; i < old_num_images; ++i) {
-        for (; ii < num_resize_stuff; ++ii) {
-            if (!resize_stuffs[ii].used) {
-                break;
-            }
-        }
-
-        assert(ii < 10000);
-        resize_stuffs[ii].image_view    = swapchain.image_views[i];
-        resize_stuffs[ii].fence         = swapchain.in_flight[i];
-        resize_stuffs[ii].semaphores[0] = swapchain.render_done[i];
-        resize_stuffs[ii].semaphores[1] = swapchain.image_avail[i];
-        resize_stuffs[ii].used          = true;
-
-        if (ii >= num_resize_stuff) {
-            num_resize_stuff = ii + 1;
-        }
+        vkDestroyImageView(gpu.logical, swapchain.image_views[i], nullptr);
+        vkDestroyFence(gpu.logical, swapchain.in_flight[i], nullptr);
+        vkDestroySemaphore(gpu.logical, swapchain.render_done[i], nullptr);
+        vkDestroySemaphore(gpu.logical, swapchain.image_avail[i], nullptr);
     }
 
     // required to safely destroy after creating new swapchain.
@@ -550,6 +537,7 @@ void recreate_swapchain(Swapchain& swapchain) {
 }
 
 void free_swapchain(Swapchain& swapchain) {
+    vkDeviceWaitIdle(gpu.logical);
     for (u32 i = 0; i < swapchain.num_images; ++i) {
         vkDestroyImageView(gpu.logical, swapchain.image_views[i], nullptr);
         vkDestroyFence(gpu.logical, swapchain.in_flight[i], nullptr);
@@ -602,8 +590,6 @@ void present_swapchain(Swapchain& swapchain) {
         if (result == VK_SUBOPTIMAL_KHR) swapchain.out_of_date = true;
     } else
         swapchain.out_of_date = true;
-
-    release_resize();
 }
 
 VkShaderModule create_shader(Buffer_View<const u32> buffer) {
@@ -645,24 +631,25 @@ struct Pipeline {
     VkPipeline handle       = { VK_NULL_HANDLE };
 } pipeline = {};
 
-struct Draw_Context {
-    VkDescriptorPool pool      = { VK_NULL_HANDLE };
-    VkDescriptorSet static_set = { VK_NULL_HANDLE };
-
-    VkFence fences[Render_Params::MAX_SWAPCHAIN_IMAGES]                  = {};
-    VkCommandBuffer command_buffers[Render_Params::MAX_SWAPCHAIN_IMAGES] = {};
-    VkDescriptorSet dynamic_sets[Render_Params::MAX_SWAPCHAIN_IMAGES]    = {};
-} draw_context = {};
-
 struct Framebuffer_Info {
     // assume always same swapchain for now. @TODO: this needs to be changed to make it more robust later on.
     VkImageView image_views[Render_Params::MAX_SWAPCHAIN_IMAGES] = {};
     VkFramebuffer handles[Render_Params::MAX_SWAPCHAIN_IMAGES]   = {};
     u32 width[Render_Params::MAX_SWAPCHAIN_IMAGES]               = {};
     u32 height[Render_Params::MAX_SWAPCHAIN_IMAGES]              = {};
-} framebuffer;
+};
 
 } // namespace
+
+struct Draw_Data {
+    VkDescriptorPool pool      = { VK_NULL_HANDLE };
+    VkDescriptorSet static_set = { VK_NULL_HANDLE };
+
+    VkFence fences[Render_Params::MAX_SWAPCHAIN_IMAGES]                  = {};
+    VkCommandBuffer command_buffers[Render_Params::MAX_SWAPCHAIN_IMAGES] = {};
+    VkDescriptorSet dynamic_sets[Render_Params::MAX_SWAPCHAIN_IMAGES]    = {};
+    Framebuffer_Info framebuffer                                         = {};
+};
 
 // @TODO : make shader system more robust?
 void create_shaders_and_pipeline() {
@@ -868,16 +855,18 @@ void create_shaders_and_pipeline() {
         vkCreateGraphicsPipelines(gpu.logical, nullptr, 1, &graphics_pipeline_create_info, nullptr, &pipeline.handle));
 }
 
-void draw(Swapchain& swapchain) {
+void draw(Swapchain& swapchain, Draw_Data* draw_data) {
+    assert(draw_data);
 
     vkWaitForFences(
         gpu.logical,
         1,
-        draw_context.fences + swapchain.current_frame,
+        draw_data->fences + swapchain.current_frame,
         VK_TRUE,
         std::numeric_limits<u64>::max());
 
-    vkResetFences(gpu.logical, 1, draw_context.fences + swapchain.current_frame);
+    vkResetFences(gpu.logical, 1, draw_data->fences + swapchain.current_frame);
+    auto& framebuffer = draw_data->framebuffer;
 
     // if (swapchain.width != framebuffer.width[swapchain.current_frame] ||
     //     swapchain.height != framebuffer.height[swapchain.current_frame]) {
@@ -888,15 +877,16 @@ void draw(Swapchain& swapchain) {
         // recreate_framebuffer
         auto& current_framebuffer = framebuffer.handles[swapchain.current_frame];
         if (current_framebuffer) {
-            bool slot_filled = false;
-            for (size_t i = 0; i < num_resize_stuff; ++i) {
-                if (resize_stuffs[i].used &&
-                    framebuffer.image_views[swapchain.current_frame] == resize_stuffs[i].image_view) {
-                    resize_stuffs[i].framebuffer = current_framebuffer;
-                    slot_filled                  = true;
-                }
-            }
-            assert(slot_filled);
+            // bool slot_filled = false;
+            // for (size_t i = 0; i < num_resize_stuff; ++i) {
+            //     if (resize_stuffs[i].used &&
+            //         framebuffer.image_views[swapchain.current_frame] == resize_stuffs[i].image_view) {
+            //         resize_stuffs[i].framebuffer = current_framebuffer;
+            //         slot_filled                  = true;
+            //     }
+            // }
+            // assert(slot_filled);
+            vkDestroyFramebuffer(gpu.logical, current_framebuffer, nullptr);
         }
 
         VkFramebufferCreateInfo framebuffer_create_info{};
@@ -918,8 +908,8 @@ void draw(Swapchain& swapchain) {
     begin_info.flags            = 0; // VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     begin_info.pInheritanceInfo = nullptr;
 
-    vkResetCommandBuffer(draw_context.command_buffers[swapchain.current_frame], 0);
-    VK_EXPECT_SUCCESS(vkBeginCommandBuffer(draw_context.command_buffers[swapchain.current_frame], &begin_info));
+    vkResetCommandBuffer(draw_data->command_buffers[swapchain.current_frame], 0);
+    VK_EXPECT_SUCCESS(vkBeginCommandBuffer(draw_data->command_buffers[swapchain.current_frame], &begin_info));
 
     VkRenderPassBeginInfo renderpass_info{};
     renderpass_info.sType      = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -942,29 +932,29 @@ void draw(Swapchain& swapchain) {
                             .minDepth = 0.0f,
                             .maxDepth = 1.0f };
 
-    vkCmdSetViewport(draw_context.command_buffers[swapchain.current_frame], 0, 1, &viewport);
+    vkCmdSetViewport(draw_data->command_buffers[swapchain.current_frame], 0, 1, &viewport);
 
     VkRect2D scissor{
         .offset = { 0, 0 },
         .extent = { (u32)swapchain.width, (u32)swapchain.height },
     };
-    vkCmdSetScissor(draw_context.command_buffers[swapchain.current_frame], 0, 1, &scissor);
+    vkCmdSetScissor(draw_data->command_buffers[swapchain.current_frame], 0, 1, &scissor);
 
     vkCmdBeginRenderPass(
-        draw_context.command_buffers[swapchain.current_frame],
+        draw_data->command_buffers[swapchain.current_frame],
         &renderpass_info,
         VK_SUBPASS_CONTENTS_INLINE);
 
     vkCmdBindPipeline(
-        draw_context.command_buffers[swapchain.current_frame],
+        draw_data->command_buffers[swapchain.current_frame],
         VK_PIPELINE_BIND_POINT_GRAPHICS,
         pipeline.handle);
 
-    vkCmdDraw(draw_context.command_buffers[swapchain.current_frame], 3, 1, 0, 0);
+    vkCmdDraw(draw_data->command_buffers[swapchain.current_frame], 3, 1, 0, 0);
 
-    vkCmdEndRenderPass(draw_context.command_buffers[swapchain.current_frame]);
+    vkCmdEndRenderPass(draw_data->command_buffers[swapchain.current_frame]);
     VK_EXPECT_SUCCESS(
-        vkEndCommandBuffer(draw_context.command_buffers[swapchain.current_frame]),
+        vkEndCommandBuffer(draw_data->command_buffers[swapchain.current_frame]),
         [](VkResult /* result */) {});
 
     VkPipelineStageFlags pipeline_stages = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -974,16 +964,17 @@ void draw(Swapchain& swapchain) {
     submit_info.pWaitSemaphores      = swapchain.image_avail + swapchain.out_of_sync_index;
     submit_info.pWaitDstStageMask    = &pipeline_stages;
     submit_info.commandBufferCount   = 1;
-    submit_info.pCommandBuffers      = draw_context.command_buffers + swapchain.current_frame;
+    submit_info.pCommandBuffers      = draw_data->command_buffers + swapchain.current_frame;
     submit_info.signalSemaphoreCount = 1;
     submit_info.pSignalSemaphores    = swapchain.render_done + swapchain.out_of_sync_index;
 
-    VK_EXPECT_SUCCESS(vkQueueSubmit(gpu.graphics_queue, 1, &submit_info, draw_context.fences[swapchain.current_frame]));
+    VK_EXPECT_SUCCESS(vkQueueSubmit(gpu.graphics_queue, 1, &submit_info, draw_data->fences[swapchain.current_frame]));
 }
 
 void assert_format(VkFormat format) { assert(format == VK_FORMAT_B8G8R8A8_SRGB); }
 
-void create_draw_data() {
+Draw_Data* create_draw_data() {
+    Draw_Data* draw_data     = new Draw_Data;
     constexpr auto pool_size = 1000;
 
     // clang-format off
@@ -1013,41 +1004,39 @@ void create_draw_data() {
         .pPoolSizes    = +sizes,
     };
 
-    VK_EXPECT_SUCCESS(vkCreateDescriptorPool(gpu.logical, &pool_info, nullptr, &draw_context.pool));
+    VK_EXPECT_SUCCESS(vkCreateDescriptorPool(gpu.logical, &pool_info, nullptr, &draw_data->pool));
 
-    for (u32 i = 0, size = ARRAY_SIZE(draw_context.fences); i < size; ++i) {
+    for (u32 i = 0, size = ARRAY_SIZE(draw_data->fences); i < size; ++i) {
         VkFenceCreateInfo fence_info{};
         fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 
         // TODO: figure out if we really need to signal at the start.
         fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-        VK_EXPECT_SUCCESS(vkCreateFence(gpu.logical, &fence_info, nullptr, draw_context.fences + i));
+        VK_EXPECT_SUCCESS(vkCreateFence(gpu.logical, &fence_info, nullptr, draw_data->fences + i));
     }
 
     VkCommandBufferAllocateInfo alloc_info{};
     alloc_info.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     alloc_info.commandPool        = gpu.command_pool;
     alloc_info.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    alloc_info.commandBufferCount = ARRAY_SIZE(draw_context.command_buffers);
-    VK_EXPECT_SUCCESS(vkAllocateCommandBuffers(gpu.logical, &alloc_info, draw_context.command_buffers));
+    alloc_info.commandBufferCount = ARRAY_SIZE(draw_data->command_buffers);
+    VK_EXPECT_SUCCESS(vkAllocateCommandBuffers(gpu.logical, &alloc_info, draw_data->command_buffers));
+    return draw_data;
 }
 
-void free_draw_data() {
-    vkFreeDescriptorSets(gpu.logical, draw_context.pool, 1, &draw_context.static_set);
+void free_draw_data(Draw_Data* draw_data) {
+    assert(draw_data);
+    vkFreeDescriptorSets(gpu.logical, draw_data->pool, 1, &draw_data->static_set);
     vkFreeCommandBuffers(
         gpu.logical,
         gpu.command_pool,
-        ARRAY_SIZE(draw_context.command_buffers),
-        draw_context.command_buffers);
+        ARRAY_SIZE(draw_data->command_buffers),
+        draw_data->command_buffers);
 
-    vkFreeDescriptorSets(
-        gpu.logical,
-        draw_context.pool,
-        ARRAY_SIZE(draw_context.dynamic_sets),
-        draw_context.dynamic_sets);
+    vkFreeDescriptorSets(gpu.logical, draw_data->pool, ARRAY_SIZE(draw_data->dynamic_sets), draw_data->dynamic_sets);
 
-    for (u32 i = 0, size = ARRAY_SIZE(draw_context.fences); i < size; ++i)
-        vkDestroyFence(gpu.logical, draw_context.fences[i], nullptr);
+    for (u32 i = 0, size = ARRAY_SIZE(draw_data->fences); i < size; ++i)
+        vkDestroyFence(gpu.logical, draw_data->fences[i], nullptr);
 }
 
 void free_shaders_and_pipeline() {

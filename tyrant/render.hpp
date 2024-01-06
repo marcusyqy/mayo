@@ -1,6 +1,6 @@
 #pragma once
-#include "types.hpp"
 #include "string.hpp"
+#include "types.hpp"
 
 #ifdef WIN32
 #include <windows.h>
@@ -54,12 +54,14 @@ Swapchain create_swapchain_from_win32(HINSTANCE hinstance, HWND hwnd);
 
 #endif // WIN32
 
-
 // TEMP
+
+struct Draw_Data;
+
 void create_shaders_and_pipeline();
 void free_shaders_and_pipeline();
 void assert_format(VkFormat format);
-void draw(Swapchain& swapchain);
+void draw(Swapchain& swapchain, Draw_Data* draw_data);
 
-void create_draw_data();
-void free_draw_data();
+Draw_Data* create_draw_data();
+void free_draw_data(Draw_Data* draw_data);

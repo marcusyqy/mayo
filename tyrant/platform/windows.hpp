@@ -127,6 +127,13 @@ static DWORD WINAPI main_thread(LPVOID param) {
 
     HWND service_window = (HWND)param;
 
+    struct Window {
+        HWND handle;
+        Swapchain swapchain;
+        Draw_Data* draw_data;
+    } windows[100];
+    size_t num_windows = 0;
+
     WNDCLASSEXW window_class   = {};
     window_class.cbSize        = sizeof(window_class);
     window_class.lpfnWndProc   = &display_wnd_proc;
@@ -137,32 +144,50 @@ static DWORD WINAPI main_thread(LPVOID param) {
     window_class.lpszClassName = L"Tyrant_Main_Class";
     RegisterClassExW(&window_class);
 
-    Actual_Window_Param p        = {};
-    p.dwExStyle                  = 0;
-    p.lpClassName                = window_class.lpszClassName;
-    p.lpWindowName               = L"Tyrant"; // Window name
-    p.dwStyle                    = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
-    p.x                          = CW_USEDEFAULT;
-    p.y                          = CW_USEDEFAULT;
-    p.nWidth                     = CW_USEDEFAULT;
-    p.nHeight                    = CW_USEDEFAULT;
-    p.hInstance                  = window_class.hInstance;
-    [[maybe_unused]] HWND handle = (HWND)SendMessageW(service_window, Window_Messages::create_window, (WPARAM)&p, 0);
+    Actual_Window_Param p = {};
+    p.dwExStyle           = 0;
+    p.lpClassName         = window_class.lpszClassName;
+    p.lpWindowName        = L"Tyrant"; // Window name
+    p.dwStyle             = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
+    p.x                   = CW_USEDEFAULT;
+    p.y                   = CW_USEDEFAULT;
+    p.nWidth              = CW_USEDEFAULT;
+    p.nHeight             = CW_USEDEFAULT;
+    p.hInstance           = window_class.hInstance;
 
     create_shaders_and_pipeline();
     defer { free_shaders_and_pipeline(); };
 
-    create_draw_data();
-    defer { free_draw_data(); };
+    auto create_window = [&]() {
+        HWND handle            = (HWND)SendMessageW(service_window, Window_Messages::create_window, (WPARAM)&p, 0);
+        auto swapchain         = create_swapchain_from_win32(window_class.hInstance, handle);
+        auto draw_data         = create_draw_data();
+        windows[num_windows++] = { handle, swapchain, draw_data };
+        assert_format(swapchain.format.format);
+    };
 
-    auto swapchain = create_swapchain_from_win32(window_class.hInstance, handle);
-    defer { free_swapchain(swapchain); };
+    auto destroy_window = [&](HWND hwnd) {
+        for (size_t i = 0; i < num_windows; ++i) {
+            if (hwnd == windows[i].handle) {
+                free_swapchain(windows[i].swapchain);
+                free_draw_data(windows[i].draw_data);
+                SendMessageW(service_window, Window_Messages::destroy_window, (WPARAM)hwnd, 0);
+                windows[i] = windows[--num_windows];
+                break;
+            }
+        }
+    };
 
-    assert_format(swapchain.format.format);
+    defer {
+        for (size_t i = 0; i < num_windows; ++i) {
+            free_swapchain(windows[i].swapchain);
+            free_draw_data(windows[i].draw_data);
+        }
+    };
 
-    int x = 0;
+    create_window();
 
-    for (;;) {
+    for (; num_windows != 0;) {
         MSG message;
         while (PeekMessage(&message, 0, 0, 0, PM_REMOVE)) {
             switch (message.message) {
@@ -171,18 +196,20 @@ static DWORD WINAPI main_thread(LPVOID param) {
                     //  when we support multiple swap chains
                     // SendMessageW(service_window, Window_Messages::create_window, (WPARAM)&p, 0);
                     // if (message.wParam == VK_ESCAPE)
-                    //     SendMessageW(service_window, Window_Messages::destroy_window, (WPARAM)GetForegroundWindow(),
-                    //     0);
+                    //     SendMessageW(service_window, Window_Messages::destroy_window,
+                    //     (WPARAM)GetForegroundWindow(), 0);
                     // if (std::tolower(message.wParam) == 'c')
                     //     SendMessageW(service_window, Window_Messages::create_window, (WPARAM)&p, 0);
                     // if (message.wParam == VK_LSHIFT) log_info("shift has been pressed");
                 } break;
                 case WM_KEYDOWN:
                     if (message.wParam == VK_SHIFT) log_info("in wm_keydown shift has been pressed");
-                    if (message.wParam == 'C')
-                        SendMessageW(service_window, Window_Messages::create_window, (WPARAM)&p, 0);
-                    if (message.wParam == VK_ESCAPE)
-                        SendMessageW(service_window, Window_Messages::destroy_window, (WPARAM)GetForegroundWindow(), 0);
+                    if (message.wParam == 'C') create_window();
+                    //                        (HWND) SendMessageW(service_window, Window_Messages::create_window,
+                    //                        (WPARAM)&p, 0);
+                    if (message.wParam == VK_ESCAPE) destroy_window(GetForegroundWindow());
+                    //                       SendMessageW(service_window, Window_Messages::destroy_window,
+                    //                       (WPARAM)GetForegroundWindow(), 0);
                     // etc.
                     break;
                 case WM_KEYUP:
@@ -202,11 +229,12 @@ static DWORD WINAPI main_thread(LPVOID param) {
         }
 
         // This is where application code is supposed to live.
-        int mid_point    = (x++ % (64 * 1024)) / 64;
-        int window_count = 0;
+        // int mid_point    = (x++ % (64 * 1024)) / 64;
+        // int window_count = 0;
         // turn this into something else?
-        for (HWND window = FindWindowExW(0, 0, window_class.lpszClassName, 0); window;
-             window      = FindWindowExW(0, window, window_class.lpszClassName, 0)) {
+        // for (HWND window = FindWindowExW(0, 0, window_class.lpszClassName, 0); window;
+        //      window      = FindWindowExW(0, window, window_class.lpszClassName, 0)) {
+        for (size_t i = 0; i < num_windows; ++i) {
             // Change this to game loop ? Do something here.
             // HDC device_context = GetDC(window);
 
@@ -218,24 +246,26 @@ static DWORD WINAPI main_thread(LPVOID param) {
             // }
             // ReleaseDC(window, device_context);
 
-            if (window == handle) {
-                RECT client;
-                GetClientRect(window, &client);
+            auto& window = windows[i];
+            RECT client;
+            GetClientRect(window.handle, &client);
+            if (!IsIconic(window.handle) && (client.bottom > client.top && client.right > client.left)) {
                 UINT width  = client.right - client.left;
                 UINT height = client.bottom - client.top;
-                if (swapchain.out_of_date || swapchain.width != width || swapchain.height != height) {
-                    resize_swapchain(swapchain, width, height);
+                if ((window.swapchain.out_of_date || window.swapchain.width != width ||
+                     window.swapchain.height != height)) {
+                    resize_swapchain(window.swapchain, width, height);
                 }
-                draw(swapchain);
-                present_swapchain(swapchain);
+                draw(window.swapchain, window.draw_data);
+                present_swapchain(window.swapchain);
             }
 
-            ++window_count;
+            // ++window_count;
         }
 
-        if (window_count == 0) {
-            break;
-        }
+        // if (window_count == 0) {
+        //     break;
+        // }
     }
 
     ExitProcess(0);
