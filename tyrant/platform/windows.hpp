@@ -217,7 +217,8 @@ static DWORD WINAPI main_thread(LPVOID param) {
                     // etc.
                     break;
                 case WM_CLOSE: {
-                    SendMessageW(service_window, Window_Messages::destroy_window, message.wParam, 0);
+                    destroy_window((HWND)message.wParam);
+                    //SendMessageW(service_window, Window_Messages::destroy_window, message.wParam, 0);
                 } break;
                     // @PERFORMANCE: this is slow and blocking.
                     // case WM_SIZE: {
