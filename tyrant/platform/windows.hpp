@@ -3,7 +3,6 @@
 #include "basic.hpp"
 #include "logger.hpp"
 #include <algorithm>
-#include <stdio.h>
 #include <windows.h>
 
 #pragma comment(lib, "kernel32")
@@ -99,11 +98,12 @@ static LRESULT CALLBACK display_wnd_proc(HWND window, UINT message, WPARAM wpara
         // NOTE(casey): Anything you want the application to handle, forward to the main thread
         // here.
         case WM_MOUSEMOVE:
+        case WM_SIZE:
         case WM_LBUTTONDOWN:
         case WM_LBUTTONUP:
         case WM_DESTROY:
-        // case WM_SIZE:
         case WM_KEYDOWN:
+        case WM_KEYUP:
         case WM_CHAR: {
             PostThreadMessageW(main_thread_id, message, wparam, lparam);
         } break;
@@ -166,14 +166,29 @@ static DWORD WINAPI main_thread(LPVOID param) {
         MSG message;
         while (PeekMessage(&message, 0, 0, 0, PM_REMOVE)) {
             switch (message.message) {
+                // this shouldn't be the way we handle inputs.
                 case WM_CHAR: {
                     //  when we support multiple swap chains
                     // SendMessageW(service_window, Window_Messages::create_window, (WPARAM)&p, 0);
+                    // if (message.wParam == VK_ESCAPE)
+                    //     SendMessageW(service_window, Window_Messages::destroy_window, (WPARAM)GetForegroundWindow(),
+                    //     0);
+                    // if (std::tolower(message.wParam) == 'c')
+                    //     SendMessageW(service_window, Window_Messages::create_window, (WPARAM)&p, 0);
+                    // if (message.wParam == VK_LSHIFT) log_info("shift has been pressed");
+                } break;
+                case WM_KEYDOWN:
+                    if (message.wParam == VK_SHIFT) log_info("in wm_keydown shift has been pressed");
+                    if (message.wParam == 'C')
+                        SendMessageW(service_window, Window_Messages::create_window, (WPARAM)&p, 0);
                     if (message.wParam == VK_ESCAPE)
                         SendMessageW(service_window, Window_Messages::destroy_window, (WPARAM)GetForegroundWindow(), 0);
-                    if (std::tolower(message.wParam) == 'c')
-                        SendMessageW(service_window, Window_Messages::create_window, (WPARAM)&p, 0);
-                } break;
+                    // etc.
+                    break;
+                case WM_KEYUP:
+                    if (message.wParam == VK_SHIFT) log_info("in wm_keyup shift has been released");
+                    // etc.
+                    break;
                 case WM_CLOSE: {
                     SendMessageW(service_window, Window_Messages::destroy_window, message.wParam, 0);
                 } break;
@@ -204,16 +219,17 @@ static DWORD WINAPI main_thread(LPVOID param) {
             // ReleaseDC(window, device_context);
 
             if (window == handle) {
+                RECT client;
+                GetClientRect(window, &client);
+                UINT width  = client.right - client.left;
+                UINT height = client.bottom - client.top;
+                resize_swapchain(swapchain, width, height);
+                // if (swapchain.out_of_date) {
+                // }
                 draw(swapchain);
                 present_swapchain(swapchain);
-                if (swapchain.out_of_date) {
-                    RECT client;
-                    GetClientRect(window, &client);
-                    UINT width  = client.right - client.left;
-                    UINT height = client.top - client.bottom;
-                    resize_swapchain(swapchain, width, height);
-                }
             }
+
             ++window_count;
         }
 

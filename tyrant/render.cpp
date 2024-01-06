@@ -21,8 +21,20 @@
 // forward declare
 Swapchain create_swapchain_from_surface(VkSurfaceKHR surface);
 void recreate_swapchain(Swapchain& swapchain);
+void release_resize();
 
 namespace {
+
+struct Resize_Stuff {
+    VkFence fence             = {};
+    VkImageView image_view    = {};
+    VkSemaphore semaphores[2] = {};
+    VkFramebuffer framebuffer = {};
+    bool used                 = false;
+};
+
+Resize_Stuff resize_stuffs[10000];
+size_t num_resize_stuff;
 
 constexpr auto API_VERSION                  = VK_API_VERSION_1_3;
 constexpr const char* VALIDATION_LAYER      = "VK_LAYER_KHRONOS_validation";
@@ -371,7 +383,7 @@ Swapchain create_swapchain_from_surface(VkSurfaceKHR surface) {
 
 void recreate_swapchain(Swapchain& swapchain) {
     // @TODO: erase all resources without waiting for gpu to be idle
-    vkDeviceWaitIdle(gpu.logical);
+    // vkDeviceWaitIdle(gpu.logical);
 
     const auto old_num_images             = swapchain.num_images;
     const auto& surface                   = swapchain.surface;
@@ -411,7 +423,7 @@ void recreate_swapchain(Swapchain& swapchain) {
         if (mode == VK_PRESENT_MODE_MAILBOX_KHR) chosen_present_mode = mode;
     }
 
-    if (capabilities.currentExtent.width != std::numeric_limits<u32>::max()) {
+    if (capabilities.currentExtent.width != UINT32_MAX && capabilities.currentExtent.height != UINT32_MAX) {
         swapchain.width  = capabilities.currentExtent.width;
         swapchain.height = capabilities.currentExtent.height;
     } else {
@@ -451,11 +463,24 @@ void recreate_swapchain(Swapchain& swapchain) {
     VK_EXPECT_SUCCESS(vkCreateSwapchainKHR(gpu.logical, &create_info, nullptr, &swapchain.handle));
 
     // cleanup.
+    size_t ii = 0;
     for (u32 i = 0; i < old_num_images; ++i) {
-        vkDestroyImageView(gpu.logical, swapchain.image_views[i], nullptr);
-        vkDestroyFence(gpu.logical, swapchain.in_flight[i], nullptr);
-        vkDestroySemaphore(gpu.logical, swapchain.render_done[i], nullptr);
-        vkDestroySemaphore(gpu.logical, swapchain.image_avail[i], nullptr);
+        for (; ii < num_resize_stuff; ++ii) {
+            if (!resize_stuffs[ii].used) {
+                break;
+            }
+        }
+
+        assert(ii < 10000);
+        resize_stuffs[ii].image_view    = swapchain.image_views[i];
+        resize_stuffs[ii].fence         = swapchain.in_flight[i];
+        resize_stuffs[ii].semaphores[0] = swapchain.render_done[i];
+        resize_stuffs[ii].semaphores[1] = swapchain.image_avail[i];
+        resize_stuffs[ii].used          = true;
+
+        if (ii >= num_resize_stuff) {
+            num_resize_stuff = ii + 1;
+        }
     }
 
     // required to safely destroy after creating new swapchain.
@@ -541,13 +566,15 @@ void free_swapchain(Swapchain& swapchain) {
 }
 
 void resize_swapchain(Swapchain& swapchain, u32 width, u32 height) {
-    swapchain.width  = width;
-    swapchain.height = height;
-    recreate_swapchain(swapchain);
+    if (swapchain.out_of_date || swapchain.width != width || swapchain.height != height) {
+        log_info("resize {}, {}, {}, {}", swapchain.width, swapchain.height, width, height);
+        swapchain.width  = width;
+        swapchain.height = height;
+        recreate_swapchain(swapchain);
+    }
 }
 
 void present_swapchain(Swapchain& swapchain) {
-
     VkSwapchainKHR swapchains[]     = { swapchain.handle };
     VkSemaphore signal_semaphores[] = { swapchain.render_done[swapchain.out_of_sync_index] };
     VkPresentInfoKHR present_info{};
@@ -578,6 +605,8 @@ void present_swapchain(Swapchain& swapchain) {
         if (result == VK_SUBOPTIMAL_KHR) swapchain.out_of_date = true;
     } else
         swapchain.out_of_date = true;
+
+    release_resize();
 }
 
 VkShaderModule create_shader(Buffer_View<const u32> buffer) {
@@ -630,9 +659,10 @@ struct Draw_Context {
 
 struct Framebuffer_Info {
     // assume always same swapchain for now. @TODO: this needs to be changed to make it more robust later on.
-    VkFramebuffer handles[Render_Params::MAX_SWAPCHAIN_IMAGES] = {};
-    u32 width                                                  = 0;
-    u32 height                                                 = 0;
+    VkImageView image_views[Render_Params::MAX_SWAPCHAIN_IMAGES] = {};
+    VkFramebuffer handles[Render_Params::MAX_SWAPCHAIN_IMAGES]   = {};
+    u32 width[Render_Params::MAX_SWAPCHAIN_IMAGES]               = {};
+    u32 height[Render_Params::MAX_SWAPCHAIN_IMAGES]              = {};
 } framebuffer;
 
 } // namespace
@@ -852,11 +882,32 @@ void draw(Swapchain& swapchain) {
 
     vkResetFences(gpu.logical, 1, draw_context.fences + swapchain.current_frame);
 
-    if (swapchain.width != framebuffer.width || swapchain.height != framebuffer.height) {
+    // if (swapchain.width != framebuffer.width[swapchain.current_frame] ||
+    //     swapchain.height != framebuffer.height[swapchain.current_frame]) {
+    if (framebuffer.image_views[swapchain.current_frame] != swapchain.image_views[swapchain.current_frame]) {
+
+        log_info(
+            "swapchain changed {} {} {} {}",
+            swapchain.width,
+            framebuffer.width[swapchain.current_frame],
+            swapchain.height,
+            framebuffer.height[swapchain.current_frame]);
+
+        framebuffer.width[swapchain.current_frame]  = swapchain.width;
+        framebuffer.height[swapchain.current_frame] = swapchain.height;
+
         // recreate_framebuffer
         auto& current_framebuffer = framebuffer.handles[swapchain.current_frame];
         if (current_framebuffer) {
-            vkDestroyFramebuffer(gpu.logical, current_framebuffer, nullptr);
+            bool slot_filled = false;
+            for (size_t i = 0; i < num_resize_stuff; ++i) {
+                if (resize_stuffs[i].used &&
+                    framebuffer.image_views[swapchain.current_frame] == resize_stuffs[i].image_view) {
+                    resize_stuffs[i].framebuffer = current_framebuffer;
+                    slot_filled                  = true;
+                }
+            }
+            assert(slot_filled);
         }
 
         VkFramebufferCreateInfo framebuffer_create_info{};
@@ -867,6 +918,8 @@ void draw(Swapchain& swapchain) {
         framebuffer_create_info.width           = swapchain.width;
         framebuffer_create_info.height          = swapchain.height;
         framebuffer_create_info.layers          = 1;
+
+        framebuffer.image_views[swapchain.current_frame] = swapchain.image_views[swapchain.current_frame];
 
         VK_EXPECT_SUCCESS(vkCreateFramebuffer(gpu.logical, &framebuffer_create_info, nullptr, &current_framebuffer));
     }
@@ -1012,4 +1065,20 @@ void free_shaders_and_pipeline() {
     vkDestroyPipelineLayout(gpu.logical, pipeline.layout, nullptr);
     vkDestroyRenderPass(gpu.logical, pipeline.renderpass, nullptr);
     vkDestroyPipeline(gpu.logical, pipeline.handle, nullptr);
+}
+
+void release_resize() {
+    for (auto i = 0u; i < num_resize_stuff; ++i) {
+        if (!resize_stuffs[i].used) {
+            auto status = vkGetFenceStatus(gpu.logical, resize_stuffs[i].fence);
+            if (VK_SUCCESS == status) {
+                vkDestroyImageView(gpu.logical, resize_stuffs[i].image_view, nullptr);
+                vkDestroyFence(gpu.logical, resize_stuffs[i].fence, nullptr);
+                vkDestroySemaphore(gpu.logical, resize_stuffs[i].semaphores[0], nullptr);
+                vkDestroySemaphore(gpu.logical, resize_stuffs[i].semaphores[1], nullptr);
+                vkDestroyFramebuffer(gpu.logical, resize_stuffs[i].framebuffer, nullptr);
+                resize_stuffs[i].used = true;
+            }
+        }
+    }
 }
