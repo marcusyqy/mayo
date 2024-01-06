@@ -223,9 +223,9 @@ static DWORD WINAPI main_thread(LPVOID param) {
                 GetClientRect(window, &client);
                 UINT width  = client.right - client.left;
                 UINT height = client.bottom - client.top;
-                resize_swapchain(swapchain, width, height);
-                // if (swapchain.out_of_date) {
-                // }
+                if (swapchain.out_of_date || swapchain.width != width || swapchain.height != height) {
+                    resize_swapchain(swapchain, width, height);
+                }
                 draw(swapchain);
                 present_swapchain(swapchain);
             }

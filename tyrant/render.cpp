@@ -566,12 +566,9 @@ void free_swapchain(Swapchain& swapchain) {
 }
 
 void resize_swapchain(Swapchain& swapchain, u32 width, u32 height) {
-    if (swapchain.out_of_date || swapchain.width != width || swapchain.height != height) {
-        log_info("resize {}, {}, {}, {}", swapchain.width, swapchain.height, width, height);
-        swapchain.width  = width;
-        swapchain.height = height;
-        recreate_swapchain(swapchain);
-    }
+    swapchain.width  = width;
+    swapchain.height = height;
+    recreate_swapchain(swapchain);
 }
 
 void present_swapchain(Swapchain& swapchain) {
@@ -885,14 +882,6 @@ void draw(Swapchain& swapchain) {
     // if (swapchain.width != framebuffer.width[swapchain.current_frame] ||
     //     swapchain.height != framebuffer.height[swapchain.current_frame]) {
     if (framebuffer.image_views[swapchain.current_frame] != swapchain.image_views[swapchain.current_frame]) {
-
-        log_info(
-            "swapchain changed {} {} {} {}",
-            swapchain.width,
-            framebuffer.width[swapchain.current_frame],
-            swapchain.height,
-            framebuffer.height[swapchain.current_frame]);
-
         framebuffer.width[swapchain.current_frame]  = swapchain.width;
         framebuffer.height[swapchain.current_frame] = swapchain.height;
 
