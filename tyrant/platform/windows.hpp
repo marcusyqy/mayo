@@ -218,7 +218,7 @@ static DWORD WINAPI main_thread(LPVOID param) {
                     break;
                 case WM_CLOSE: {
                     destroy_window((HWND)message.wParam);
-                    //SendMessageW(service_window, Window_Messages::destroy_window, message.wParam, 0);
+                    // SendMessageW(service_window, Window_Messages::destroy_window, message.wParam, 0);
                 } break;
                     // @PERFORMANCE: this is slow and blocking.
                     // case WM_SIZE: {
@@ -253,12 +253,32 @@ static DWORD WINAPI main_thread(LPVOID param) {
             if (!IsIconic(window.handle) && (client.bottom > client.top && client.right > client.left)) {
                 UINT width  = client.right - client.left;
                 UINT height = client.bottom - client.top;
+
                 if ((window.swapchain.out_of_date || window.swapchain.width != width ||
                      window.swapchain.height != height)) {
                     resize_swapchain(window.swapchain, width, height);
                 }
+
+                if (window.swapchain.out_of_date) {
+                    GetClientRect(window.handle, &client);
+                    width  = client.right - client.left;
+                    height = client.bottom - client.top;
+                    resize_swapchain(window.swapchain, width, height);
+                }
+
+                if (window.swapchain.out_of_date) {
+                    continue;
+                }
+
                 draw(window.swapchain, window.draw_data);
                 present_swapchain(window.swapchain);
+
+                if (window.swapchain.out_of_date) {
+                    GetClientRect(window.handle, &client);
+                    width  = client.right - client.left;
+                    height = client.bottom - client.top;
+                    resize_swapchain(window.swapchain, width, height);
+                }
             }
 
             // ++window_count;

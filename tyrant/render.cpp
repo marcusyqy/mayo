@@ -20,21 +20,11 @@
 
 // forward declare
 Swapchain create_swapchain_from_surface(VkSurfaceKHR surface);
-void recreate_swapchain(Swapchain& swapchain);
+void recreate_swapchain(Swapchain& swapchain, u32 width, u32 height);
 void release_resize();
+void swapchain_acquire_next_image(Swapchain& swapchain);
 
 namespace {
-
-struct Resize_Stuff {
-    VkFence fence             = {};
-    VkImageView image_view    = {};
-    VkSemaphore semaphores[2] = {};
-    VkFramebuffer framebuffer = {};
-    bool used                 = false;
-};
-
-Resize_Stuff resize_stuffs[10000];
-size_t num_resize_stuff;
 
 constexpr auto API_VERSION                  = VK_API_VERSION_1_3;
 constexpr const char* VALIDATION_LAYER      = "VK_LAYER_KHRONOS_validation";
@@ -376,22 +366,61 @@ Swapchain create_swapchain_from_surface(VkSurfaceKHR surface) {
     swapchain.surface   = surface;
 
     // create_swapchain here.
-    recreate_swapchain(swapchain);
+    recreate_swapchain(swapchain, 0, 0);
 
     return swapchain;
 }
 
-void recreate_swapchain(Swapchain& swapchain) {
-    // @TODO: erase all resources without waiting for gpu to be idle
-    vkDeviceWaitIdle(gpu.logical);
+void swapchain_acquire_next_image(Swapchain& swapchain) {
+    if (swapchain.semaphore_size == 0) {
+        VkSemaphore semaphore;
+        VkSemaphoreCreateInfo semaphore_info{};
+        semaphore_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+        VK_EXPECT_SUCCESS(vkCreateSemaphore(gpu.logical, &semaphore_info, nullptr, &semaphore));
+        swapchain.semaphore_pool[swapchain.semaphore_size++] = semaphore;
+    }
+
+    assert(swapchain.semaphore_size < Render_Params::MAX_SWAPCHAIN_IMAGES);
+    auto semaphore = swapchain.semaphore_pool[--swapchain.semaphore_size];
+
+    VkResult result = vkAcquireNextImageKHR(
+        gpu.logical,
+        swapchain.handle,
+        std::numeric_limits<std::uint64_t>::max(),
+        semaphore,
+        nullptr,
+        &swapchain.current_frame);
+
+    assert(result == VK_SUBOPTIMAL_KHR || result == VK_SUCCESS || result == VK_ERROR_OUT_OF_DATE_KHR);
+    if (result == VK_SUBOPTIMAL_KHR || result == VK_ERROR_OUT_OF_DATE_KHR) swapchain.out_of_date = true;
+
+    swapchain.semaphore_pool[swapchain.semaphore_size++] = swapchain.image_avail[swapchain.current_frame];
+    swapchain.image_avail[swapchain.current_frame]       = semaphore;
+}
+
+void recreate_swapchain(Swapchain& swapchain, u32 width, u32 height) {
 
     const auto old_num_images             = swapchain.num_images;
     const auto& surface                   = swapchain.surface;
     VkSurfaceCapabilitiesKHR capabilities = {};
+    VK_EXPECT_SUCCESS(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(gpu.physical, surface, &capabilities));
+
+    if (capabilities.currentExtent.width == swapchain.width && capabilities.currentExtent.height == swapchain.height)
+        return;
+
+    if (capabilities.currentExtent.width != std::numeric_limits<u32>::max()) {
+        width  = capabilities.currentExtent.width;
+        height = capabilities.currentExtent.height;
+    }
+
+    if (width == swapchain.width && height == swapchain.height) {
+        return;
+    }
+    swapchain.width  = width;
+    swapchain.height = height;
+
     VkSurfaceFormatKHR formats[Render_Params::MAX_FORMAT_COUNT];
     VkPresentModeKHR present_modes[Render_Params::MAX_PRESENT_MODE_COUNT];
-
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(gpu.physical, surface, &capabilities);
 
     u32 format_count{};
     vkGetPhysicalDeviceSurfaceFormatsKHR(gpu.physical, surface, &format_count, nullptr);
@@ -423,21 +452,6 @@ void recreate_swapchain(Swapchain& swapchain) {
         if (mode == VK_PRESENT_MODE_MAILBOX_KHR) chosen_present_mode = mode;
     }
 
-    if (capabilities.currentExtent.width != UINT32_MAX && capabilities.currentExtent.height != UINT32_MAX) {
-        swapchain.width  = capabilities.currentExtent.width;
-        swapchain.height = capabilities.currentExtent.height;
-    } else {
-        VkExtent2D actual_extent = { static_cast<u32>(swapchain.width), static_cast<u32>(swapchain.height) };
-        actual_extent.width =
-            std::clamp(actual_extent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
-
-        actual_extent.height =
-            std::clamp(actual_extent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
-
-        swapchain.width  = actual_extent.width;
-        swapchain.height = actual_extent.height;
-    }
-
     u32 image_count =
         std::clamp(capabilities.minImageCount + 1, capabilities.minImageCount, capabilities.maxImageCount);
 
@@ -454,24 +468,34 @@ void recreate_swapchain(Swapchain& swapchain) {
                                           .imageSharingMode      = VK_SHARING_MODE_EXCLUSIVE,
                                           .queueFamilyIndexCount = 0,
                                           .pQueueFamilyIndices   = nullptr,
-                                          .preTransform          = capabilities.currentTransform,
-                                          .compositeAlpha        = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-                                          .presentMode           = chosen_present_mode,
-                                          .clipped               = VK_TRUE,
-                                          .oldSwapchain          = swapchain.handle };
+                                          .preTransform =
+                                              capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR
+                                              ? VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR
+                                              : capabilities.currentTransform,
+                                          .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+                                          .presentMode    = chosen_present_mode,
+                                          .clipped        = VK_TRUE,
+                                          .oldSwapchain   = swapchain.handle };
 
     VK_EXPECT_SUCCESS(vkCreateSwapchainKHR(gpu.logical, &create_info, nullptr, &swapchain.handle));
 
-    // cleanup.
-    for (u32 i = 0; i < old_num_images; ++i) {
-        vkDestroyImageView(gpu.logical, swapchain.image_views[i], nullptr);
-        vkDestroyFence(gpu.logical, swapchain.in_flight[i], nullptr);
-        vkDestroySemaphore(gpu.logical, swapchain.render_done[i], nullptr);
-        vkDestroySemaphore(gpu.logical, swapchain.image_avail[i], nullptr);
-    }
+    // @TODO: erase all resources without waiting for gpu to be idle
+    vkDeviceWaitIdle(gpu.logical);
 
-    // required to safely destroy after creating new swapchain.
-    if (create_info.oldSwapchain != nullptr) vkDestroySwapchainKHR(gpu.logical, create_info.oldSwapchain, nullptr);
+    // cleanup : required to safely destroy after creating new swapchain.
+    if (create_info.oldSwapchain != nullptr) {
+        for (u32 i = 0; i < old_num_images; ++i) {
+            vkDestroyImageView(gpu.logical, swapchain.image_views[i], nullptr);
+            vkDestroySemaphore(gpu.logical, swapchain.render_done[i], nullptr);
+            vkDestroySemaphore(gpu.logical, swapchain.image_avail[i], nullptr);
+        }
+
+        for (size_t i = 0; i < swapchain.semaphore_size; ++i) {
+            vkDestroySemaphore(gpu.logical, swapchain.semaphore_pool[i], nullptr);
+        }
+        swapchain.semaphore_size = 0;
+        vkDestroySwapchainKHR(gpu.logical, create_info.oldSwapchain, nullptr);
+    }
 
     // retrieve images
     VkImage placeholder[Render_Params::MAX_SWAPCHAIN_IMAGES];
@@ -513,37 +537,23 @@ void recreate_swapchain(Swapchain& swapchain) {
 
         VK_EXPECT_SUCCESS(vkCreateSemaphore(gpu.logical, &semaphore_info, nullptr, swapchain.image_avail + i));
         VK_EXPECT_SUCCESS(vkCreateSemaphore(gpu.logical, &semaphore_info, nullptr, swapchain.render_done + i));
-
-        // create fence (maybe i don't need this)
-        VkFenceCreateInfo fence_info{};
-        fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-        // TODO: figure out if we really need to signal at the start.
-        fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-        VK_EXPECT_SUCCESS(vkCreateFence(gpu.logical, &fence_info, nullptr, swapchain.in_flight + i));
     }
 
     swapchain.out_of_date = false;
-
-    VkResult result = vkAcquireNextImageKHR(
-        gpu.logical,
-        swapchain.handle,
-        std::numeric_limits<std::uint64_t>::max(),
-        swapchain.image_avail[swapchain.out_of_sync_index],
-        nullptr,
-        &swapchain.current_frame);
-
-    assert(result == VK_SUBOPTIMAL_KHR || result == VK_SUCCESS);
-    if (result == VK_SUBOPTIMAL_KHR) swapchain.out_of_date = true;
+    swapchain_acquire_next_image(swapchain);
 }
 
 void free_swapchain(Swapchain& swapchain) {
     vkDeviceWaitIdle(gpu.logical);
     for (u32 i = 0; i < swapchain.num_images; ++i) {
         vkDestroyImageView(gpu.logical, swapchain.image_views[i], nullptr);
-        vkDestroyFence(gpu.logical, swapchain.in_flight[i], nullptr);
         vkDestroySemaphore(gpu.logical, swapchain.render_done[i], nullptr);
         vkDestroySemaphore(gpu.logical, swapchain.image_avail[i], nullptr);
     }
+    for (size_t i = 0; i < swapchain.semaphore_size; ++i) {
+        vkDestroySemaphore(gpu.logical, swapchain.semaphore_pool[i], nullptr);
+    }
+    swapchain.semaphore_size = 0;
 
     if (swapchain.handle) {
         vkDestroySwapchainKHR(gpu.logical, swapchain.handle, nullptr);
@@ -553,15 +563,11 @@ void free_swapchain(Swapchain& swapchain) {
     }
 }
 
-void resize_swapchain(Swapchain& swapchain, u32 width, u32 height) {
-    swapchain.width  = width;
-    swapchain.height = height;
-    recreate_swapchain(swapchain);
-}
+void resize_swapchain(Swapchain& swapchain, u32 width, u32 height) { recreate_swapchain(swapchain, width, height); }
 
 void present_swapchain(Swapchain& swapchain) {
     VkSwapchainKHR swapchains[]     = { swapchain.handle };
-    VkSemaphore signal_semaphores[] = { swapchain.render_done[swapchain.out_of_sync_index] };
+    VkSemaphore signal_semaphores[] = { swapchain.render_done[swapchain.current_frame] };
     VkPresentInfoKHR present_info{};
     present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
@@ -574,20 +580,8 @@ void present_swapchain(Swapchain& swapchain) {
     // get queue from device.
     VkResult result = vkQueuePresentKHR(gpu.present_queue, &present_info);
 
-    // increment to get next sync object
-    swapchain.out_of_sync_index = (swapchain.out_of_sync_index + 1) % swapchain.num_images;
-
     if (result == VK_SUCCESS) {
-        result = vkAcquireNextImageKHR(
-            gpu.logical,
-            swapchain.handle,
-            std::numeric_limits<std::uint64_t>::max(),
-            swapchain.image_avail[swapchain.out_of_sync_index],
-            nullptr,
-            &swapchain.current_frame);
-        assert(result == VK_SUBOPTIMAL_KHR || result == VK_SUCCESS);
-
-        if (result == VK_SUBOPTIMAL_KHR) swapchain.out_of_date = true;
+        swapchain_acquire_next_image(swapchain);
     } else
         swapchain.out_of_date = true;
 }
@@ -886,6 +880,7 @@ void draw(Swapchain& swapchain, Draw_Data* draw_data) {
             //     }
             // }
             // assert(slot_filled);
+            vkQueueWaitIdle(gpu.graphics_queue);
             vkDestroyFramebuffer(gpu.logical, current_framebuffer, nullptr);
         }
 
@@ -961,12 +956,12 @@ void draw(Swapchain& swapchain, Draw_Data* draw_data) {
     VkSubmitInfo submit_info{};
     submit_info.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submit_info.waitSemaphoreCount   = 1;
-    submit_info.pWaitSemaphores      = swapchain.image_avail + swapchain.out_of_sync_index;
+    submit_info.pWaitSemaphores      = swapchain.image_avail + swapchain.current_frame;
     submit_info.pWaitDstStageMask    = &pipeline_stages;
     submit_info.commandBufferCount   = 1;
     submit_info.pCommandBuffers      = draw_data->command_buffers + swapchain.current_frame;
     submit_info.signalSemaphoreCount = 1;
-    submit_info.pSignalSemaphores    = swapchain.render_done + swapchain.out_of_sync_index;
+    submit_info.pSignalSemaphores    = swapchain.render_done + swapchain.current_frame;
 
     VK_EXPECT_SUCCESS(vkQueueSubmit(gpu.graphics_queue, 1, &submit_info, draw_data->fences[swapchain.current_frame]));
 }
@@ -1045,20 +1040,4 @@ void free_shaders_and_pipeline() {
     vkDestroyPipelineLayout(gpu.logical, pipeline.layout, nullptr);
     vkDestroyRenderPass(gpu.logical, pipeline.renderpass, nullptr);
     vkDestroyPipeline(gpu.logical, pipeline.handle, nullptr);
-}
-
-void release_resize() {
-    for (auto i = 0u; i < num_resize_stuff; ++i) {
-        if (!resize_stuffs[i].used) {
-            auto status = vkGetFenceStatus(gpu.logical, resize_stuffs[i].fence);
-            if (VK_SUCCESS == status) {
-                vkDestroyImageView(gpu.logical, resize_stuffs[i].image_view, nullptr);
-                vkDestroyFence(gpu.logical, resize_stuffs[i].fence, nullptr);
-                vkDestroySemaphore(gpu.logical, resize_stuffs[i].semaphores[0], nullptr);
-                vkDestroySemaphore(gpu.logical, resize_stuffs[i].semaphores[1], nullptr);
-                vkDestroyFramebuffer(gpu.logical, resize_stuffs[i].framebuffer, nullptr);
-                resize_stuffs[i].used = true;
-            }
-        }
-    }
 }

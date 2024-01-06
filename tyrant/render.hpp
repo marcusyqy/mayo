@@ -24,7 +24,6 @@ struct Swapchain {
     VkSurfaceFormatKHR format = {};
     u32 num_images            = {};
     u32 current_frame         = {};
-    u32 out_of_sync_index     = {};
     bool out_of_date          = {};
 
     u32 width = {}, height = {};
@@ -32,7 +31,8 @@ struct Swapchain {
     VkImageView image_views[Render_Params::MAX_SWAPCHAIN_IMAGES] = {};
     VkSemaphore image_avail[Render_Params::MAX_SWAPCHAIN_IMAGES] = {};
     VkSemaphore render_done[Render_Params::MAX_SWAPCHAIN_IMAGES] = {};
-    VkFence in_flight[Render_Params::MAX_SWAPCHAIN_IMAGES]       = {};
+    VkSemaphore semaphore_pool[Render_Params::MAX_SWAPCHAIN_IMAGES] = {};
+    size_t semaphore_size                                           = {};
 };
 
 //
