@@ -1,8 +1,10 @@
-#ifdef WIN32
+#ifdef _WIN32
 
 #define NO_ENTRY_POINT
+
 #include "windows.hpp"
-#include "../render.hpp"
+#include "core.hpp"
+#include "render.hpp"
 
 #include "basic.hpp"
 #include "logger.hpp"
@@ -15,10 +17,7 @@
 
 namespace {
 
-DWORD service_thread_id;
-HWND service_window;
-
-struct Actual_Window_Param {
+struct Window_Param {
     DWORD dwExStyle;
     LPCWSTR lpClassName;
     LPCWSTR lpWindowName;
@@ -37,48 +36,93 @@ struct Window_Messages {
     enum : UINT {
         create_window  = WM_USER + 0x1337,
         destroy_window = WM_USER + 0x1338,
-        defer_wm_close = WM_USER + 0x1339,
     };
 };
 
-LRESULT CALLBACK service_wnd_proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
-    LRESULT result = 0;
+struct Service {
+    static HWND hwnd;
+    static void initialize() { static auto handle = CreateThread(0, 0, worker, 0, 0, &thread_id); }
 
-    switch (message) {
-        case Window_Messages::create_window: {
-            auto* p      = (Actual_Window_Param*)wparam;
-            DWORD thread = (DWORD)lparam;
-            auto hwnd    = CreateWindowExW(
-                p->dwExStyle,
-                p->lpClassName,
-                p->lpWindowName,
-                p->dwStyle,
-                p->x,
-                p->y,
-                p->nWidth,
-                p->nHeight,
-                p->hWndParent,
-                p->hMenu,
-                p->hInstance,
-                p->lpParam);
-            assert(hwnd);
+private:
+    static LRESULT CALLBACK wnd_proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
+        LRESULT result = 0;
 
-            SetWindowLongPtrW(hwnd, GWLP_USERDATA, thread);
-            result = (LRESULT)hwnd;
-            break;
+        switch (message) {
+            case Window_Messages::create_window: {
+                auto* p      = (Window_Param*)wparam;
+                DWORD thread = (DWORD)lparam;
+                auto new_window = CreateWindowExW(
+                    p->dwExStyle,
+                    p->lpClassName,
+                    p->lpWindowName,
+                    p->dwStyle,
+                    p->x,
+                    p->y,
+                    p->nWidth,
+                    p->nHeight,
+                    p->hWndParent,
+                    p->hMenu,
+                    p->hInstance,
+                    p->lpParam);
+                assert(hwnd);
+
+                SetWindowLongPtrW(new_window, GWLP_USERDATA, thread);
+                result = (LRESULT)new_window;
+                break;
+            }
+            case Window_Messages::destroy_window: {
+                DestroyWindow((HWND)wparam);
+                break;
+            }
+            default: {
+                result = DefWindowProcW(window, message, wparam, lparam);
+                break;
+            }
         }
-        case Window_Messages::destroy_window: {
-            DestroyWindow((HWND)wparam);
-            break;
-        }
-        default: {
-            result = DefWindowProcW(window, message, wparam, lparam);
-            break;
-        }
+
+        return result;
     }
 
-    return result;
-}
+    static DWORD WINAPI worker(LPVOID) {
+        WNDCLASSEXW window_class   = {};
+        window_class.cbSize        = sizeof(window_class);
+        window_class.lpfnWndProc   = &wnd_proc;
+        window_class.hInstance     = GetModuleHandleW(NULL);
+        window_class.hIcon         = LoadIconA(NULL, IDI_APPLICATION);
+        window_class.hCursor       = LoadCursorA(NULL, IDC_ARROW);
+        window_class.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+        window_class.lpszClassName = L"Anoynmous-Class";
+        RegisterClassExW(&window_class);
+
+        hwnd = CreateWindowExW(
+            0, // STYLE NOT VISIBLE.
+            window_class.lpszClassName,
+            L"Anonymous-Service",
+            0,
+            CW_USEDEFAULT,
+            CW_USEDEFAULT,
+            CW_USEDEFAULT,
+            CW_USEDEFAULT,
+            0,
+            0,
+            window_class.hInstance,
+            0);
+
+        for (;;) {
+            MSG message;
+            GetMessageW(&message, 0, 0, 0);
+            TranslateMessage(&message);
+            DispatchMessageW(&message);
+        }
+
+        ExitProcess(0);
+    }
+
+    static DWORD thread_id;
+};
+
+DWORD Service::thread_id = {};
+HWND Service::hwnd       = {};
 
 LRESULT CALLBACK display_wnd_proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
 
@@ -86,23 +130,10 @@ LRESULT CALLBACK display_wnd_proc(HWND window, UINT message, WPARAM wparam, LPAR
     DWORD thread   = (DWORD)GetWindowLongPtrW(window, GWLP_USERDATA);
 
     switch (message) {
-        // NOTE(casey): Mildly annoying, if you want to specify a window, you have
-        // to snuggle the params yourself, because Windows doesn't let you forward
-        // a god damn window message even though the program IS CALLED WINDOWS. It's
-        // in the name! Let me pass it!    
-         case WM_SIZE:
-         case WM_CLOSE: {
-            // return FALSE;
-            // PostThreadMessageW(GetWindowThreadProcessId(window, 0), message, (WPARAM)window, lparam);
-            //  PostMessageW(window, WM_CLOSE, (WPARAM)window, lparam);
-            DWORD thread = (DWORD)GetWindowLongPtrW(window, GWLP_USERDATA);
+        case WM_CLOSE: {
             PostThreadMessageW(thread, message, (WPARAM)window, lparam);
-            // SendMessageW(window, WM_CLOSE, (WPARAM)window, lparam);
-            // PostThreadMessageW(event_thread_id, message, (WPARAM)window, lparam);
         } break;
-
-        // NOTE(casey): Anything you want the application to handle, forward to the main thread
-        // here.
+        case WM_SIZE:
         case WM_MOUSEMOVE:
         case WM_LBUTTONDOWN:
         case WM_LBUTTONUP:
@@ -110,73 +141,139 @@ LRESULT CALLBACK display_wnd_proc(HWND window, UINT message, WPARAM wparam, LPAR
         case WM_KEYDOWN:
         case WM_KEYUP:
         case WM_CHAR: {
-            // PostThreadMessageW(event_thread_id, message, wparam, lparam);
-            DWORD thread = (DWORD)GetWindowLongPtrW(window, GWLP_USERDATA);
             PostThreadMessageW(thread, message, wparam, lparam);
-            // result = DefWindowProcW(window, message, wparam, lparam);
         } break;
         default: {
             result = DefWindowProcW(window, message, wparam, lparam);
-            // PostThreadMessageW(service_thread_id, message, wparam, lparam);
-            //  PostThreadMessageW(event_thread_id, message, (WPARAM)window, lparam);
         } break;
     }
 
     return result;
 }
 
-DWORD WINAPI service_thread(LPVOID param) {
-    // DWORD main_thread_id = (DWORD)param;
+Key to_key(WPARAM wparam) {
+#define KEYPAD_ENTER (VK_RETURN + KF_EXTENDED)
 
-    WNDCLASSEXW window_class   = {};
-    window_class.cbSize        = sizeof(window_class);
-    window_class.lpfnWndProc   = &service_wnd_proc;
-    window_class.hInstance     = GetModuleHandleW(NULL);
-    window_class.hIcon         = LoadIconA(NULL, IDI_APPLICATION);
-    window_class.hCursor       = LoadCursorA(NULL, IDC_ARROW);
-    window_class.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
-    window_class.lpszClassName = L"Tyrant-Class";
-    RegisterClassExW(&window_class);
-
-    service_window = CreateWindowExW(
-        0, // STYLE NOT VISIBLE.
-        window_class.lpszClassName,
-        L"Tyrant-Service",
-        0,
-        CW_USEDEFAULT,
-        CW_USEDEFAULT,
-        CW_USEDEFAULT,
-        CW_USEDEFAULT,
-        0,
-        0,
-        window_class.hInstance,
-        0);
-
-    for (;;) {
-        MSG message;
-        GetMessageW(&message, 0, 0, 0);
-        TranslateMessage(&message);
-        DispatchMessageW(&message);
-        // if ((message.message == WM_CHAR) || (message.message == WM_KEYDOWN) || (message.message == WM_QUIT) ||
-        //     (message.message == WM_SIZE)) {
-        //     PostThreadMessageW(main_thread_id, message.message, message.wParam, message.lParam);
-        // } else {
-        //     DispatchMessageW(&message);
-        // }
+    switch (wparam) {
+        case VK_TAB: return key_tab;
+        case VK_LEFT: return key_leftarrow;
+        case VK_RIGHT: return key_rightarrow;
+        case VK_UP: return key_uparrow;
+        case VK_DOWN: return key_downarrow;
+        case VK_PRIOR: return key_pageup;
+        case VK_NEXT: return key_pagedown;
+        case VK_HOME: return key_home;
+        case VK_END: return key_end;
+        case VK_INSERT: return key_insert;
+        case VK_DELETE: return key_delete;
+        case VK_BACK: return key_backspace;
+        case VK_SPACE: return key_space;
+        case VK_RETURN: return key_enter;
+        case VK_ESCAPE: return key_escape;
+        case VK_OEM_7: return key_apostrophe;
+        case VK_OEM_COMMA: return key_comma;
+        case VK_OEM_MINUS: return key_minus;
+        case VK_OEM_PERIOD: return key_period;
+        case VK_OEM_2: return key_slash;
+        case VK_OEM_1: return key_semicolon;
+        case VK_OEM_PLUS: return key_equal;
+        case VK_OEM_4: return key_leftbracket;
+        case VK_OEM_5: return key_backslash;
+        case VK_OEM_6: return key_rightbracket;
+        case VK_OEM_3: return key_graveaccent;
+        case VK_CAPITAL: return key_capslock;
+        case VK_SCROLL: return key_scrolllock;
+        case VK_NUMLOCK: return key_numlock;
+        case VK_SNAPSHOT: return key_printscreen;
+        case VK_PAUSE: return key_pause;
+        case VK_NUMPAD0: return key_keypad0;
+        case VK_NUMPAD1: return key_keypad1;
+        case VK_NUMPAD2: return key_keypad2;
+        case VK_NUMPAD3: return key_keypad3;
+        case VK_NUMPAD4: return key_keypad4;
+        case VK_NUMPAD5: return key_keypad5;
+        case VK_NUMPAD6: return key_keypad6;
+        case VK_NUMPAD7: return key_keypad7;
+        case VK_NUMPAD8: return key_keypad8;
+        case VK_NUMPAD9: return key_keypad9;
+        case VK_DECIMAL: return key_keypaddecimal;
+        case VK_DIVIDE: return key_keypaddivide;
+        case VK_MULTIPLY: return key_keypadmultiply;
+        case VK_SUBTRACT: return key_keypadsubtract;
+        case VK_ADD: return key_keypadadd;
+        case KEYPAD_ENTER: return key_keypadenter;
+        case VK_LSHIFT: return key_leftshift;
+        case VK_LCONTROL: return key_leftctrl;
+        case VK_LMENU: return key_leftalt;
+        case VK_LWIN: return key_leftsuper;
+        case VK_RSHIFT: return key_rightshift;
+        case VK_RCONTROL: return key_rightctrl;
+        case VK_RMENU: return key_rightalt;
+        case VK_RWIN: return key_rightsuper;
+        case VK_APPS: return key_menu;
+        case '0': return key_0;
+        case '1': return key_1;
+        case '2': return key_2;
+        case '3': return key_3;
+        case '4': return key_4;
+        case '5': return key_5;
+        case '6': return key_6;
+        case '7': return key_7;
+        case '8': return key_8;
+        case '9': return key_9;
+        case 'A': return key_a;
+        case 'B': return key_b;
+        case 'C': return key_c;
+        case 'D': return key_d;
+        case 'E': return key_e;
+        case 'F': return key_f;
+        case 'G': return key_g;
+        case 'H': return key_h;
+        case 'I': return key_i;
+        case 'J': return key_j;
+        case 'K': return key_k;
+        case 'L': return key_l;
+        case 'M': return key_m;
+        case 'N': return key_n;
+        case 'O': return key_o;
+        case 'P': return key_p;
+        case 'Q': return key_q;
+        case 'R': return key_r;
+        case 'S': return key_s;
+        case 'T': return key_t;
+        case 'U': return key_u;
+        case 'V': return key_v;
+        case 'W': return key_w;
+        case 'X': return key_x;
+        case 'Y': return key_y;
+        case 'Z': return key_z;
+        case VK_F1: return key_f1;
+        case VK_F2: return key_f2;
+        case VK_F3: return key_f3;
+        case VK_F4: return key_f4;
+        case VK_F5: return key_f5;
+        case VK_F6: return key_f6;
+        case VK_F7: return key_f7;
+        case VK_F8: return key_f8;
+        case VK_F9: return key_f9;
+        case VK_F10: return key_f10;
+        case VK_F11: return key_f11;
+        case VK_F12: return key_f12;
+        default: return key_none;
     }
-
-    ExitProcess(0);
+#undef KEYPAD_ENTER
 }
 
-void initialize_and_create_empty_window() {
-    // create event thread
-    CreateThread(0, 0, service_thread, (LPVOID)GetCurrentThreadId(), 0, &service_thread_id);
+void set_input(UINT message, WPARAM wparam) {
+    bool is_key_down = message == WM_KEYDOWN || message == WM_SYSKEYDOWN;
+    Key key          = to_key(wparam);
+    Core::io.set_key_state(key, is_key_down);
 }
 
 } // namespace
 
 void execute() {
-    initialize_and_create_empty_window();
+    Service::initialize();
 
     init_vulkan_resources();
     defer { free_vulkan_resources(); };
@@ -195,26 +292,26 @@ void execute() {
     window_class.hIcon         = LoadIconA(NULL, IDI_APPLICATION);
     window_class.hCursor       = LoadCursorA(NULL, IDC_ARROW);
     window_class.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
-    window_class.lpszClassName = L"Tyrant_Main_Class";
+    window_class.lpszClassName = L"Anoynmous_Main_Class";
     RegisterClassExW(&window_class);
 
-    Actual_Window_Param p = {};
-    p.dwExStyle           = 0;
-    p.lpClassName         = window_class.lpszClassName;
-    p.lpWindowName        = L"Tyrant"; // Window name
-    p.dwStyle             = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
-    p.x                   = CW_USEDEFAULT;
-    p.y                   = CW_USEDEFAULT;
-    p.nWidth              = CW_USEDEFAULT;
-    p.nHeight             = CW_USEDEFAULT;
-    p.hInstance           = window_class.hInstance;
+    Window_Param p = {};
+    p.dwExStyle    = 0;
+    p.lpClassName  = window_class.lpszClassName;
+    p.lpWindowName = L"Tyrant"; // Window name
+    p.dwStyle      = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
+    p.x            = CW_USEDEFAULT;
+    p.y            = CW_USEDEFAULT;
+    p.nWidth       = CW_USEDEFAULT;
+    p.nHeight      = CW_USEDEFAULT;
+    p.hInstance    = window_class.hInstance;
 
     create_shaders_and_pipeline();
     defer { free_shaders_and_pipeline(); };
 
     auto create_window = [&]() {
         HWND handle =
-            (HWND)SendMessageW(service_window, Window_Messages::create_window, (WPARAM)&p, GetCurrentThreadId());
+            (HWND)SendMessageW(Service::hwnd, Window_Messages::create_window, (WPARAM)&p, GetCurrentThreadId());
         auto swapchain         = create_swapchain_from_win32(window_class.hInstance, handle);
         auto draw_data         = create_draw_data();
         windows[num_windows++] = { handle, swapchain, draw_data };
@@ -226,7 +323,7 @@ void execute() {
             if (hwnd == windows[i].handle) {
                 free_swapchain(windows[i].swapchain);
                 free_draw_data(windows[i].draw_data);
-                SendMessageW(service_window, Window_Messages::destroy_window, (WPARAM)hwnd, 0);
+                SendMessageW(Service::hwnd, Window_Messages::destroy_window, (WPARAM)hwnd, 0);
                 windows[i] = windows[--num_windows];
                 break;
             }
@@ -246,36 +343,32 @@ void execute() {
         MSG message;
         while (PeekMessage(&message, 0, 0, 0, PM_REMOVE)) {
             switch (message.message) {
-                // this shouldn't be the way we handle inputs.
-                case WM_CHAR: {
-                    //  when we support multiple swap chains
-                    // SendMessageW(service_window, Window_Messages::create_window, (WPARAM)&p, 0);
-                    // if (message.wParam == VK_ESCAPE)
-                    //     SendMessageW(service_window, Window_Messages::destroy_window,
-                    //     (WPARAM)GetForegroundWindow(), 0);
-                    // if (std::tolower(message.wParam) == 'c')
-                    //     SendMessageW(service_window, Window_Messages::create_window, (WPARAM)&p, 0);
-                    // if (message.wParam == VK_LSHIFT) log_info("shift has been pressed");
-                } break;
-                case WM_KEYDOWN:
-                    if (message.wParam == VK_SHIFT) log_info("in wm_keydown shift has been pressed");
-                    if (message.wParam == 'C') create_window();
-                    //                        (HWND) SendMessageW(service_window, Window_Messages::create_window,
-                    //                        (WPARAM)&p, 0);
-                    if (message.wParam == VK_ESCAPE) destroy_window(GetForegroundWindow());
-                    //                       SendMessageW(service_window, Window_Messages::destroy_window,
-                    //                       (WPARAM)GetForegroundWindow(), 0);
-                    // etc.
-                    break;
+                case WM_SYSKEYUP:
                 case WM_KEYUP:
-                    if (message.wParam == VK_SHIFT) log_info("in wm_keyup shift has been released");
-                    // etc.
-                    break;
+                case WM_SYSKEYDOWN:
+                case WM_KEYDOWN: {
+                    set_input(message.message, message.wParam);
+                    //bool is_key_down = (message.message == WM_KEYDOWN || message.message == WM_SYSKEYDOWN);
+                    //if (message.wParam == VK_SHIFT)
+                    //     log_info("in wm_keydown shift has been {}", is_key_down ? "pressed" : "released");
+                    //if (is_key_down && message.wParam == 'C') create_window();
+                    //if (is_key_down && message.wParam == VK_ESCAPE) destroy_window(GetForegroundWindow());
+                } break;
                 case WM_CLOSE: {
                     destroy_window((HWND)message.wParam);
-                    // SendMessageW(service_window, Window_Messages::destroy_window, message.wParam, 0);
                 } break;
             }
+        }
+
+        if (Core::io.key_states[key_leftshift].key_down) {
+            log_info("shift has been clicked");
+        }
+        if (Core::io.key_states[key_escape].key_down) {
+            destroy_window(GetForegroundWindow());
+        }
+
+        if (Core::io.key_states[key_c].key_down) {
+            create_window();
         }
 
         for (size_t i = 0; i < num_windows; ++i) {
@@ -295,7 +388,9 @@ void execute() {
                 present_swapchain(window.swapchain);
             }
         }
+
+        Core::update();
     }
 }
 
-#endif // WIN32
+#endif // _WIN32

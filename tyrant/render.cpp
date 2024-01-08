@@ -249,7 +249,7 @@ void init_vulkan_resources() {
                 found_graphics     = true;
                 graphics_queue_idx = j;
             }
-#ifdef WIN32
+#ifdef _WIN32
             VkBool32 presentation_support = vkGetPhysicalDeviceWin32PresentationSupportKHR(physical_device, j);
 #else
             static_assert(false); // TODO: this needs to be changed
