@@ -2,6 +2,7 @@
 #ifdef _WIN32
 
 #include "logger.hpp"
+#define WIN32_LEAN_AND_MEAN      // Exclude rarely-used stuff from Windows headers
 #include <windows.h>
 
 #pragma comment(lib, "kernel32")
