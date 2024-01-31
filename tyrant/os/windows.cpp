@@ -43,7 +43,7 @@ struct Window_Messages {
 
 struct Service {
     static HWND hwnd;
-    static void initialize() { static auto handle = CreateThread(0, 0, worker, 0, 0, &thread_id); }
+    static void initialize() { [[maybe_unused]] static auto handle = CreateThread(0, 0, worker, 0, 0, &thread_id); }
 
 private:
     static LRESULT CALLBACK wnd_proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam) {
@@ -93,7 +93,7 @@ private:
         window_class.hIcon         = LoadIconA(NULL, IDI_APPLICATION);
         window_class.hCursor       = LoadCursorA(NULL, IDC_ARROW);
         window_class.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
-        window_class.lpszClassName = L"Anoynmous-Class";
+        window_class.lpszClassName = L"Anonynmous-Class";
         RegisterClassExW(&window_class);
 
         hwnd = CreateWindowExW(
@@ -311,7 +311,7 @@ void execute() {
     create_shaders_and_pipeline();
     defer { free_shaders_and_pipeline(); };
 
-    auto create_window = [&]() {
+    auto create_window = [&] {
         HWND handle =
             (HWND)SendMessageW(Service::hwnd, Window_Messages::create_window, (WPARAM)&p, GetCurrentThreadId());
         auto swapchain         = create_swapchain_from_win32(window_class.hInstance, handle);
@@ -365,6 +365,7 @@ void execute() {
         if (Core::io.key_states[key_leftshift].key_down) {
             log_info("shift has been clicked");
         }
+
         if (Core::io.key_states[key_escape].key_down) {
             destroy_window(GetForegroundWindow());
         }

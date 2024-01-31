@@ -15,9 +15,6 @@ void* Linear_Allocator::allocate(size_t size, size_t alignment) noexcept {
         return nullptr;
     }
     offset = curr_offset + size;
-    // memset?
-    // weird casts...
-    // @TODO(marc) check if we need launder?
     return (void*)std::launder((u8*)candidate);
 }
 
@@ -29,9 +26,7 @@ void Arena::clear() noexcept {
 void* Arena::allocate(size_t size, size_t alignment) noexcept {
     void* ptr = strategy.allocate(size, alignment);
     if (ptr == nullptr) {
-        // push_front
         if (current->next == nullptr) {
-            // can try using windows alloc.
             current->next = new Memory_Bucket();
             current       = current->next;
             strategy      = Linear_Allocator(first.data, first.length);

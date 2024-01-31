@@ -1,5 +1,5 @@
 #ifdef _WIN32
-#include "platform/windows.hpp"
+#include "os/windows.hpp"
 #endif // _WIN32
 
 /**

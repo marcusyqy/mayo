@@ -4,6 +4,7 @@
 #include "logger.hpp"
 #define WIN32_LEAN_AND_MEAN      // Exclude rarely-used stuff from Windows headers
 #include <windows.h>
+#undef max
 
 #pragma comment(lib, "kernel32")
 #pragma comment(lib, "user32")

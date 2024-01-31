@@ -39,19 +39,12 @@ struct Buffer_View {
     const T* begin() const { return data; }
     const T* end() const { return data + count; }
 
-    template <std::enable_if<!std::is_const_v<T>, bool> = false>
-    Buffer_View<std::add_const<T>> as_const() const {
-        return { data, count };
-    }
+    std::enable_if_t<!std::is_const_v<T>, Buffer_View<std::add_const<T>>> as_const() const { return { data, count }; }
 
-    template <std::enable_if<!std::is_const_v<T>, bool> = false>
-    operator Buffer_View<std::add_const<T>>() const {
-        return as_const();
-    }
+    operator std::enable_if_t<!std::is_const_v<T>, Buffer_View<std::add_const<T>>>() const { return as_const(); }
 };
 
 template <typename T>
 struct Buffer : Buffer_View<T> {};
-
 
 #define ARRAY_SIZE(X) (sizeof(X) / sizeof(X[0]))

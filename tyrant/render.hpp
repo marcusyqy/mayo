@@ -36,7 +36,7 @@ struct Swapchain {
     size_t semaphore_size                                           = {};
 };
 
-//
+// main api.
 void init_vulkan_resources();
 void free_vulkan_resources();
 

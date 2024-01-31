@@ -36,8 +36,6 @@ void Core::update() {
     io.update(clock.dt);
 }
 
-
-
 // what
 Clock Core::clock = {};
 IO Core::io       = {};

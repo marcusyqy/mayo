@@ -663,7 +663,7 @@ struct Draw_Data {
     Framebuffer_Info framebuffer                                         = {};
 };
 
-// @TODO : make shader system more robust?
+// @TODO : make shader system more robust? and to use arenas instead of allocating new objects.
 void create_shaders_and_pipeline() {
     const auto read_file = [](std::string_view filename) -> Buffer_View<char> {
         std::ifstream file{ filename.data(), std::ios::ate | std::ios::binary };

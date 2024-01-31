@@ -10,7 +10,6 @@ struct Clock {
     Clock();
 };
 
-
 enum Key : int {
     // Keyboard
     key_none = 0,
@@ -135,7 +134,6 @@ struct IO {
 
     IO();
 };
-
 
 struct Core {
     static Clock clock;

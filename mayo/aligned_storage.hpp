@@ -19,4 +19,4 @@ using aligned_storage_t = typename aligned_storage<Len, Align>::type;
 template <typename Type>
 using typed_aligned_storage_t = typename aligned_storage<sizeof(Type), alignof(Type)>::type;
 
-} // namespace stdx
+} // namespace mayo
